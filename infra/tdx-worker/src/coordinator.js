@@ -1,9 +1,9 @@
 import { DurableObject } from "cloudflare:workers";
 import { AppError, errorEnvelope } from "./errors.js";
 import { numericEnv } from "./config.js";
-import { requestToken, fetchTdxPages } from "./tdx.js";
+import { requestToken, fetchTdxPages, withOneAuthRefresh } from "./tdx.js";
 import { normalizeRoute } from "./normalize/index.js";
-import { classifySnapshot } from "./cache.js";
+import { classifySnapshot, snapshotEnvelope } from "./cache.js";
 import { assertBudget } from "./budget.js";
 
 function iso(ms) {
@@ -93,17 +93,11 @@ export class TdxCoordinator extends DurableObject {
   }
 
   staleEnvelope(row) {
-    const body = JSON.parse(row.body);
-    return {
-      ...body,
-      status: "stale",
-      stale: true,
-      expiresAt: iso(Number(row.expires_at))
-    };
+    return snapshotEnvelope(row, true);
   }
 
   freshEnvelope(row) {
-    return JSON.parse(row.body);
+    return snapshotEnvelope(row, false);
   }
 
   getCooldownUntil() {
@@ -200,16 +194,10 @@ export class TdxCoordinator extends DurableObject {
   }
 
   async fetchWithAuth(spec) {
-    let token = await this.getAccessToken(false);
-    try {
-      return await this.fetchOne(spec, token);
-    } catch (error) {
-      if (error instanceof AppError && error.extra?.refreshToken) {
-        token = await this.getAccessToken(true);
-        return this.fetchOne(spec, token);
-      }
-      throw error;
-    }
+    return withOneAuthRefresh({
+      getToken: (force) => this.getAccessToken(force),
+      request: (token) => this.fetchOne(spec, token)
+    });
   }
 
   async refresh(kind, scope, upstream, ttl) {
