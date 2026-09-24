@@ -42,7 +42,7 @@ jobs:
 
       - name: Browser screenshots and interaction regression
         run: |
-          cat > /tmp/visual-qa.mjs <<'EOF'
+          cat > visual-qa.mjs <<'EOF'
           import { chromium } from 'playwright';
           import fs from 'node:fs';
 
@@ -197,7 +197,7 @@ jobs:
           if(failed.length) process.exit(1);
           EOF
 
-          node /tmp/visual-qa.mjs
+          node visual-qa.mjs
 
       - name: Upload QA screenshots
         if: always()
