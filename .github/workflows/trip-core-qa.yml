@@ -1,0 +1,150 @@
+name: Trip Core QA
+
+on:
+  push:
+    branches: ["feature/trip-core"]
+    paths:
+      - "index.html"
+      - "assets/app.js"
+      - "assets/styles.css"
+      - "sw.js"
+      - ".github/workflows/trip-core-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax
+        run: |
+          node --check assets/app.js
+          node --check sw.js
+      - name: Install browsers
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium webkit
+      - name: Start app
+        run: |
+          python3 -m http.server 4173 >/tmp/server.log 2>&1 &
+          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/server.log
+          exit 1
+      - name: Trip interactions
+        run: |
+          cat > trip-qa.mjs <<'EOF'
+          import { chromium, webkit } from 'playwright';
+          import fs from 'node:fs';
+
+          const base='http://127.0.0.1:4173/';
+          const out='trip-qa-artifacts';
+          fs.mkdirSync(out,{recursive:true});
+
+          async function run(browserType,label){
+            const browser=await browserType.launch({headless:true});
+            const context=await browser.newContext({
+              viewport:{width:430,height:932},
+              isMobile:true,
+              hasTouch:true,
+              serviceWorkers:'block'
+            });
+            await context.addInitScript(()=>{
+              localStorage.clear();
+              window.__opened=[];
+              window.open=(url)=>{window.__opened.push(String(url));return null;};
+            });
+            const page=await context.newPage();
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e)));
+
+            await page.goto(base,{waitUntil:'networkidle'});
+            await page.locator('[data-go="trip"]').first().click();
+
+            await page.locator('#tripFrom').fill('台南');
+            await page.locator('#tripTo').fill('台北');
+            await page.locator('#planTripBtn').click();
+
+            const text=await page.locator('#tripResult').textContent();
+            if(!text.includes('台南 → 台北'))throw new Error(label+' route title');
+            if(!text.includes('國 1'))throw new Error(label+' auto corridor');
+            if(!text.includes('沿途充電'))throw new Error(label+' charging summary');
+            if(await page.locator('#recentTrips [data-recent-from]').count()!==1)throw new Error(label+' recent route save');
+            const stored=await page.evaluate(()=>JSON.parse(localStorage.getItem('cola-go-recent-trips')||'[]').length);
+            if(stored!==1)throw new Error(label+' recent storage');
+
+            await page.locator('[data-map="google"]').click();
+            await page.locator('[data-map="apple"]').click();
+            const opened=await page.evaluate(()=>window.__opened);
+            if(!opened.some(x=>x.includes('google.com/maps/dir')))throw new Error(label+' google route');
+            if(!opened.some(x=>x.includes('maps.apple.com')))throw new Error(label+' apple route');
+
+            await page.locator('[data-trip-tool="charging"]').click();
+            if(!(await page.locator('[data-view="charging"].active').isVisible()))throw new Error(label+' charging tool opens');
+            if(!((await page.locator('#roadFilter [data-road="1"]').getAttribute('class'))||'').includes('active'))throw new Error(label+' charging road scope');
+            if((await page.locator('#chargingDirection').inputValue())!=='north')throw new Error(label+' charging direction scope');
+
+            await page.locator('.brand').click();
+            await page.locator('[data-go="trip"]').first().click();
+            await page.locator('#tripFrom').fill('台北');
+            await page.locator('#tripTo').fill('宜蘭');
+            await page.locator('#tripCorridor').selectOption('auto');
+            await page.locator('#planTripBtn').click();
+            const yilan=await page.locator('#tripResult').textContent();
+            if(!yilan.includes('國 5'))throw new Error(label+' Yilan corridor');
+            if(!yilan.includes('雪隧'))throw new Error(label+' tunnel suggestion');
+            if(await page.locator('[data-trip-tool="tunnel"]').count()!==1)throw new Error(label+' tunnel action missing');
+
+            await page.locator('#tripCorridor').selectOption('3');
+            await page.locator('#planTripBtn').click();
+            const manual=await page.locator('#tripResult').textContent();
+            if(!manual.includes('國 3'))throw new Error(label+' manual corridor');
+            if(!manual.includes('你指定關注國 3'))throw new Error(label+' manual route note');
+
+            await page.locator('[data-trip-tool="cctv"]').click();
+            if(!(await page.locator('[data-view="cctv"].active').isVisible()))throw new Error(label+' CCTV tool');
+            if(!((await page.locator('#cctvRoadFilter [data-cctv-road="3"]').getAttribute('class'))||'').includes('active'))throw new Error(label+' CCTV corridor');
+
+            await page.locator('.brand').click();
+            await page.locator('[data-go="trip"]').first().click();
+            await page.locator('#recentTrips [data-recent-from]').first().click();
+            if(!(await page.locator('#tripResult').textContent()).includes('台北 → 宜蘭'))throw new Error(label+' recent route restore');
+
+            await page.locator('#clearRecentTrips').click();
+            if(await page.locator('#recentTrips [data-recent-from]').count())throw new Error(label+' clear recent routes');
+            const cleared=await page.evaluate(()=>localStorage.getItem('cola-go-recent-trips'));
+            if(cleared!==null)throw new Error(label+' recent storage clear');
+
+            await page.locator('#tripFrom').fill('台南');
+            await page.locator('#tripTo').fill('嘉義');
+            await page.locator('#tripCorridor').selectOption('1');
+            await page.locator('#planTripBtn').click();
+            await page.locator('[data-trip-tool="parking-google"]').click();
+            await page.locator('[data-trip-tool="parking-apple"]').click();
+            const opened2=await page.evaluate(()=>window.__opened);
+            if(!opened2.some(x=>x.includes('google.com/maps/search')&&x.includes('%E5%81%9C%E8%BB%8A%E5%A0%B4')))throw new Error(label+' destination parking google');
+            if(!opened2.some(x=>x.includes('maps.apple.com')&&x.includes('%E5%81%9C%E8%BB%8A%E5%A0%B4')))throw new Error(label+' destination parking apple');
+
+            await page.screenshot({path:out+'/trip-'+label+'.png',fullPage:true});
+            if(errors.length)throw new Error(label+' page errors '+errors.join(' | '));
+            await browser.close();
+          }
+
+          await run(chromium,'chromium');
+          await run(webkit,'webkit');
+          console.log('TRIP_CORE_QA_SUCCESS');
+          EOF
+          node trip-qa.mjs
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trip-core-qa
+          path: trip-qa-artifacts
+          retention-days: 2
