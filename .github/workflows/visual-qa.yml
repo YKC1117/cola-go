@@ -1,0 +1,207 @@
+name: Visual QA Codex Skin
+
+on:
+  push:
+    branches: ["design/codex-premium-skin"]
+    paths:
+      - "index.html"
+      - "assets/styles.css"
+      - "assets/app.js"
+      - ".github/workflows/visual-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Playwright Chromium
+        run: |
+          npm --yes exec playwright@1.55.0 install --with-deps chromium
+
+      - name: Start static server
+        run: |
+          python3 -m http.server 4173 >/tmp/cola-go-server.log 2>&1 &
+          echo $! >/tmp/cola-go-server.pid
+          for i in {1..20}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0
+            sleep 1
+          done
+          cat /tmp/cola-go-server.log
+          exit 1
+
+      - name: Browser screenshots and interaction regression
+        run: |
+          cat > /tmp/visual-qa.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          import fs from 'node:fs';
+
+          const base='http://127.0.0.1:4173/';
+          const out='qa-artifacts';
+          fs.mkdirSync(out,{recursive:true});
+          const results=[];
+          const pass=(name,detail='')=>results.push({name,status:'PASS',detail});
+          const fail=(name,detail='')=>{results.push({name,status:'FAIL',detail}); throw new Error(name+': '+detail)};
+          const expect=(cond,name,detail='')=>cond?pass(name,detail):fail(name,detail);
+
+          const browser=await chromium.launch({headless:true});
+          const context=await browser.newContext({
+            viewport:{width:430,height:932},
+            deviceScaleFactor:1,
+            userAgent:'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'
+          });
+          const page=await context.newPage();
+          await page.addInitScript(()=>{
+            window.__opened=[];
+            window.open=(url)=>{ window.__opened.push(String(url)); return null; };
+          });
+          page.on('pageerror',e=>results.push({name:'pageerror',status:'FAIL',detail:String(e)}));
+
+          await page.goto(base,{waitUntil:'networkidle'});
+          await page.waitForTimeout(500);
+
+          expect(await page.locator('.home-search').isVisible(),'home search visible');
+          expect(await page.locator('.core-actions').isVisible(),'home core actions visible');
+          expect(await page.locator('.road-now').isVisible(),'home road summary visible');
+          const roadBox=await page.locator('.road-now').boundingBox();
+          expect(roadBox && roadBox.y < 932,'road summary starts in first viewport',JSON.stringify(roadBox));
+          expect(await page.locator('#installSheet').count()===0,'blocking install sheet absent');
+          await page.screenshot({path:out+'/home-430x932.png',fullPage:true});
+
+          await page.locator('#installBtn').click();
+          await page.waitForTimeout(100);
+          expect(await page.locator('#toast').classList().then(c=>c.includes('show')),'iPhone install uses non-blocking toast');
+          expect(await page.locator('.sheet').count()===0,'no blocking sheet after install click');
+
+          const coreViews=['charging','parking','highway','tunnel'];
+          for(const view of coreViews){
+            await page.locator('[data-go="'+view+'"]').first().click();
+            await page.waitForTimeout(120);
+            expect(await page.locator('[data-view="'+view+'"].active').isVisible(),view+' opens');
+            await page.screenshot({path:out+'/'+view+'-430x932.png',fullPage:true});
+            await page.locator('[data-view="'+view+'"] .back').click();
+          }
+
+          await page.locator('[data-go="charging"]').first().click();
+          await page.locator('#roadFilter [data-road="1"]').click();
+          expect(await page.locator('#roadFilter [data-road="1"]').getAttribute('class').then(v=>v?.includes('active')),'charging road filter');
+          await page.locator('#chargingSearch').fill('泰安');
+          pass('charging search accepts input');
+
+          await page.locator('.bottom-nav [data-go="parking"]').click();
+          await page.locator('#parkingSearch').fill('永康');
+          pass('parking search accepts input');
+
+          await page.locator('.brand').click();
+          await page.locator('[data-go="trip"]').first().click();
+          await page.locator('#tripFrom').fill('台南');
+          await page.locator('#tripTo').fill('東山');
+          await page.locator('#planTripBtn').click();
+          expect(await page.locator('#tripResult').textContent().then(t=>t.includes('台南')&&t.includes('東山')),'trip result renders');
+          await page.locator('#tripResult [data-map="google"]').click();
+          expect(await page.evaluate(()=>window.__opened.some(x=>x.includes('google.com/maps/dir'))),'trip external map opens');
+          await page.screenshot({path:out+'/trip-430x932.png',fullPage:true});
+
+          const pages=['cctv','tools','tesla-db','market','locations','community','partners'];
+          for(const view of pages){
+            await page.locator('.brand').click();
+            await page.locator('[data-go="'+view+'"]').first().click();
+            await page.waitForTimeout(100);
+            expect(await page.locator('[data-view="'+view+'"].active').isVisible(),view+' opens');
+            await page.screenshot({path:out+'/'+view+'-430x932.png',fullPage:true});
+          }
+
+          await page.locator('.brand').click();
+          await page.locator('[data-go="tools"]').first().click();
+          await page.locator('[data-go="vin"]').click();
+          await page.locator('#vinInput').fill('5YJ3E1EA1NF000001');
+          await page.locator('#decodeVinBtn').click();
+          expect(await page.locator('#vinResult').textContent().then(t=>t.includes('解析結果')),'VIN tool works');
+
+          await page.locator('[data-view="vin"] .back').click();
+          await page.locator('[data-go="calculator"]').click();
+          await page.locator('#calcKm').fill('1200');
+          await page.locator('#runCalcBtn').click();
+          expect(await page.locator('#calcResult').textContent().then(t=>t.includes('估算結果')),'calculator works');
+
+          await page.locator('[data-view="calculator"] .back').click();
+          await page.locator('[data-go="delivery"]').click();
+          const check=page.locator('#deliveryChecklist input').first();
+          await check.check();
+          expect(await check.isChecked(),'checklist toggles');
+          await page.locator('#resetChecklist').click();
+          expect(!(await check.isChecked()),'checklist reset');
+
+          await page.locator('.brand').click();
+          await page.locator('[data-go="tesla-db"]').first().click();
+          const compares=page.locator('[data-compare]');
+          if(await compares.count()>=2){
+            await compares.nth(0).click();
+            await compares.nth(1).click();
+            expect(await page.locator('#compareTray').isVisible(),'compare tray appears');
+            await page.locator('#openCompare').click();
+            expect(await page.locator('#compareResult table').isVisible(),'compare table renders');
+            await page.locator('#clearCompare').click();
+            expect(!(await page.locator('#compareTray').isVisible()),'compare clear works');
+          }else{
+            fail('compare buttons available','fewer than 2');
+          }
+
+          await page.locator('.brand').click();
+          await page.locator('[data-go="cctv"]').first().click();
+          await page.locator('[data-view="cctv"] [data-url]').first().click();
+          expect(await page.evaluate(()=>window.__opened.some(x=>x.includes('1968.freeway.gov.tw'))),'CCTV external opens');
+
+          await page.locator('.brand').click();
+          await page.locator('[data-go="locations"]').first().click();
+          const locBtn=page.locator('[data-location-map]').first();
+          if(await locBtn.count()){
+            await locBtn.click();
+            expect(await page.evaluate(()=>window.__opened.some(x=>x.includes('google.com/maps/search'))),'location map opens');
+          }
+
+          const viewports=[
+            {name:'home-390x844',w:390,h:844},
+            {name:'home-768x1024',w:768,h:1024},
+            {name:'home-1440x1000',w:1440,h:1000}
+          ];
+          for(const v of viewports){
+            const p=await browser.newPage({viewport:{width:v.w,height:v.h}});
+            await p.goto(base,{waitUntil:'networkidle'});
+            await p.waitForTimeout(250);
+            await p.screenshot({path:out+'/'+v.name+'.png',fullPage:true});
+            if(v.w>=768){
+              const shell=await p.locator('.app-shell').boundingBox();
+              expect(shell && shell.width<=542,'desktop/tablet shell stays mobile-like '+v.name,JSON.stringify(shell));
+              const center=Math.abs((shell.x+shell.width/2)-v.w/2);
+              expect(center<3,'desktop/tablet shell centered '+v.name,'center delta '+center);
+            }
+            await p.close();
+          }
+
+          fs.writeFileSync(out+'/results.json',JSON.stringify(results,null,2));
+          console.log(JSON.stringify(results,null,2));
+
+          const failed=results.filter(x=>x.status==='FAIL');
+          await browser.close();
+          if(failed.length) process.exit(1);
+          EOF
+
+          npm --yes exec --package=playwright@1.55.0 -- node /tmp/visual-qa.mjs
+
+      - name: Upload QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-skin-visual-qa
+          path: qa-artifacts
+          retention-days: 2
