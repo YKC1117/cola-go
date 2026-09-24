@@ -28,6 +28,15 @@
   <symbol id="i-install" viewBox="0 0 24 24"><path d="M12 3v11M7.5 10 12 14.5 16.5 10"/><path d="M5 20h14"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19 8V4l-3 3a7 7 0 1 0 2 8"/></symbol>
   <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+
+  <symbol id="i-camera" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></symbol>
+  <symbol id="i-tools" viewBox="0 0 24 24"><path d="m14 6 4-4 4 4-4 4"/><path d="M14 6 4 16a3 3 0 1 0 4 4l10-10"/></symbol>
+  <symbol id="i-calc" viewBox="0 0 24 24"><rect x="4" y="2.5" width="16" height="19" rx="2"/><path d="M7 6h10M8 11h1M12 11h1M16 11h1M8 15h1M12 15h1M16 15h1M8 19h1M12 19h5"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M9 5h6"/><rect x="5" y="4" width="14" height="17" rx="2"/><path d="m8 11 2 2 4-4M8 17h8"/></symbol>
+  <symbol id="i-hash" viewBox="0 0 24 24"><path d="M9 3 7 21M17 3l-2 18M4 9h16M3 15h16"/></symbol>
+  <symbol id="i-handshake" viewBox="0 0 24 24"><path d="m8 12 3 3a2 2 0 0 0 3 0l3-3"/><path d="m3 9 4-4 4 2 2-1 4 1 4 4-5 5a4 4 0 0 1-6 0l-7-7Z"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="m5 16-1 2v2h2l1-2h10l1 2h2v-2l-1-2-2-7H7z"/><path d="M6 14h12M8 9l1-3h6l1 3"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 13v6H5V6h6"/></symbol>
 </svg>
 
 <div class="stage">
@@ -97,10 +106,12 @@
           </div>
         </section>
 
-        <section class="section compact">
-          <div class="future-note">
-            <span>接下來</span>
-            <p>二手電車、優質服務、車主工具會在核心開車功能完成後加入，不干擾首頁。</p>
+        <section class="section">
+          <div class="section-head"><div><span class="mini-label">MORE</span><h2>更多實用功能</h2></div></div>
+          <div class="tool-shortcuts">
+            <button data-go="cctv"><span class="shortcut-icon"><svg><use href="#i-camera"/></svg></span><span><b>即時影像</b><small>1968／公路局 CCTV</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
+            <button data-go="tools"><span class="shortcut-icon"><svg><use href="#i-tools"/></svg></span><span><b>車主工具</b><small>VIN、電費、驗車、保養、零件</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
+            <button data-go="partners"><span class="shortcut-icon"><svg><use href="#i-handshake"/></svg></span><span><b>合作專區</b><small>合作招募中・歡迎洽談</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
           </div>
         </section>
       </section>
@@ -140,6 +151,114 @@
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">SNOW MOUNTAIN</span><h1>雪隧</h1></div></div>
         <div class="filter-row direction" id="tunnelDirection"><button class="active" data-direction="south">南下 台北 → 宜蘭</button><button data-direction="north">北上 宜蘭 → 台北</button></div>
         <div class="list" id="tunnelList"></div>
+      </section>
+
+      <section class="view" data-view="cctv">
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">LIVE CAMERA</span><h1>即時影像</h1></div></div>
+        <p class="notice strong">這裡只放真的能開啟的公開即時路況服務，不做假影像縮圖。</p>
+        <div class="link-cards">
+          <button data-url="https://1968.freeway.gov.tw/"><span class="shortcut-icon q3"><svg><use href="#i-camera"/></svg></span><span><b>高速公路 1968</b><small>國道 CCTV、路況、事件、服務區資訊</small></span><svg class="shortcut-arrow"><use href="#i-external"/></svg></button>
+          <button data-url="https://168.thb.gov.tw/thb168"><span class="shortcut-icon q2"><svg><use href="#i-camera"/></svg></span><span><b>幸福公路即時影像</b><small>省道、快速道路、國道影像與路況</small></span><svg class="shortcut-arrow"><use href="#i-external"/></svg></button>
+        </div>
+        <div class="info-box"><b>開車安全</b><p>駕駛中不要操作手機；請由乘客查看，或停妥車輛後再操作即時影像。</p></div>
+      </section>
+
+      <section class="view" data-view="tools">
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">OWNER TOOLS</span><h1>車主工具</h1></div></div>
+        <div class="tools-grid">
+          <button data-go="vin"><span><svg><use href="#i-search"/></svg></span><b>VIN 解碼</b><small>17 碼快速解析</small></button>
+          <button data-go="calculator"><span><svg><use href="#i-calc"/></svg></span><b>電費計算</b><small>電車 vs 油車</small></button>
+          <button data-go="delivery"><span><svg><use href="#i-clipboard"/></svg></span><b>驗車清單</b><small>交車逐項勾選</small></button>
+          <button data-go="maintenance"><span><svg><use href="#i-tools"/></svg></span><b>保養週期</b><small>常見檢查整理</small></button>
+          <button data-go="parts"><span><svg><use href="#i-tools"/></svg></span><b>Tesla 零件</b><small>官方目錄與料號</small></button>
+          <button data-go="plate"><span><svg><use href="#i-car"/></svg></span><b>選牌標牌</b><small>官方監理入口</small></button>
+          <button data-go="lucky"><span><svg><use href="#i-hash"/></svg></span><b>車牌數字</b><small>快速加總參考</small></button>
+          <button data-go="cctv"><span><svg><use href="#i-camera"/></svg></span><b>即時影像</b><small>國道／省道 CCTV</small></button>
+        </div>
+      </section>
+
+      <section class="view" data-view="vin">
+        <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">TESLA VIN</span><h1>VIN 解碼</h1></div></div>
+        <div class="tool-form">
+          <label><small>17 碼 VIN</small><input id="vinInput" maxlength="17" placeholder="例如 5YJ3E1EA1NF000001" autocapitalize="characters"></label>
+          <button class="primary" id="decodeVinBtn">解析 VIN</button>
+        </div>
+        <div id="vinResult"></div>
+        <p class="notice">依公開 VIN 編碼規則快速解析，僅供辨識參考；最終車輛資料以 Tesla 官方紀錄為準。</p>
+      </section>
+
+      <section class="view" data-view="calculator">
+        <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">COST</span><h1>電費計算</h1></div></div>
+        <div class="calc-grid">
+          <label><small>每月里程 km</small><input id="calcKm" type="number" value="1000" min="0"></label>
+          <label><small>電價 元/kWh</small><input id="calcElec" type="number" value="5" min="0" step="0.1"></label>
+          <label><small>電耗 km/kWh</small><input id="calcEff" type="number" value="6" min="0.1" step="0.1"></label>
+          <label><small>油價 元/L</small><input id="calcFuel" type="number" value="33" min="0" step="0.1"></label>
+          <label><small>油耗 km/L</small><input id="calcFuelEff" type="number" value="12" min="0.1" step="0.1"></label>
+        </div>
+        <button class="primary" id="runCalcBtn">重新計算</button>
+        <div id="calcResult" class="calc-result"></div>
+      </section>
+
+      <section class="view" data-view="delivery">
+        <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">DELIVERY</span><h1>驗車清單</h1></div></div>
+        <div class="check-head"><span id="checkProgress">0 / 13</span><button id="resetChecklist">重置</button></div>
+        <div id="deliveryChecklist" class="checklist"></div>
+      </section>
+
+      <section class="view" data-view="maintenance">
+        <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">MAINTENANCE</span><h1>保養週期</h1></div></div>
+        <div class="timeline">
+          <article><span>日常</span><div><b>胎壓、輪胎、燈具、雨刷水</b><p>長途出發前尤其值得快速檢查。</p></div></article>
+          <article><span>約 1 年</span><div><b>輪胎換位／定位、雨刷、空調濾網</b><p>依里程與實際磨耗調整。</p></div></article>
+          <article><span>約 2 年</span><div><b>煞車油狀況、底盤與懸吊檢查</b><p>潮濕、山路或高強度使用可提早檢查。</p></div></article>
+          <article><span>依車型</span><div><b>HEPA、乾燥劑、低壓電池等</b><p>不同年份與車型週期不同，請以官方手冊為準。</p></div></article>
+        </div>
+        <button class="external-btn" data-url="https://www.tesla.com/ownersmanual">開啟 Tesla 官方車主手冊<svg><use href="#i-external"/></svg></button>
+      </section>
+
+      <section class="view" data-view="parts">
+        <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">PARTS</span><h1>Tesla 零件</h1></div></div>
+        <div class="tool-form">
+          <label><small>VIN（可選）</small><input id="partsVin" maxlength="17" placeholder="輸入 VIN 方便進官方目錄比對"></label>
+          <label><small>料號（可選）</small><input id="partNo" placeholder="例如 1107681-00-C"></label>
+        </div>
+        <div class="stack-actions">
+          <button class="external-btn" data-url="https://parts.tesla.com/">Tesla 官方 EPC<svg><use href="#i-external"/></svg></button>
+          <button class="external-btn" id="searchPartBtn">Google 搜尋料號<svg><use href="#i-external"/></svg></button>
+        </div>
+        <p class="notice">台灣供貨、相容性與實際價格仍以 Tesla 台灣服務中心／官方目錄為準。</p>
+      </section>
+
+      <section class="view" data-view="plate">
+        <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">LICENSE PLATE</span><h1>選牌標牌</h1></div></div>
+        <div class="info-box"><b>官方選號最可靠</b><p>監理服務網的可選號碼會即時變動，因此 COLA GO 不複製過期清單，直接帶你到官方選號／競標流程。</p></div>
+        <button class="external-btn" data-url="https://www.mvdis.gov.tw/">開啟監理服務網<svg><use href="#i-external"/></svg></button>
+        <button class="external-btn secondary" data-url="https://www.gov.tw/News_Content_2_376850">查看官方選號說明<svg><use href="#i-external"/></svg></button>
+      </section>
+
+      <section class="view" data-view="lucky">
+        <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">PLATE NUMBER</span><h1>車牌數字</h1></div></div>
+        <div class="tool-form"><label><small>輸入車牌或數字</small><input id="luckyInput" placeholder="例如 EBP-5555"></label><button class="primary" id="luckyBtn">計算數字總和</button></div>
+        <div id="luckyResult"></div>
+        <p class="notice">這是民俗娛樂參考，不影響車輛安全、價值或實際運勢。</p>
+      </section>
+
+      <section class="view" data-view="partners">
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">PARTNERS</span><h1>合作專區</h1></div></div>
+        <div class="partner-hero"><span>合作招募中</span><h2>歡迎洽談，一起把台灣電動車出行做得更好。</h2><p>COLA GO 核心功能維持免費；合作內容必須對車主真的有幫助，並清楚標示合作關係。</p></div>
+        <div class="partner-grid">
+          <article><b>充電／停車</b><p>營運商、停車場、即時資料與優惠合作。</p></article>
+          <article><b>保險／貸款</b><p>透明方案、車主專屬內容與實用工具。</p></article>
+          <article><b>輪胎／維修</b><p>可信賴店家、保養與道路救援服務。</p></article>
+          <article><b>包膜／隔熱紙</b><p>優質施工店家、實際案例與優惠。</p></article>
+          <article><b>車用配件</b><p>電動車用品、充電配件、生活周邊。</p></article>
+          <article><b>二手電車</b><p>車主自售、車商、估價與透明車況合作。</p></article>
+          <article><b>內容／社群</b><p>車主社群、創作者、活動與內容交換。</p></article>
+          <article><b>資料／API</b><p>合法公開資料、即時資訊與技術串接。</p></article>
+        </div>
+        <button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=partner.yml">我要洽談合作</button>
+        <p class="notice">目前合作聯絡先使用公開提案表單；未來可再換成 COLA GO 官方 LINE 或商務信箱。</p>
       </section>
     </main>
 

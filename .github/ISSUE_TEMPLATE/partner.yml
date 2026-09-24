@@ -1,0 +1,54 @@
+name: COLA GO 合作洽談
+description: 品牌、店家、營運商、社群或資料合作提案
+title: "[合作] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## COLA GO 合作招募中
+        歡迎充電、停車、保險、貸款、輪胎、維修、包膜、配件、二手電車、內容社群與資料 API 合作。
+        請留下可公開聯絡的方式，我們會以此提案內容作為後續洽談依據。
+  - type: input
+    id: brand
+    attributes:
+      label: 品牌／店家／單位
+      placeholder: 請填名稱
+    validations:
+      required: true
+  - type: dropdown
+    id: type
+    attributes:
+      label: 合作類型
+      options:
+        - 充電／停車
+        - 保險／貸款
+        - 輪胎／維修／道路救援
+        - 包膜／隔熱紙／美容
+        - 車用配件
+        - 二手電車／車商
+        - 內容／社群／活動
+        - 資料／API／技術
+        - 其他
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 合作想法
+      placeholder: 希望怎麼合作、可以提供什麼、對車主有什麼幫助
+    validations:
+      required: true
+  - type: input
+    id: contact
+    attributes:
+      label: 聯絡方式
+      placeholder: Email、LINE 官方帳號或其他可公開聯絡方式
+    validations:
+      required: true
+  - type: checkboxes
+    id: disclosure
+    attributes:
+      label: 合作原則
+      options:
+        - label: 我了解 COLA GO 會清楚標示合作／贊助關係，不把廣告偽裝成中立推薦。
+          required: true
