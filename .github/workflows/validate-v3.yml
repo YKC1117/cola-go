@@ -26,6 +26,18 @@ jobs:
           python3 -m json.tool data/marketplace.json >/dev/null
           python3 -m json.tool data/community.json >/dev/null
           python3 -m json.tool data/tesla-locations.json >/dev/null
+      - name: Smoke test Tainan live parking source
+        if: github.ref == 'refs/heads/feature/tainan-live-parking'
+        run: |
+          python3 scripts/sync_tainan_parking.py | tee /tmp/parking-sync.log
+          grep -q "PARKING_SYNC_OK" /tmp/parking-sync.log
+          python3 - <<'PY'
+          import json
+          data=json.load(open("data/parking-live-tainan.json",encoding="utf-8"))
+          assert data["status"]=="live"
+          assert len(data["items"])>=5
+          print("LIVE_PARKING_ROWS",len(data["items"]))
+          PY
       - name: Check required files
         run: |
           test -s index.html
