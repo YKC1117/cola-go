@@ -1,0 +1,57 @@
+{
+  "updatedAt": "2026-09-24",
+  "source": "Tesla Taiwan official Find Us",
+  "roadsideAssistance": "0809-007-518",
+  "services": [
+    {
+      "name": "Tesla 台北南港服務中心",
+      "area": "台北",
+      "address": "台北市南港區南港路三段104號"
+    },
+    {
+      "name": "Tesla 新北中和服務中心",
+      "area": "新北",
+      "address": "新北市中和區建一路76號"
+    },
+    {
+      "name": "Tesla 桃園蘆竹快修中心",
+      "area": "桃園",
+      "address": "桃園市蘆竹區南山路二段129號"
+    },
+    {
+      "name": "Tesla 新竹香山服務中心",
+      "area": "新竹",
+      "address": "新竹市香山區牛埔東路120號"
+    },
+    {
+      "name": "Tesla 新竹香山快速保養中心",
+      "area": "新竹",
+      "address": "新竹市香山區中華路四段402-1號"
+    },
+    {
+      "name": "Tesla 台中青海服務體驗中心",
+      "area": "台中",
+      "address": "台中市西屯區青海路二段2號"
+    },
+    {
+      "name": "Tesla 台中市政服務體驗中心",
+      "area": "台中",
+      "address": "台中市西屯區市政路638號"
+    },
+    {
+      "name": "Tesla 台南中華西路服務中心",
+      "area": "台南",
+      "address": "台南市南區中華西路一段27號"
+    },
+    {
+      "name": "Tesla 台南安平快速保養中心",
+      "area": "台南",
+      "address": "台南市新樂路22號"
+    },
+    {
+      "name": "Tesla 高雄鼓山服務體驗中心",
+      "area": "高雄",
+      "address": "高雄市鼓山區博愛一路437號"
+    }
+  ]
+}

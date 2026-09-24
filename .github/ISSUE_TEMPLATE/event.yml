@@ -1,0 +1,35 @@
+name: 提交車主活動
+description: 車聚、露營、講座、試駕或其他電動車活動
+title: "[活動] "
+body:
+  - type: input
+    id: name
+    attributes: {label: 活動名稱}
+    validations: {required: true}
+  - type: input
+    id: date
+    attributes: {label: 日期／時間, placeholder: "例如 2026-10-03 14:00"}
+    validations: {required: true}
+  - type: input
+    id: area
+    attributes: {label: 地點／城市}
+    validations: {required: true}
+  - type: textarea
+    id: description
+    attributes: {label: 活動內容}
+    validations: {required: true}
+  - type: input
+    id: url
+    attributes: {label: 公開報名／活動網址}
+    validations: {required: true}
+  - type: input
+    id: contact
+    attributes: {label: 主辦方公開聯絡方式}
+    validations: {required: true}
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: 提交聲明
+      options:
+        - label: 我是主辦方或已獲授權，活動資料真實且可公開。
+          required: true

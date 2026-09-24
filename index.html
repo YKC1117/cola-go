@@ -113,6 +113,8 @@
             <button data-go="tools"><span class="shortcut-icon"><svg><use href="#i-tools"/></svg></span><span><b>車主工具</b><small>VIN、電費、驗車、保養、零件</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
             <button data-go="market"><span class="shortcut-icon"><svg><use href="#i-car"/></svg></span><span><b>買車・賣車・配件</b><small>免費刊登、求購、原廠認證</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
             <button data-go="tesla-db"><span class="shortcut-icon"><svg><use href="#i-calc"/></svg></span><span><b>Tesla 車系比較</b><small>價格、續航、加速、驅動直接比</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
+            <button data-go="locations"><span class="shortcut-icon"><svg><use href="#i-pin"/></svg></span><span><b>Tesla 原廠據點</b><small>服務中心、道路救援、導航</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
+            <button data-go="community"><span class="shortcut-icon"><svg><use href="#i-handshake"/></svg></span><span><b>社群・活動</b><small>LINE、FB、Discord、車聚公開招募</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
             <button data-go="partners"><span class="shortcut-icon"><svg><use href="#i-handshake"/></svg></span><span><b>合作專區</b><small>合作招募中・歡迎洽談</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
           </div>
         </section>
@@ -370,6 +372,51 @@
           <button class="go" id="openCompare">開始比較</button>
         </div>
         <div id="compareResult"></div>
+      </section>
+
+
+      <section class="view" data-view="locations">
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">TESLA SUPPORT</span><h1>原廠據點</h1></div></div>
+        <div class="roadside-card">
+          <span>道路救援</span>
+          <h2>需要協助，直接打 Tesla。</h2>
+          <p>台灣 Tesla 服務中心官方頁目前列出的 Roadside Assistance：0809-007-518。</p>
+          <a href="tel:0809007518">撥打 0809-007-518</a>
+        </div>
+        <div class="location-links">
+          <button data-url="https://www.tesla.com/zh_tw/findus/list/services/Taiwan">官方服務中心清單<svg><use href="#i-external"/></svg></button>
+          <button data-url="https://www.tesla.com/zh_tw/findus/list/stores/Taiwan">官方體驗店清單<svg><use href="#i-external"/></svg></button>
+          <button data-url="https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan">官方超級充電站清單<svg><use href="#i-external"/></svg></button>
+        </div>
+        <div class="section-head location-section-head"><div><span class="mini-label">SERVICE</span><h2>服務／快修據點</h2></div><span class="updated" id="locationCount">—</span></div>
+        <div id="teslaLocationList" class="location-list"></div>
+      </section>
+
+      <section class="view" data-view="community">
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">COMMUNITY</span><h1>社群・活動</h1></div></div>
+        <div class="community-hero">
+          <span>公開招募中</span>
+          <h2>不是先塞一堆假群組，而是讓真的社群自己加入。</h2>
+          <p>LINE、Facebook、Discord、Telegram、車聚、露營、二手交易與區域車主社群都可以申請；上架時會標示主理人與平台。</p>
+        </div>
+        <div class="market-summary">
+          <button><span><b id="communityCount">0</b><small>公開社群</small></span></button>
+          <button><span><b id="eventCount">0</b><small>車主活動</small></span></button>
+          <button data-url="https://www.tesla.com/zh_tw/events"><span><b>官方</b><small>Tesla 活動</small></span><svg><use href="#i-external"/></svg></button>
+        </div>
+        <div class="action-duo">
+          <button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=community.yml">登錄社群</button>
+          <button class="external-btn secondary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=event.yml">提交車聚／活動<svg><use href="#i-arrow"/></svg></button>
+        </div>
+        <div class="filter-row community-filter" id="communityFilter">
+          <button class="active" data-community-filter="all">全部</button>
+          <button data-community-filter="regional">區域</button>
+          <button data-community-filter="model">車系</button>
+          <button data-community-filter="topic">主題</button>
+        </div>
+        <div id="communityList" class="market-list"></div>
+        <div class="section-head event-title"><div><span class="mini-label">EVENTS</span><h2>近期活動</h2></div></div>
+        <div id="eventList" class="market-list"></div>
       </section>
 
       <section class="view" data-view="partners">

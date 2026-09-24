@@ -12,6 +12,9 @@ const state={
   modelFilter:"all",
   usedFilter:"all",
   compare:[],
+  communityFilter:"all",
+  community:{communities:[],events:[]},
+  locations:{services:[]},
   installPrompt:null
 };
 
@@ -81,7 +84,9 @@ async function load(){
     getJSON("./data/tunnel.json"),
     getJSON("./data/parking.json"),
     getJSON("./data/tesla-models.json"),
-    getJSON("./data/marketplace.json")
+    getJSON("./data/marketplace.json"),
+    getJSON("./data/community.json"),
+    getJSON("./data/tesla-locations.json")
   ]);
 
   if(results[0].status==="fulfilled")state.charging=results[0].value;
@@ -90,6 +95,8 @@ async function load(){
   if(results[3].status==="fulfilled")state.parking=results[3].value;
   if(results[4].status==="fulfilled")state.models=results[4].value.models||[];
   if(results[5].status==="fulfilled")state.market=results[5].value;
+  if(results[6].status==="fulfilled")state.community=results[6].value;
+  if(results[7].status==="fulfilled")state.locations=results[7].value;
 
   renderAll();
 }
@@ -101,6 +108,8 @@ function renderAll(){
   renderTunnel();
   renderMarket();
   renderModels();
+  renderCommunity();
+  renderLocations();
 
   const live=state.traffic?.status==="live";
   $("#syncState").classList.toggle("ready",live);
@@ -380,6 +389,57 @@ function openCompare(){
     '<p class="compare-source">價格與規格會變動，購車前請再開「官方來源」確認 Tesla 台灣最新資訊。</p>';
 
   $("#compareResult").scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+
+function renderLocations(){
+  const root=$("#teslaLocationList");
+  if(!root)return;
+  const rows=state.locations?.services||[];
+  $("#locationCount").textContent=rows.length+" 個";
+  root.innerHTML=rows.map(x=>
+    '<article class="location-card">'+
+      '<h3>'+esc(x.name)+'</h3>'+
+      '<span class="area">'+esc(x.area)+'</span>'+
+      '<p>'+esc(x.address)+'</p>'+
+      '<div class="location-actions">'+
+        '<button data-location-map="'+encodeURIComponent(x.address)+'">Google Maps</button>'+
+        '<button data-location-apple="'+encodeURIComponent(x.address)+'">Apple 地圖</button>'+
+      '</div>'+
+    '</article>'
+  ).join("");
+  $("[data-location-map]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.locationMap,"_blank","noopener"));
+  $("[data-location-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?q="+b.dataset.locationApple,"_blank","noopener"));
+}
+function renderCommunity(){
+  const communities=state.community?.communities||[];
+  const events=state.community?.events||[];
+  if($("#communityCount"))$("#communityCount").textContent=communities.length;
+  if($("#eventCount"))$("#eventCount").textContent=events.length;
+
+  const root=$("#communityList");
+  if(root){
+    const rows=communities.filter(x=>state.communityFilter==="all"||x.category===state.communityFilter);
+    root.innerHTML=rows.length?rows.map(x=>
+      '<article class="community-card"><h3>'+esc(x.name)+'</h3><div class="badges"><span>'+esc(x.platform||"")+'</span><span>'+esc(x.region||"全台")+'</span></div><p>'+esc(x.description||"")+'</p><button class="external-btn" data-url="'+esc(x.url)+'">加入／查看<svg><use href="#i-external"/></svg></button></article>'
+    ).join(""):'<div class="market-empty"><b>目前 0 個通過審核的公開社群</b><p>不冒用別人的 LINE 群或社團。主理人可以免費登錄，審核後才公開。</p><button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=community.yml">登錄第一個社群</button></div>';
+  }
+
+  const eventRoot=$("#eventList");
+  if(eventRoot){
+    eventRoot.innerHTML=events.length?events.map(x=>
+      '<article class="community-card"><h3>'+esc(x.name)+'</h3><div class="badges"><span>'+esc(x.date||"")+'</span><span>'+esc(x.area||"")+'</span></div><p>'+esc(x.description||"")+'</p><button class="external-btn" data-url="'+esc(x.url)+'">活動詳情<svg><use href="#i-external"/></svg></button></article>'
+    ).join(""):'<div class="market-empty"><b>目前 0 個公開車主活動</b><p>車聚、露營、講座、交車活動都能免費提交；日期過期後不繼續冒充「近期活動」。</p><button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=event.yml">提交第一個活動</button></div>';
+  }
+  bindExternal(document);
+}
+function bindCommunity(){
+  $("[data-community-filter]").forEach(b=>b.onclick=()=>{
+    $("[data-community-filter]").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    state.communityFilter=b.dataset.communityFilter;
+    renderCommunity();
+  });
 }
 
 function bindFilters(){
@@ -764,6 +824,7 @@ bindNav();
 bindExternal();
 bindFilters();
 bindMarket();
+bindCommunity();
 bindTrip();
 bindVin();
 bindCalculator();

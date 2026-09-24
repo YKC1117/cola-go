@@ -1,0 +1,39 @@
+name: 登錄車主社群
+description: LINE、Facebook、Discord、Telegram 或其他公開車主社群
+title: "[社群] "
+body:
+  - type: input
+    id: name
+    attributes: {label: 社群名稱}
+    validations: {required: true}
+  - type: dropdown
+    id: category
+    attributes: {label: 類型, options: ["區域車主群","車系車主群","旅遊／露營","二手交易","新手／交車","新聞／資訊","其他主題"]}
+    validations: {required: true}
+  - type: dropdown
+    id: platform
+    attributes: {label: 平台, options: ["LINE","Facebook","Discord","Telegram","其他"]}
+    validations: {required: true}
+  - type: input
+    id: region
+    attributes: {label: 地區, placeholder: "全台、北部、中部、南部或城市"}
+    validations: {required: true}
+  - type: input
+    id: url
+    attributes: {label: 公開加入／介紹網址}
+    validations: {required: true}
+  - type: textarea
+    id: intro
+    attributes: {label: 社群介紹與規則}
+    validations: {required: true}
+  - type: input
+    id: contact
+    attributes: {label: 主理人公開聯絡方式}
+    validations: {required: true}
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: 登錄聲明
+      options:
+        - label: 我是社群主理人或已獲授權，並同意 COLA GO 公開此加入網址。
+          required: true
