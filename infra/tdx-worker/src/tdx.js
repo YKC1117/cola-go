@@ -107,3 +107,14 @@ export async function fetchTdxPages({ env, token, path, paginate = true, fetchIm
 
   throw new AppError(502, "UPSTREAM_SCHEMA_INVALID", "TDX pagination exceeded safety limit");
 }
+
+export async function withOneAuthRefresh({ getToken, request }) {
+  let token = await getToken(false);
+  try {
+    return await request(token);
+  } catch (error) {
+    if (!(error instanceof AppError) || !error.extra?.refreshToken) throw error;
+    token = await getToken(true);
+    return request(token);
+  }
+}
