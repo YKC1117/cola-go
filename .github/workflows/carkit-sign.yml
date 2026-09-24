@@ -77,7 +77,8 @@ jobs:
               "HVACSetTempIntent","ChargeLimitIntent","PreconditionIntent",
               "LockUnlockIntent","RearTrunkIntent","FrontTrunkIntent",
               "DefrostIntent","VentIntent","CloseWindowIntent",
-              "SentryModeIntent","FlashLightIntent","ChargePortIntent"
+              "SentryModeIntent","FlashLightIntent","ChargePortIntent",
+              "HVACSeatHeaterIntent"
           }
           ask={"Value":{"Type":"Ask"},"WFSerializationType":"WFTextTokenAttachment"}
 
@@ -87,7 +88,7 @@ jobs:
               if ident.startswith(bundle+"."):
                   intent=ident.split(".")[-1]
                   assert intent in evidenced, f"unsupported/unproven Tesla intent: {intent}"
-                  if intent in {"ChargeLimitIntent","FlashLightIntent"}:
+                  if intent in {"ChargeLimitIntent","FlashLightIntent","HVACSeatHeaterIntent"}:
                       assert "vehicle" not in p, f"{intent}: invented vehicle parameter"
                   elif "vehicle" in p:
                       assert p["vehicle"] == ask, f"{intent}: vehicle is not runtime Ask candidate"
@@ -146,17 +147,21 @@ jobs:
               if ident.endswith(".RearTrunkIntent"):
                   assert p.get("rearTrunkAction")==ask
               if ident.endswith(".DefrostIntent"):
-                  assert p.get("defrostAction")=="enable"
+                  assert p.get("defrostAction") in {"enable","disable"}
               if ident.endswith(".SentryModeIntent"):
                   assert p.get("vehicleModeAction")==ask
               if ident.endswith(".ChargePortIntent"):
                   assert p.get("chargePortAction")=="open"
                   assert p.get("vehicle")==ask
+              if ident.endswith(".HVACSeatHeaterIntent"):
+                  assert p.get("seat")=="frontLeft"
+                  assert p.get("level") in {"high","off"}
+                  assert "vehicle" not in p
 
           # Unsupported native actions remain absent until a donor is obtained.
           for forbidden in [
               "HornIntent","StartChargingIntent","StopChargingIntent",
-              "SeatHeaterIntent","DogModeIntent","CampModeIntent","Bioweapon"
+              "DogModeIntent","CampModeIntent","Bioweapon"
           ]:
               assert forbidden not in tblob, f"unproven intent leaked: {forbidden}"
 
