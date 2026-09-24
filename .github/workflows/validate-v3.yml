@@ -48,6 +48,8 @@ jobs:
           grep -q "bottom-nav" index.html
           grep -q "core-actions" index.html
           ! grep -q 'id="installSheet"' index.html
+          ! grep -q 'installSheet' assets/app.js
+          grep -q '加入主畫面：點瀏覽器' assets/app.js
           grep -q "data-view=\"tesla-db\"" index.html
           grep -q "data-view=\"market\"" index.html
           grep -q "data-view=\"warranty\"" index.html
