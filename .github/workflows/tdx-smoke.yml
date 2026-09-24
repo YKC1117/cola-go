@@ -1,0 +1,49 @@
+name: TDX browser smoke
+
+on:
+  push:
+    branches: ["feature/highway-cctv-live"]
+    paths:
+      - ".github/workflows/tdx-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Test TDX visitor-mode basic APIs in browser
+        run: |
+          cat > tdx-smoke.mjs <<'EOF'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage();
+          const urls=[
+            'https://tdx.transportdata.tw/api/basic/v2/Road/Traffic/Live/Freeway?%24format=JSON',
+            'https://tdx.transportdata.tw/api/basic/v2/Road/Traffic/CCTV/Freeway?%24format=JSON'
+          ];
+          for(const url of urls){
+            const result=await page.evaluate(async (url)=>{
+              try{
+                const r=await fetch(url,{headers:{Accept:'application/json'}});
+                const text=await r.text();
+                return {url,status:r.status,ok:r.ok,type:r.headers.get('content-type'),length:text.length,preview:text.slice(0,180)};
+              }catch(e){
+                return {url,error:String(e)};
+              }
+            },url);
+            console.log(JSON.stringify(result));
+          }
+          await browser.close();
+          EOF
+          node tdx-smoke.mjs
