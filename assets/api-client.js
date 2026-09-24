@@ -1,5 +1,6 @@
 (()=> {
   const state={ready:false,baseUrl:"",enabled:false,source:"none"};
+  let initPromise=null;
 
   function normalizeBase(value){
     if(!value)return "";
@@ -13,17 +14,21 @@
 
   async function init(configUrl="./data/runtime-config.json"){
     if(state.ready)return {...state};
-    state.ready=true;
-    try{
-      const response=await fetch(configUrl,{cache:"no-store"});
-      if(response.ok){
-        const config=await response.json();
-        state.baseUrl=normalizeBase(config?.apiBaseUrl);
-        state.enabled=Boolean(state.baseUrl);
-        state.source=state.enabled?"runtime-config":"none";
-      }
-    }catch{}
-    return {...state};
+    if(initPromise)return initPromise;
+    initPromise=(async()=>{
+      try{
+        const response=await fetch(configUrl,{cache:"no-store"});
+        if(response.ok){
+          const config=await response.json();
+          state.baseUrl=normalizeBase(config?.apiBaseUrl);
+          state.enabled=Boolean(state.baseUrl);
+          state.source=state.enabled?"runtime-config":"none";
+        }
+      }catch{}
+      state.ready=true;
+      return {...state};
+    })();
+    return initPromise;
   }
 
   function enabled(){return state.enabled;}
