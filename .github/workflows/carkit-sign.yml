@@ -13,19 +13,41 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
-      - name: Check Shortcuts CLI
+      - name: Validate plist
         run: |
-          sw_vers
-          /usr/bin/shortcuts help || true
-      - name: Convert and sign
+          set -euxo pipefail
+          plutil -lint carkit-sign/Test.shortcut.xml
+      - name: Sign through HubSign
         run: |
           set -euxo pipefail
           mkdir -p carkit-sign/out
-          cp carkit-sign/Test.shortcut.xml carkit-sign/out/Test.unsigned.shortcut
-          plutil -convert binary1 carkit-sign/out/Test.unsigned.shortcut
-          /usr/bin/shortcuts sign --mode anyone --input carkit-sign/out/Test.unsigned.shortcut --output carkit-sign/out/CarKit-Sign-Test.shortcut
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+
+          src = Path("carkit-sign/Test.shortcut.xml").read_text(encoding="utf-8")
+          payload = json.dumps({"shortcutName":"CarKit Sign Test","shortcut":src}).encode()
+          req = Request(
+              "https://hubsign.routinehub.services/sign",
+              data=payload,
+              headers={
+                  "Content-Type":"application/json",
+                  "User-Agent":"CarKitTW/0.3",
+                  "Origin":"https://routinehub.co",
+                  "Referer":"https://routinehub.co/",
+              },
+              method="POST",
+          )
+          with urlopen(req, timeout=30) as resp:
+              out = resp.read()
+          if out[:4] != b"AEA1":
+              raise SystemExit(f"HubSign did not return AEA1: {out[:120]!r}")
+          Path("carkit-sign/out/CarKit-Sign-Test.shortcut").write_bytes(out)
+          print("signed bytes:", len(out))
+          PY
           test "$(xxd -p -l 4 carkit-sign/out/CarKit-Sign-Test.shortcut)" = "41454131"
-          ls -lh carkit-sign/out
+          ls -lh carkit-sign/out/CarKit-Sign-Test.shortcut
       - name: Upload signed shortcut
         uses: actions/upload-artifact@v4
         with:
