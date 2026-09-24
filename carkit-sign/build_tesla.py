@@ -20,6 +20,9 @@ def named_var(name):
 def cond_action_output(u,n):
     return {"Type":"Variable","Variable":ao(u,n)}
 
+def cond_named_var(name):
+    return {"Type":"Variable","Variable":named_var(name)}
+
 def cond_extension_input():
     return {
       "Type":"Variable",
@@ -360,7 +363,7 @@ actions=[
 actions += if_exact(cond_extension_input(),"AUTO_START",auto_start,"route-auto-start")
 
 # Always initialize canonical command to empty text.
-actions += set_command("","command-init")
+actions += set_command("NONE","command-init")
 
 voice,voice_id=ask_text("要做什麼？","voice-command")
 actions.append(voice)
@@ -405,9 +408,6 @@ charge_follow=[
   *normalize_aliases(charge_qid,["90","90%","九十"],"CHARGE_90","voice-charge-followup-90"),
   *route_aliases(charge_qid,["Tesla","開 Tesla","App"],lambda s:[app(BUNDLE,s)],"voice-charge-followup-app")
 ]
-# If follow-up produced no command and did not open the app, cancel.
-charge_follow += if_exact(named_var("Command"),"CHARGE_80",[],"voice-charge-followup-has80")
-charge_follow += if_exact(named_var("Command"),"CHARGE_90",[],"voice-charge-followup-has90")
 actions += if_exact(cond_action_output(voice_id,"Provided Input"),"充電",charge_follow,"voice-charge-ambiguous")
 
 # Sentry is donor-backed but its fixed enum is not yet proven. Keep Tesla's own
@@ -418,7 +418,7 @@ actions += normalize_aliases(voice_id,["哨兵","哨兵模式"],"SENTRY","voice-
 actions += if_exact(cond_action_output(voice_id,"Provided Input"),"選單",manual_menu,"voice-menu")
 
 # ---- one canonical Tesla AppIntent per actual function ----
-cmd=named_var("Command")
+cmd=cond_named_var("Command")
 actions += if_exact(cmd,"PRE_START",[pre_start_action("canonical-pre-start"),exit_shortcut()],"run-pre-start")
 actions += if_exact(cmd,"PRE_STOP",[pre_stop_action("canonical-pre-stop"),exit_shortcut()],"run-pre-stop")
 actions += if_exact(cmd,"TEMP_22",[temp_action(22,"canonical-temp22"),exit_shortcut()],"run-temp22")
