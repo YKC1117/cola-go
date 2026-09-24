@@ -1,7 +1,7 @@
 name: Validate COLA GO V3
 on:
   push:
-    branches: ["main", "design/v3-product-ui", "feature/full-toolbox", "feature/market-db", "feature/owner-plus"]
+    branches: ["main", "design/v3-product-ui", "feature/full-toolbox", "feature/market-db", "feature/owner-plus", "feature/community-locations"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,6 +23,8 @@ jobs:
           python3 -m json.tool data/parking.json >/dev/null
           python3 -m json.tool data/tesla-models.json >/dev/null
           python3 -m json.tool data/marketplace.json >/dev/null
+          python3 -m json.tool data/community.json >/dev/null
+          python3 -m json.tool data/tesla-locations.json >/dev/null
       - name: Check required files
         run: |
           test -s index.html
@@ -35,3 +37,5 @@ jobs:
           grep -q "data-view=\"market\"" index.html
           grep -q "data-view=\"warranty\"" index.html
           grep -q "data-view=\"connector\"" index.html
+          grep -q "data-view=\"community\"" index.html
+          grep -q "data-view=\"locations\"" index.html
