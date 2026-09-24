@@ -25,7 +25,11 @@ def url_open(url,seed):
 
 def menu(prompt,items,branches,seed):
     g=uid(seed+"-group")
-    a=[act("is.workflow.actions.choosefrommenu",{
+    comment=act("is.workflow.actions.comment",{
+      "UUID":uid(seed+"-comment"),
+      "WFCommentActionText":f"{prompt}\n- 顯示這組功能選項\n- 依車主選擇執行對應動作"
+    })
+    a=[comment,act("is.workflow.actions.choosefrommenu",{
       "UUID":uid(seed+"-start"),"GroupingIdentifier":g,"WFControlFlowMode":0,
       "WFMenuPrompt":prompt,"WFMenuItems":items
     })]
