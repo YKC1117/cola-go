@@ -43,7 +43,7 @@ export function normalizeChargingPoints(items, city) {
       connectorSummary: connectorSummary(x.Connectors),
       joinable: Boolean(sourceId && stationId)
     };
-  };
+  });
 }
 
 export function normalizeChargingConnectors(items, city) {
@@ -61,7 +61,7 @@ export function normalizeChargingConnectors(items, city) {
       maxPowerKw: numberOrNull(x.MaxPower ?? x.MaxPowerKW ?? x.Power),
       joinable: Boolean(sourceId && (stationId || chargingPointId))
     };
-  };
+  });
 }
 
 export function normalizeChargingAvailability(items, city) {
