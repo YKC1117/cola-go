@@ -289,3 +289,23 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .charging-status-line span{font-size:11px;color:var(--ink);font-weight:600}
 .charging-status-line small{font-size:11px;color:var(--muted)}
 @media(max-width:380px){.charging-actions{grid-template-columns:1fr}.charging-actions button{min-height:58px}.charging-filter-grid{grid-template-columns:1fr}}
+
+.trip-plan{margin-top:16px}
+.trip-plan-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.trip-plan-head h2{font-size:20px;line-height:1.35;letter-spacing:-.03em;margin:5px 0 0}
+.trip-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;background:var(--soft);border-radius:var(--radius);padding:16px 0;margin-top:18px}
+.trip-metrics div{padding:0 13px;border-right:1px solid #daddd2}
+.trip-metrics div:last-child{border-right:0}
+.trip-metrics small{display:block;font-size:11px;color:var(--muted)}
+.trip-metrics b{display:block;font-size:15px;font-weight:650;margin-top:7px;line-height:1.35}
+.trip-note{font-size:12px;line-height:1.65;color:var(--muted);margin:14px 0}
+.trip-nav-actions{margin-top:0}
+.trip-tools{display:grid;margin-top:18px;border-top:1px solid var(--line)}
+.trip-tools button,.recent-trips>button{display:grid;grid-template-columns:minmax(0,1fr) 18px;gap:12px;align-items:center;width:100%;min-height:64px;padding:14px 0;border-bottom:1px solid var(--line);text-align:left}
+.trip-tools b,.recent-trips b{display:block;font-size:14px;font-weight:600}
+.trip-tools small,.recent-trips small{display:block;font-size:11px;color:var(--muted);margin-top:3px}
+.trip-tools svg,.recent-trips svg{width:18px;height:18px;color:var(--muted)}
+.trip-recent-section{margin-top:30px}
+.compact-empty{padding:20px 16px}
+.route-form select{width:100%;min-height:44px;border:0;background:transparent;padding:8px 0;font-weight:500}
+@media(max-width:380px){.trip-metrics{grid-template-columns:1fr}.trip-metrics div{border-right:0;border-bottom:1px solid #daddd2;padding:10px 14px}.trip-metrics div:last-child{border-bottom:0}}

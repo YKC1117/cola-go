@@ -14,6 +14,8 @@ const state={
   chargingOperator:"all",
   chargingFavoritesOnly:false,
   chargingFavorites:[],
+  tripCorridor:"auto",
+  recentTrips:[],
   highway:"1",
   direction:"south",
   modelFilter:"all",
@@ -982,13 +984,161 @@ function bindMarket(){
   $("#openCompare")?.addEventListener("click",openCompare);
 }
 
+const PLACE_ORDER=[
+  ["基隆",0],["台北",1],["臺北",1],["新北",1],["桃園",2],["新竹",3],["苗栗",4],
+  ["台中",5],["臺中",5],["彰化",6],["雲林",7],["嘉義",8],["台南",9],["臺南",9],["高雄",10],["屏東",11]
+];
+
+function placeRank(value){
+  const text=String(value||"");
+  for(const [name,rank] of PLACE_ORDER){
+    if(text.includes(name))return rank;
+  }
+  return null;
+}
+function tripDirection(from,to){
+  const a=placeRank(from),b=placeRank(to);
+  if(a==null||b==null||a===b)return "all";
+  return b<a?"north":"south";
+}
+function tripDirectionLabel(direction){
+  return direction==="north"?"北上":direction==="south"?"南下":"雙向";
+}
+function inferTripCorridor(from,to){
+  const text=(from+" "+to);
+  if(/宜蘭|羅東|礁溪|頭城|花蓮/.test(text))return "5";
+  if(/埔里|日月潭/.test(text))return "6";
+  if(/南投/.test(to)&&!/台北|臺北|新北|桃園/.test(from))return "3";
+  const a=placeRank(from),b=placeRank(to);
+  if(a!=null||b!=null)return "1";
+  return "1";
+}
+function tripChargingRows(corridor,direction){
+  return state.charging.filter(x=>x.road===corridor).filter(x=>{
+    if(direction==="all")return true;
+    const d=String(x.direction||"");
+    if(d.includes("雙向"))return true;
+    return direction==="north"?d.includes("北"):d.includes("南");
+  });
+}
+function saveRecentTrip(from,to,corridor){
+  const row={from,to,corridor,ts:Date.now()};
+  const current=state.recentTrips.filter(x=>!(x.from===from&&x.to===to));
+  state.recentTrips=[row,...current].slice(0,5);
+  try{localStorage.setItem("cola-go-recent-trips",JSON.stringify(state.recentTrips));}catch{}
+  renderRecentTrips();
+}
+function loadRecentTrips(){
+  try{
+    const rows=JSON.parse(localStorage.getItem("cola-go-recent-trips")||"[]");
+    state.recentTrips=Array.isArray(rows)?rows.slice(0,5):[];
+  }catch{state.recentTrips=[];}
+}
+function renderRecentTrips(){
+  const root=$("#recentTrips");
+  if(!root)return;
+  root.innerHTML=state.recentTrips.length?state.recentTrips.map(x=>
+    '<button data-recent-from="'+esc(x.from)+'" data-recent-to="'+esc(x.to)+'" data-recent-road="'+esc(x.corridor||"auto")+'"><span><b>'+esc(x.from)+' → '+esc(x.to)+'</b><small>'+(x.corridor&&x.corridor!=="auto"?'國 '+esc(x.corridor):'自動建議')+'</small></span><svg><use href="#i-arrow"/></svg></button>'
+  ).join(""):'<div class="empty compact-empty"><b>還沒有最近路線</b><p>整理一次行程後會保存在這台裝置。</p></div>';
+
+  $$("[data-recent-from]",root).forEach(b=>b.onclick=()=>{
+    $("#tripFrom").value=b.dataset.recentFrom;
+    $("#tripTo").value=b.dataset.recentTo;
+    $("#tripCorridor").value=b.dataset.recentRoad||"auto";
+    planTrip();
+  });
+}
+function setHighwayView(road){
+  state.highway=String(road);
+  $$("#highwayTabs button").forEach(b=>b.classList.toggle("active",b.dataset.highway===state.highway));
+  show("highway");
+  renderTraffic();
+}
+function setChargingTripView(road,direction){
+  state.road=String(road);
+  state.chargingDirection=direction;
+  $$("#roadFilter button").forEach(b=>b.classList.toggle("active",b.dataset.road===state.road));
+  if($("#chargingDirection"))$("#chargingDirection").value=direction;
+  show("charging");
+  renderCharging();
+}
+function destinationParking(to,provider){
+  const query="停車場 "+to;
+  const url=provider==="apple"
+    ?"https://maps.apple.com/?q="+encodeURIComponent(query)
+    :"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(query);
+  window.open(url,"_blank","noopener");
+}
+function planTrip(){
+  const from=$("#tripFrom").value.trim()||"目前位置";
+  const to=$("#tripTo").value.trim();
+  if(!to)return toast("請先輸入目的地");
+
+  const selected=$("#tripCorridor")?.value||"auto";
+  const corridor=selected==="auto"?inferTripCorridor(from,to):selected;
+  const direction=tripDirection(from,to);
+  const chargers=tripChargingRows(corridor,direction);
+  const speeds=state.traffic?.highways?.[corridor]||[];
+  const highwayAvg=avg(speeds);
+  const needsTunnel=corridor==="5"||/宜蘭|羅東|礁溪|頭城|花蓮/.test(from+" "+to);
+
+  const routeNote=selected==="auto"
+    ?"依起終點做「行前關注」建議，不代表導航一定走國 "+corridor+"。"
+    :"你指定關注國 "+corridor+"；實際導航路線仍以地圖 App 為準。";
+
+  $("#tripResult").innerHTML=
+    '<article class="trip-plan">'+
+      '<div class="trip-plan-head"><div><span class="mini-label">TRIP BRIEF</span><h2>'+esc(from)+' → '+esc(to)+'</h2></div><span class="route-tag">國 '+esc(corridor)+' · '+tripDirectionLabel(direction)+'</span></div>'+
+      '<div class="trip-metrics">'+
+        '<div><small>國道路況</small><b>'+(highwayAvg?highwayAvg+' km/h':'官方入口')+'</b></div>'+
+        '<div><small>沿途充電</small><b>'+chargers.length+' 處</b></div>'+
+        '<div><small>雪隧</small><b>'+(needsTunnel?'要看':'非重點')+'</b></div>'+
+      '</div>'+
+      '<p class="trip-note">'+esc(routeNote)+'</p>'+
+      '<div class="item-actions trip-nav-actions"><button class="go" data-map="google">Google Maps</button><button data-map="apple">Apple 地圖</button></div>'+
+      '<div class="trip-tools">'+
+        '<button data-trip-tool="highway"><span><b>國道路況</b><small>國 '+esc(corridor)+'</small></span><svg><use href="#i-arrow"/></svg></button>'+
+        '<button data-trip-tool="charging"><span><b>沿途充電</b><small>'+chargers.length+' 處服務區</small></span><svg><use href="#i-arrow"/></svg></button>'+
+        '<button data-trip-tool="cctv"><span><b>即時影像</b><small>國 '+esc(corridor)+' CCTV</small></span><svg><use href="#i-arrow"/></svg></button>'+
+        (needsTunnel?'<button data-trip-tool="tunnel"><span><b>雪隧</b><small>國 5 南北向</small></span><svg><use href="#i-arrow"/></svg></button>':'')+
+        '<button data-trip-tool="parking-google"><span><b>目的地停車</b><small>Google Maps</small></span><svg><use href="#i-external"/></svg></button>'+
+        '<button data-trip-tool="parking-apple"><span><b>目的地停車</b><small>Apple 地圖</small></span><svg><use href="#i-external"/></svg></button>'+
+      '</div>'+
+    '</article>';
+
+  $$("[data-map]",$("#tripResult")).forEach(b=>b.onclick=()=>{
+    let url;
+    if(b.dataset.map==="apple"){
+      const start=from==="目前位置"?"":"&saddr="+encodeURIComponent(from);
+      url="https://maps.apple.com/?daddr="+encodeURIComponent(to)+"&dirflg=d"+start;
+    }else{
+      const origin=from==="目前位置"?"":"&origin="+encodeURIComponent(from);
+      url="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(to)+"&travelmode=driving"+origin;
+    }
+    window.open(url,"_blank","noopener");
+  });
+
+  $$("[data-trip-tool]",$("#tripResult")).forEach(b=>b.onclick=()=>{
+    const tool=b.dataset.tripTool;
+    if(tool==="highway")return setHighwayView(corridor);
+    if(tool==="charging")return setChargingTripView(corridor,direction);
+    if(tool==="cctv")return openCCTVForRoad(corridor);
+    if(tool==="tunnel")return show("tunnel");
+    if(tool==="parking-google")return destinationParking(to,"google");
+    if(tool==="parking-apple")return destinationParking(to,"apple");
+  });
+
+  saveRecentTrip(from,to,corridor);
+}
 function fillRoute(from,to){
   $("#tripFrom").value=from;
   $("#tripTo").value=to;
   show("trip");
 }
-
 function bindTrip(){
+  loadRecentTrips();
+  renderRecentTrips();
+
   $$("[data-route]").forEach(b=>b.onclick=()=>{
     const parts=b.dataset.route.split("|");
     $("#tripFrom").value=parts[0];
@@ -1000,32 +1150,12 @@ function bindTrip(){
     fillRoute(parts[0],parts[1]);
   });
 
-  $("#planTripBtn").onclick=()=>{
-    const from=$("#tripFrom").value.trim()||"目前位置";
-    const to=$("#tripTo").value.trim();
-    if(!to)return toast("請先輸入目的地");
-
-    $("#tripResult").innerHTML=
-      '<div class="list-item">'+
-        '<h3>'+esc(from)+' → '+esc(to)+'</h3>'+
-        '<div class="meta">先看路況與充電，再直接交給你慣用的地圖導航。</div>'+
-        '<div class="item-actions"><button class="go" data-map="google">Google Maps</button><button data-map="apple">Apple 地圖</button></div>'+
-        '<div class="item-actions"><button data-next="highway">國道路況</button><button data-next="charging">沿途充電</button><button data-next="parking">停車</button></div>'+
-      '</div>';
-
-    $$("[data-next]",$("#tripResult")).forEach(b=>b.onclick=()=>show(b.dataset.next));
-    $$("[data-map]",$("#tripResult")).forEach(b=>b.onclick=()=>{
-      let url;
-      if(b.dataset.map==="apple"){
-        const start=from==="目前位置"?"":"&saddr="+encodeURIComponent(from);
-        url="https://maps.apple.com/?daddr="+encodeURIComponent(to)+"&dirflg=d"+start;
-      }else{
-        const origin=from==="目前位置"?"":"&origin="+encodeURIComponent(from);
-        url="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(to)+"&travelmode=driving"+origin;
-      }
-      window.open(url,"_blank","noopener");
-    });
-  };
+  $("#planTripBtn").onclick=planTrip;
+  $("#clearRecentTrips")?.addEventListener("click",()=>{
+    state.recentTrips=[];
+    try{localStorage.removeItem("cola-go-recent-trips");}catch{}
+    renderRecentTrips();
+  });
 }
 
 const VIN_WMI={"5YJ":"美國 Tesla","7SA":"美國 Tesla","LRW":"中國上海 Giga Shanghai","XP7":"德國柏林 Giga Berlin","SFZ":"英國（初代 Roadster）","7G2":"美國 Tesla"};

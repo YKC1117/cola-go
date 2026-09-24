@@ -140,10 +140,24 @@
         <div class="route-form">
           <label><small>起點</small><input id="tripFrom" placeholder="目前位置或輸入起點"></label>
           <label><small>目的地</small><input id="tripTo" placeholder="輸入目的地"></label>
+          <label><small>國道關注</small>
+            <select id="tripCorridor">
+              <option value="auto">自動建議</option>
+              <option value="1">國 1</option>
+              <option value="3">國 3</option>
+              <option value="5">國 5</option>
+              <option value="6">國 6</option>
+            </select>
+          </label>
           <div class="route-chips"><button data-route="台南|東山">台南 → 東山</button><button data-route="台南|嘉義">台南 → 嘉義</button><button data-route="台南|台北">台南 → 台北</button></div>
           <button class="primary" id="planTripBtn">整理沿途資訊<svg><use href="#i-arrow"/></svg></button>
         </div>
+        <p class="notice">COLA GO 整理行前重點，不冒充導航引擎；真正轉彎路線與交流道選擇仍交給 Google Maps／Apple 地圖。</p>
         <div id="tripResult"></div>
+        <section class="trip-recent-section">
+          <div class="section-head"><div><span class="mini-label">RECENT</span><h2>最近路線</h2></div><button class="text-link" id="clearRecentTrips">清除</button></div>
+          <div id="recentTrips" class="recent-trips"></div>
+        </section>
       </section>
 
       <section class="view" data-view="charging">
