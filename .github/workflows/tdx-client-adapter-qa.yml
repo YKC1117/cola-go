@@ -1,0 +1,212 @@
+name: TDX Client Adapter QA
+
+on:
+  push:
+    branches: ["feature/tdx-client-adapter"]
+    paths:
+      - "assets/api-client.js"
+      - "assets/app.js"
+      - "index.html"
+      - "sw.js"
+      - "data/runtime-config.json"
+      - ".github/workflows/tdx-client-adapter-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax and config checks
+        run: |
+          node --check assets/api-client.js
+          node --check assets/app.js
+          node --check sw.js
+          python3 -m json.tool data/runtime-config.json >/dev/null
+          python3 - <<'PY'
+          import json
+          data=json.load(open("data/runtime-config.json"))
+          assert data["apiBaseUrl"] == ""
+          PY
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium webkit
+      - name: Start app
+        run: |
+          python3 -m http.server 4173 >/tmp/server.log 2>&1 &
+          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/server.log
+          exit 1
+      - name: Secure proxy browser regression
+        run: |
+          cat > adapter-qa.mjs <<'EOF'
+          import { chromium, webkit } from 'playwright';
+
+          const base='http://127.0.0.1:4173/';
+          const API='https://api.cola.test';
+
+          function envelope(items,{status='static',stale=false,updatedAt='2026-09-25T04:00:00+08:00',snapshotId='snap-1'}={}){
+            return {
+              schemaVersion:1,status,source:'TDX',scope:null,updatedAt,
+              fetchedAt:'2026-09-25T04:00:10+08:00',
+              expiresAt:'2026-09-25T04:01:10+08:00',
+              stale,partial:false,snapshotId,items,
+              coverage:{supported:true,returned:items.length,total:items.length},
+              pagination:{nextCursor:null},error:null
+            };
+          }
+
+          const parkingBasic=envelope([
+            {id:'Taipei:P1',sourceId:'P1',city:'Taipei',name:'市府測試停車場',address:'臺北市信義區市府路1號',lat:25.04,lon:121.56,totalSpaces:100,feeText:'每小時30元',hasLiveAvailability:true},
+            {id:'Taipei:P2',sourceId:'P2',city:'Taipei',name:'信義一般停車場',address:'臺北市信義區松仁路',lat:25.03,lon:121.57,totalSpaces:80,feeText:'依現場',hasLiveAvailability:false}
+          ]);
+          const parkingLive=envelope([
+            {id:'Taipei:P1',sourceId:'P1',city:'Taipei',availableSpaces:22,totalSpaces:100,serviceStatus:1,fullStatus:0,sourceUpdatedAt:'2026-09-25T04:00:00+08:00'}
+          ],{status:'stale',stale:true,snapshotId:'snap-live'});
+
+          const sections=envelope([
+            {id:'N1',roadId:'1',roadName:'國道1號',direction:'S',name:'永康 → 台南',startMile:320,endMile:330,lengthKm:10},
+            {id:'N5',roadId:'5',roadName:'國道5號',direction:'S',name:'石碇 → 坪林',startMile:10,endMile:30,lengthKm:20}
+          ],{snapshotId:'sections'});
+          const live=envelope([
+            {id:'N1',roadName:'國道1號',direction:'S',speedKph:88,travelTimeSeconds:400,congestionCode:0,closed:false,sourceUpdatedAt:'2026-09-25T04:00:00+08:00'},
+            {id:'N5',roadName:'國道5號',direction:'S',speedKph:65,travelTimeSeconds:900,congestionCode:1,closed:false,sourceUpdatedAt:'2026-09-25T04:00:00+08:00'}
+          ],{status:'live',snapshotId:'live'});
+          const cctv=envelope([
+            {id:'C1',roadName:'國道1號',direction:'S',name:'319K',lat:23.02,lon:120.22,imageUrl:null,streamUrl:'https://example.test/live.m3u8',imageRefreshSeconds:null,displayPolicy:'metadata-link'}
+          ],{snapshotId:'cctv'});
+
+          async function setup(browserType,mode='success'){
+            const browser=await browserType.launch({headless:true});
+            const context=await browser.newContext({
+              viewport:{width:430,height:932},
+              isMobile:true,hasTouch:true,serviceWorkers:'block'
+            });
+            const direct=[];
+            context.on('request',req=>{
+              const u=req.url();
+              if(u.includes('tdx.transportdata.tw')||u.includes('tisvcloud.freeway.gov.tw'))direct.push(u);
+            });
+            await context.route('**/data/runtime-config.json',r=>r.fulfill({
+              status:200,contentType:'application/json',body:JSON.stringify({apiBaseUrl:API})
+            }));
+
+            if(mode==='success'){
+              await context.route(API+'/api/v1/parking/Taipei*',r=>{
+                const u=new URL(r.request().url());
+                const isLive=u.pathname.endsWith('/availability');
+                return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(isLive?parkingLive:parkingBasic)});
+              });
+              await context.route(API+'/api/v1/freeway/sections*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(sections)}));
+              await context.route(API+'/api/v1/freeway/live*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(live)}));
+              await context.route(API+'/api/v1/freeway/cctv*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cctv)}));
+            }else{
+              await context.route(API+'/**',r=>r.fulfill({
+                status:503,contentType:'application/json',
+                body:JSON.stringify({
+                  schemaVersion:1,status:'unavailable',source:'TDX',scope:null,
+                  updatedAt:null,fetchedAt:null,expiresAt:null,stale:false,partial:false,
+                  snapshotId:null,items:[],coverage:{supported:true,returned:0,total:null},
+                  pagination:{nextCursor:null},error:{code:'UPSTREAM_UNAVAILABLE',retryAfterSeconds:60}
+                })
+              }));
+            }
+            const page=await context.newPage();
+            await page.addInitScript(()=>{
+              window.__opened=[];
+              window.open=(url)=>{window.__opened.push(String(url));return null;};
+            });
+            return {browser,page,direct};
+          }
+
+          async function successScenario(browserType,label){
+            const {browser,page,direct}=await setup(browserType,'success');
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e)));
+            await page.goto(base,{waitUntil:'networkidle'});
+            if(!await page.evaluate(()=>window.COLAGO_API?.enabled()))throw new Error(label+' proxy not enabled');
+
+            await page.locator('[data-go="parking"]').first().click();
+            await page.locator('#parkingCitySelect').selectOption('Taipei');
+            await page.waitForFunction(()=>document.querySelector('#parkingScopeStatus')?.textContent.includes('2 筆'));
+            const parkingText=await page.locator('#liveParkingList').textContent();
+            if(!parkingText.includes('市府測試停車場')||!parkingText.includes('22'))throw new Error(label+' parking proxy data');
+            if(!parkingText.includes('快取剩餘'))throw new Error(label+' stale parking label');
+            if(!((await page.locator('#parkingScopeStatus').textContent())||'').includes('可能較舊'))throw new Error(label+' stale scope label');
+
+            await page.locator('.brand').click();
+            await page.locator('[data-go="highway"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#highwayList')?.textContent.includes('永康 → 台南'));
+            const highwayText=await page.locator('#highwayList').textContent();
+            if(!highwayText.includes('88'))throw new Error(label+' freeway proxy data');
+
+            await page.locator('[data-view="highway"] .back').click();
+            await page.locator('[data-go="tunnel"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#tunnelList')?.textContent.includes('石碇 → 坪林'));
+            if(!((await page.locator('#tunnelList').textContent())||'').includes('65'))throw new Error(label+' tunnel projection');
+
+            await page.locator('.brand').click();
+            await page.locator('[data-go="cctv"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#cctvSourceState')?.textContent.includes('1 支'));
+            if(await page.locator('.cctv-card').count()!==1)throw new Error(label+' CCTV proxy data');
+            await page.locator('[data-cctv-stream]').click();
+            if(!await page.evaluate(()=>window.__opened.some(x=>x.includes('example.test/live.m3u8'))))throw new Error(label+' CCTV stream action');
+
+            if(direct.length)throw new Error(label+' made forbidden direct official request: '+direct.join(','));
+            if(errors.length)throw new Error(label+' page errors: '+errors.join(' | '));
+            await browser.close();
+          }
+
+          async function failureScenario(){
+            const {browser,page,direct}=await setup(chromium,'failure');
+            await page.goto(base,{waitUntil:'networkidle'});
+
+            await page.locator('[data-go="parking"]').first().click();
+            await page.locator('#parkingCitySelect').selectOption('HualienCounty');
+            await page.waitForFunction(()=>document.querySelector('#parkingScopeStatus')?.textContent.includes('仍可搜尋與導航'));
+            const parkingText=await page.locator('#liveParkingList').textContent();
+            if(!parkingText.includes('Google Maps')||!parkingText.includes('Apple 地圖'))throw new Error('parking unavailable fallback');
+
+            await page.locator('.brand').click();
+            await page.locator('[data-go="highway"]').first().click();
+            await page.waitForTimeout(200);
+            if(!((await page.locator('#highwayList').textContent())||'').includes('1968'))throw new Error('freeway fallback missing');
+
+            await page.locator('.brand').click();
+            await page.locator('[data-go="cctv"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#cctvSourceState')?.textContent.includes('暫時無法讀取'));
+            if(await page.locator('.cctv-card').count())throw new Error('CCTV unavailable must not show fake camera');
+            if(await page.locator('[data-view="cctv"] [data-url]').count()<2)throw new Error('official CCTV links missing');
+
+            if(direct.length)throw new Error('failure path made forbidden direct official request: '+direct.join(','));
+            await browser.close();
+          }
+
+          async function blankConfigScenario(){
+            const browser=await chromium.launch({headless:true});
+            const context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'});
+            await context.route('**/data/runtime-config.json',r=>r.fulfill({
+              status:200,contentType:'application/json',body:JSON.stringify({apiBaseUrl:''})
+            }));
+            const page=await context.newPage();
+            await page.goto(base,{waitUntil:'networkidle'});
+            if(await page.evaluate(()=>window.COLAGO_API?.enabled()))throw new Error('blank config must keep proxy disabled');
+            if(!await page.locator('.core-actions').isVisible())throw new Error('blank config broke existing app');
+            await browser.close();
+          }
+
+          await successScenario(chromium,'chromium');
+          await successScenario(webkit,'webkit');
+          await failureScenario();
+          await blankConfigScenario();
+          console.log('TDX_CLIENT_ADAPTER_QA_SUCCESS');
+          EOF
+          node adapter-qa.mjs
