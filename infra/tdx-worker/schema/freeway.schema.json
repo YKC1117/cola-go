@@ -1,0 +1,24 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://cola-go.example/schema/freeway.schema.json",
+  "$defs":{
+    "section":{
+      "type":"object",
+      "required":["id"],
+      "properties":{
+        "id":{"type":"string"},"roadId":{"type":["string","null"]},"roadName":{"type":["string","null"]},
+        "direction":{"type":["string","null"]},"name":{"type":"string"},
+        "startMile":{"type":["number","null"]},"endMile":{"type":["number","null"]},"lengthKm":{"type":["number","null"]}
+      }
+    },
+    "live":{
+      "type":"object",
+      "required":["id","closed"],
+      "properties":{
+        "id":{"type":"string"},"roadName":{"type":["string","null"]},"direction":{"type":["string","null"]},
+        "speedKph":{"type":["number","null"]},"travelTimeSeconds":{"type":["number","null"]},
+        "congestionCode":{"type":["number","null"]},"closed":{"type":"boolean"},"sourceUpdatedAt":{"type":["string","null"]}
+      }
+    }
+  }
+}
