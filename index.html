@@ -3,162 +3,168 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f4f3ef">
+  <meta name="theme-color" content="#f7f6f2">
   <meta name="description" content="COLA GO｜台灣電動車出行工具。充電、停車、國道路況、雪隧與沿途資訊。">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="COLA GO">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/logo.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@6.11.1/dist/maplibre-gl.css">
   <link rel="stylesheet" href="./assets/styles.css">
   <title>COLA GO</title>
 </head>
 <body>
 <svg aria-hidden="true" class="sprite">
-  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.7"/><path d="m16 16 4 4"/></symbol>
-  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.3 2.5 5.5 13h5.8l-.6 8.5L18.5 10h-5.7z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m4 11 8-6.5 8 6.5"/><path d="M6 10v10h12V10"/><path d="M9.5 20v-6h5v6"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13.5 2.5 5.5 13h5.8l-.6 8.5L18.5 10h-5.7z"/></symbol>
   <symbol id="i-park" viewBox="0 0 24 24"><path d="M7 21V3h6.2a5 5 0 0 1 0 10H7"/><path d="M7 13h6.2"/></symbol>
   <symbol id="i-road" viewBox="0 0 24 24"><path d="M8 3 5 21M16 3l3 18M12 3v4M12 11v3M12 18v3"/></symbol>
   <symbol id="i-tunnel" viewBox="0 0 24 24"><path d="M3 20v-9a9 9 0 0 1 18 0v9"/><path d="M7 20v-8a5 5 0 0 1 10 0v8"/></symbol>
   <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h3a3 3 0 0 0 3-3V9a3 3 0 0 1 3-3"/></symbol>
-  <symbol id="i-home" viewBox="0 0 24 24"><path d="m4 11 8-6.5 8 6.5"/><path d="M6 10v10h12V10"/><path d="M9.5 20v-6h5v6"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s6-5.4 6-11a6 6 0 1 0-12 0c0 5.6 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></symbol>
-  <symbol id="i-locate" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h13M13 7l5 5-5 5"/></symbol>
   <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
-  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
   <symbol id="i-install" viewBox="0 0 24 24"><path d="M12 3v11M7.5 10 12 14.5 16.5 10"/><path d="M5 20h14"/></symbol>
   <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M19 8V4l-3 3a7 7 0 1 0 2 8"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
 </svg>
 
-<div id="map" aria-label="COLA GO 地圖"></div>
-<div class="map-wash"></div>
-
-<header class="app-header">
-  <button class="brand" data-go="home" aria-label="COLA GO 首頁">
-    <span class="cola-mark"><i></i><i></i><i></i></span>
-    <span class="brand-text">COLA <b>GO</b></span>
-  </button>
-  <div class="header-actions">
-    <span class="live-chip" id="liveChip"><i></i><span id="liveText">資料同步中</span></span>
-    <button class="round-btn" id="locateBtn" aria-label="定位"><svg><use href="#i-locate"/></svg></button>
-    <button class="round-btn" id="installBtn" aria-label="安裝"><svg><use href="#i-install"/></svg></button>
-  </div>
-</header>
-
-<main class="app-main">
-  <section class="home-panel panel active" data-view="home">
-    <div class="grabber"></div>
-
-    <div class="home-intro">
-      <p class="eyebrow">今天要去哪裡？</p>
-      <h1>路況、充電、停車，<br><span>一個畫面先看懂。</span></h1>
-      <button class="destination" data-go="trip">
-        <span class="dest-icon"><svg><use href="#i-search"/></svg></span>
-        <span class="dest-copy"><small>目的地</small><strong>搜尋地點或規劃路線</strong></span>
-        <svg class="dest-arrow"><use href="#i-arrow"/></svg>
+<div class="stage">
+  <div class="app-shell">
+    <header class="topbar">
+      <button class="brand" data-go="home" aria-label="COLA GO 首頁">
+        <span class="brand-bubble"><i></i><i></i><i></i></span>
+        <span>COLA <b>GO</b></span>
       </button>
-    </div>
-
-    <div class="quick-row">
-      <button data-go="charging"><span class="quick-icon coral"><svg><use href="#i-bolt"/></svg></span><b>充電</b><small id="chargingQuick">服務區</small></button>
-      <button data-go="parking"><span class="quick-icon blue"><svg><use href="#i-park"/></svg></span><b>停車</b><small>剩餘車位</small></button>
-      <button data-go="highway"><span class="quick-icon green"><svg><use href="#i-road"/></svg></span><b>國道</b><small>即時路況</small></button>
-      <button data-go="tunnel"><span class="quick-icon violet"><svg><use href="#i-tunnel"/></svg></span><b>雪隧</b><small>南北向</small></button>
-    </div>
-
-    <section class="now-card">
-      <div class="now-head">
-        <div><small>NOW</small><h2>現在路上</h2></div>
-        <span id="lastUpdate">等待即時資料</span>
+      <div class="top-actions">
+        <span class="sync-state" id="syncState"><i></i><span id="syncText">同步中</span></span>
+        <button class="icon-btn" id="refreshBtn" aria-label="重新整理"><svg><use href="#i-refresh"/></svg></button>
+        <button class="icon-btn" id="installBtn" aria-label="安裝"><svg><use href="#i-install"/></svg></button>
       </div>
-      <div class="now-grid">
-        <button data-go="highway">
-          <span class="now-label"><i class="status-dot pending" id="trafficDot"></i>國道</span>
-          <strong id="trafficHero">—</strong>
-          <small id="trafficCaption">同步中</small>
-        </button>
-        <button data-go="charging">
-          <span class="now-label"><i class="status-dot ready"></i>充電</span>
-          <strong id="chargeHero">—</strong>
-          <small>服務區 / 休息站</small>
-        </button>
-        <button data-go="tunnel">
-          <span class="now-label"><i class="status-dot pending" id="tunnelDot"></i>雪隧</span>
-          <strong id="tunnelHero">—</strong>
-          <small>國 5 即時</small>
-        </button>
-      </div>
-    </section>
+    </header>
 
-    <section class="home-secondary">
-      <button class="wide-link" data-go="trip"><span><svg><use href="#i-route"/></svg></span><div><b>規劃一趟路</b><small>把沿途充電、路況與停車整理在一起</small></div><svg class="arrow"><use href="#i-arrow"/></svg></button>
-      <div class="coming">
-        <span>COMING NEXT</span>
-        <p>二手電車、優質服務、車主工具會在核心開車功能完成後加入。</p>
-      </div>
-    </section>
-  </section>
+    <main>
+      <section class="view active" data-view="home">
+        <div class="hero">
+          <span class="mini-label">TAIWAN EV TOOL</span>
+          <h1>上路前，<br><span>先看最重要的。</span></h1>
+          <p>充電、停車、國道、雪隧，全部集中在一個手機畫面。</p>
+          <button class="search-destination" data-go="trip">
+            <svg><use href="#i-search"/></svg>
+            <span><small>我要去哪</small><strong>搜尋目的地或規劃路線</strong></span>
+            <svg class="arrow"><use href="#i-arrow"/></svg>
+          </button>
+        </div>
 
-  <section class="detail-panel panel" data-view="trip">
-    <div class="detail-top"><button class="back-btn" data-go="home"><svg><use href="#i-back"/></svg></button><div><span>TRIP</span><h2>規劃路線</h2></div></div>
-    <div class="route-form">
-      <label><small>起點</small><input id="tripFrom" placeholder="目前位置或輸入起點"></label>
-      <label><small>目的地</small><input id="tripTo" placeholder="輸入目的地"></label>
-      <div class="route-presets"><button data-route="台南|東山">台南 → 東山</button><button data-route="台南|嘉義">台南 → 嘉義</button><button data-route="台南|台北">台南 → 台北</button></div>
-      <button class="primary-btn" id="planTripBtn">整理沿途資訊<svg><use href="#i-arrow"/></svg></button>
-    </div>
-    <div id="tripResult"></div>
-  </section>
+        <section class="quick-grid">
+          <button data-go="charging"><span class="quick-icon q1"><svg><use href="#i-bolt"/></svg></span><b>充電</b><small id="chargeQuick">服務區</small></button>
+          <button data-go="parking"><span class="quick-icon q2"><svg><use href="#i-park"/></svg></span><b>停車</b><small>剩餘車位</small></button>
+          <button data-go="highway"><span class="quick-icon q3"><svg><use href="#i-road"/></svg></span><b>國道</b><small>即時路況</small></button>
+          <button data-go="tunnel"><span class="quick-icon q4"><svg><use href="#i-tunnel"/></svg></span><b>雪隧</b><small>南北向</small></button>
+        </section>
 
-  <section class="detail-panel panel" data-view="charging">
-    <div class="detail-top"><button class="back-btn" data-go="home"><svg><use href="#i-back"/></svg></button><div><span>CHARGING</span><h2>沿途充電</h2></div></div>
-    <div class="filter-row" id="roadFilter"><button class="active" data-road="all">全部</button><button data-road="1">國 1</button><button data-road="3">國 3</button><button data-road="5">國 5</button><button data-road="6">國 6</button></div>
-    <label class="inline-search"><svg><use href="#i-search"/></svg><input id="chargingSearch" type="search" placeholder="搜尋服務區、業者、接頭"></label>
-    <p class="source-note">官方設備清單 ≠ 即時空槍。COLA GO 只把真的即時資料標成即時。</p>
-    <div id="chargingList" class="list"></div>
-  </section>
+        <section class="section">
+          <div class="section-head">
+            <div><span class="mini-label">NOW</span><h2>現在路上</h2></div>
+            <span class="updated" id="lastUpdate">等待資料</span>
+          </div>
+          <div class="status-card">
+            <button data-go="highway">
+              <span class="status-name"><i class="dot pending" id="trafficDot"></i>國道路況</span>
+              <span class="status-value" id="trafficValue">—</span>
+              <small id="trafficCaption">資料同步中</small>
+            </button>
+            <button data-go="charging">
+              <span class="status-name"><i class="dot ready"></i>服務區充電</span>
+              <span class="status-value" id="chargeValue">—</span>
+              <small>設備資料</small>
+            </button>
+            <button data-go="tunnel">
+              <span class="status-name"><i class="dot pending" id="tunnelDot"></i>雪隧</span>
+              <span class="status-value" id="tunnelValue">—</span>
+              <small>國 5 即時</small>
+            </button>
+          </div>
+        </section>
 
-  <section class="detail-panel panel" data-view="parking">
-    <div class="detail-top"><button class="back-btn" data-go="home"><svg><use href="#i-back"/></svg></button><div><span>PARKING</span><h2>停車</h2></div></div>
-    <p class="source-note">逐步整合各縣市免費即時剩餘車位；沒有資料的城市不顯示假空位。</p>
-    <div id="parkingCities" class="list"></div>
-  </section>
+        <section class="section">
+          <div class="section-head"><div><span class="mini-label">QUICK TRIP</span><h2>常用出發</h2></div></div>
+          <div class="trip-list">
+            <button data-fill-route="台南|東山"><span><b>台南 → 東山</b><small>返家 / 假日</small></span><svg><use href="#i-arrow"/></svg></button>
+            <button data-fill-route="台南|嘉義"><span><b>台南 → 嘉義</b><small>國 1 / 國 3</small></span><svg><use href="#i-arrow"/></svg></button>
+            <button data-fill-route="台南|台北"><span><b>台南 → 台北</b><small>長途行程</small></span><svg><use href="#i-arrow"/></svg></button>
+          </div>
+        </section>
 
-  <section class="detail-panel panel" data-view="highway">
-    <div class="detail-top"><button class="back-btn" data-go="home"><svg><use href="#i-back"/></svg></button><div><span>LIVE TRAFFIC</span><h2>國道路況</h2></div></div>
-    <div class="filter-row freeway-filter" id="highwayTabs"><button class="active" data-highway="1">國 1</button><button data-highway="2">國 2</button><button data-highway="3">國 3</button><button data-highway="4">國 4</button><button data-highway="5">國 5</button><button data-highway="6">國 6</button></div>
-    <div id="highwayList" class="list"></div>
-  </section>
+        <section class="section compact">
+          <div class="future-note">
+            <span>接下來</span>
+            <p>二手電車、優質服務、車主工具會在核心開車功能完成後加入，不干擾首頁。</p>
+          </div>
+        </section>
+      </section>
 
-  <section class="detail-panel panel" data-view="tunnel">
-    <div class="detail-top"><button class="back-btn" data-go="home"><svg><use href="#i-back"/></svg></button><div><span>SNOW MOUNTAIN</span><h2>雪隧</h2></div></div>
-    <div class="filter-row direction-filter" id="tunnelDirection"><button class="active" data-direction="south">南下 台北 → 宜蘭</button><button data-direction="north">北上 宜蘭 → 台北</button></div>
-    <div id="tunnelList" class="list"></div>
-  </section>
-</main>
+      <section class="view" data-view="trip">
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">TRIP</span><h1>我要出發</h1></div></div>
+        <div class="route-form">
+          <label><small>起點</small><input id="tripFrom" placeholder="目前位置或輸入起點"></label>
+          <label><small>目的地</small><input id="tripTo" placeholder="輸入目的地"></label>
+          <div class="route-chips"><button data-route="台南|東山">台南 → 東山</button><button data-route="台南|嘉義">台南 → 嘉義</button><button data-route="台南|台北">台南 → 台北</button></div>
+          <button class="primary" id="planTripBtn">整理沿途資訊<svg><use href="#i-arrow"/></svg></button>
+        </div>
+        <div id="tripResult"></div>
+      </section>
 
-<nav class="bottom-nav">
-  <button class="active" data-go="home"><svg><use href="#i-home"/></svg><span>首頁</span></button>
-  <button data-go="charging"><svg><use href="#i-bolt"/></svg><span>充電</span></button>
-  <button data-go="parking"><svg><use href="#i-park"/></svg><span>停車</span></button>
-  <button data-go="highway"><svg><use href="#i-road"/></svg><span>國道</span></button>
-  <button data-go="tunnel"><svg><use href="#i-tunnel"/></svg><span>雪隧</span></button>
-</nav>
+      <section class="view" data-view="charging">
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">CHARGING</span><h1>充電</h1></div></div>
+        <div class="filter-row" id="roadFilter"><button class="active" data-road="all">全部</button><button data-road="1">國 1</button><button data-road="3">國 3</button><button data-road="5">國 5</button><button data-road="6">國 6</button></div>
+        <label class="inline-search"><svg><use href="#i-search"/></svg><input id="chargingSearch" type="search" placeholder="搜尋服務區、業者、接頭"></label>
+        <p class="notice">設備清單不等於即時空槍，沒有即時來源就不標即時。</p>
+        <div class="list" id="chargingList"></div>
+      </section>
 
-<div class="toast" id="toast"></div>
-<div class="install-sheet" id="installSheet" hidden>
-  <div class="install-card">
-    <span class="sheet-grab"></span>
-    <button class="sheet-close" id="closeInstall"><svg><use href="#i-close"/></svg></button>
-    <span class="mini-logo"><i></i><i></i><i></i></span>
-    <h3>把 COLA GO 放到主畫面</h3>
-    <p id="installHelp"></p>
-    <button class="primary-btn" id="installOk">知道了</button>
+      <section class="view" data-view="parking">
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">PARKING</span><h1>停車</h1></div></div>
+        <p class="notice">逐步整合各縣市免費即時剩餘車位；沒有資料就不顯示假空位。</p>
+        <div class="list" id="parkingCities"></div>
+      </section>
+
+      <section class="view" data-view="highway">
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">LIVE TRAFFIC</span><h1>國道路況</h1></div></div>
+        <div class="filter-row" id="highwayTabs"><button class="active" data-highway="1">國 1</button><button data-highway="2">國 2</button><button data-highway="3">國 3</button><button data-highway="4">國 4</button><button data-highway="5">國 5</button><button data-highway="6">國 6</button></div>
+        <div class="list" id="highwayList"></div>
+      </section>
+
+      <section class="view" data-view="tunnel">
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">SNOW MOUNTAIN</span><h1>雪隧</h1></div></div>
+        <div class="filter-row direction" id="tunnelDirection"><button class="active" data-direction="south">南下 台北 → 宜蘭</button><button data-direction="north">北上 宜蘭 → 台北</button></div>
+        <div class="list" id="tunnelList"></div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="active" data-go="home"><svg><use href="#i-home"/></svg><span>首頁</span></button>
+      <button data-go="charging"><svg><use href="#i-bolt"/></svg><span>充電</span></button>
+      <button data-go="parking"><svg><use href="#i-park"/></svg><span>停車</span></button>
+      <button data-go="highway"><svg><use href="#i-road"/></svg><span>國道</span></button>
+      <button data-go="tunnel"><svg><use href="#i-tunnel"/></svg><span>雪隧</span></button>
+    </nav>
   </div>
 </div>
 
-<script type="module" src="./assets/app.js"></script>
+<div class="toast" id="toast"></div>
+<div class="sheet" id="installSheet" hidden>
+  <div class="sheet-card">
+    <span class="sheet-grab"></span>
+    <button class="sheet-close" id="closeInstall"><svg><use href="#i-close"/></svg></button>
+    <span class="brand-bubble large"><i></i><i></i><i></i></span>
+    <h3>把 COLA GO 放到主畫面</h3>
+    <p id="installHelp"></p>
+    <button class="primary" id="installOk">知道了</button>
+  </div>
+</div>
+
+<script src="./assets/app.js" defer></script>
 </body>
 </html>
