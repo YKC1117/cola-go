@@ -29,6 +29,13 @@ jobs:
           node --check assets/api-client.js
           node --check assets/app.js
           node --check sw.js
+          node - <<'NODE'
+          const fs=require('fs');
+          const src=fs.readFileSync('assets/app.js','utf8');
+          if(src.includes('$$(')) throw new Error('triple-dollar selector regression');
+          const bad=src.split(/\n/).filter(line=>/^\s*\$\([^\n]*\)\.forEach/.test(line));
+          if(bad.length) throw new Error('single-element selector used as collection: '+bad.join(' | '));
+          NODE
           python3 -m json.tool data/runtime-config.json >/dev/null
           python3 - <<'PY'
           import json
