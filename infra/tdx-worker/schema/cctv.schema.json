@@ -1,0 +1,12 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://cola-go.example/schema/cctv.schema.json",
+  "type":"object",
+  "required":["id","displayPolicy"],
+  "properties":{
+    "id":{"type":"string"},"roadName":{"type":["string","null"]},"direction":{"type":["string","null"]},
+    "name":{"type":"string"},"lat":{"type":["number","null"]},"lon":{"type":["number","null"]},
+    "imageUrl":{"type":["string","null"]},"streamUrl":{"type":["string","null"]},
+    "imageRefreshSeconds":{"type":["number","null"]},"displayPolicy":{"enum":["metadata-link","metadata-only"]}
+  }
+}
