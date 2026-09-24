@@ -24,18 +24,48 @@ jobs:
           LIVE="https://data.ntpc.gov.tw/api/datasets/e09b35a5-a738-48cc-b0f5-570b67ad9c78/csv/file"
 
           def fetch(url):
-              req=urllib.request.Request(url,headers={"User-Agent":"COLA-GO/1.0","Accept":"text/csv,*/*"})
+              req=urllib.request.Request(url,headers={"User-Agent":"COLA-GO/1.0","Accept":"text/csv,application/json,text/plain,*/*"})
               with urllib.request.urlopen(req,timeout=30) as r:
                   raw=r.read()
-              for enc in ("utf-8-sig","utf-8","cp950","big5"):
+                  info={
+                      "status":getattr(r,"status",None),
+                      "url":r.geturl(),
+                      "content_type":r.headers.get("Content-Type"),
+                      "content_encoding":r.headers.get("Content-Encoding"),
+                      "charset":r.headers.get_content_charset(),
+                      "length":len(raw),
+                  }
+              print("HTTP_INFO",json.dumps(info,ensure_ascii=False))
+              print("RAW_HEX",raw[:80].hex())
+              print("RAW_REPR",repr(raw[:300]))
+              if raw[:2]==b"\x1f\x8b":
+                  import gzip
+                  raw=gzip.decompress(raw)
+                  print("GZIP_DECOMPRESSED",len(raw))
+              stripped=raw.lstrip()
+              if stripped.startswith((b"{",b"[")):
+                  for enc in ("utf-8-sig","utf-8","cp950","big5"):
+                      try:
+                          obj=json.loads(raw.decode(enc))
+                          print("JSON_SHAPE",type(obj).__name__, list(obj)[:20] if isinstance(obj,dict) else len(obj))
+                          if isinstance(obj,list):
+                              return obj,enc,len(raw)
+                          if isinstance(obj,dict):
+                              for key in ("data","Data","result","Result","items","Items"):
+                                  if isinstance(obj.get(key),list):
+                                      return obj[key],enc,len(raw)
+                      except Exception:
+                          pass
+              for enc in tuple(x for x in (info["charset"],"utf-8-sig","utf-8","cp950","big5","latin1") if x):
                   try:
                       text=raw.decode(enc)
+                      print("DECODE_OK",enc,"PREVIEW",repr(text[:300]))
                       rows=list(csv.DictReader(io.StringIO(text)))
-                      if rows and rows[0]:
+                      if rows and rows[0] and len(rows[0])>1:
                           return rows,enc,len(raw)
-                  except Exception:
-                      pass
-              raise RuntimeError("cannot decode csv")
+                  except Exception as exc:
+                      print("DECODE_FAIL",enc,repr(exc))
+              raise RuntimeError("cannot parse source response")
 
           static,se,sbytes=fetch(STATIC)
           live,le,lbytes=fetch(LIVE)
