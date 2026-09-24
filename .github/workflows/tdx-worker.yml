@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate:
@@ -23,19 +23,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: "npm"
+          cache-dependency-path: infra/tdx-worker/package-lock.json
       - name: Install npm 11
         run: npm install --global npm@11
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
-      - name: Commit generated lockfile if missing
-        run: |
-          if [ -f package-lock.json ] && [ -n "$(git status --porcelain package-lock.json)" ]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "build: lock TDX worker dependencies"
-            git push origin HEAD:infra/tdx-proxy
-          fi
+        run: npm ci --no-audit --no-fund
       - name: Syntax check
         run: |
           find src test -name '*.js' -print0 | xargs -0 -n1 node --check
