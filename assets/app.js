@@ -812,30 +812,37 @@ function bindConnector(){
 }
 
 function bindInstall(){
+  const installBtn=$("#installBtn");
+  const standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
+
+  if(standalone&&installBtn){
+    installBtn.hidden=true;
+  }
+
   addEventListener("beforeinstallprompt",e=>{
     e.preventDefault();
     state.installPrompt=e;
   });
 
-  $("#installBtn").onclick=async()=>{
-    if(state.installPrompt){
-      state.installPrompt.prompt();
-      await state.installPrompt.userChoice;
-      state.installPrompt=null;
-      return;
-    }
+  if(installBtn){
+    installBtn.onclick=async()=>{
+      if(state.installPrompt){
+        try{
+          state.installPrompt.prompt();
+          await state.installPrompt.userChoice;
+        }catch{}
+        state.installPrompt=null;
+        return;
+      }
 
-    const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);
-    $("#installHelp").innerHTML=ios
-      ?"在瀏覽器分享選單選「加入主畫面」，之後 COLA GO 會像 App 一樣獨立開啟。"
-      :"在 Chrome / Edge 選單選「安裝 COLA GO」或「新增至主畫面」。";
-    $("#installSheet").hidden=false;
-  };
-
-  $("#closeInstall").onclick=$("#installOk").onclick=()=>$("#installSheet").hidden=true;
-  $("#installSheet").onclick=e=>{
-    if(e.target.id==="installSheet")$("#installSheet").hidden=true;
-  };
+      const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);
+      if(ios){
+        toast("加入主畫面：點瀏覽器「分享」→「加入主畫面」",3600);
+      }else{
+        toast("請使用瀏覽器選單的「安裝」或「新增至主畫面」",3200);
+      }
+    };
+  }
 
   if("serviceWorker" in navigator){
     navigator.serviceWorker.register("./sw.js").catch(()=>{});

@@ -1,7 +1,7 @@
 name: Validate COLA GO V3
 on:
   push:
-    branches: ["main", "design/v3-product-ui", "feature/full-toolbox", "feature/market-db", "feature/owner-plus", "feature/community-locations", "feature/tainan-live-parking"]
+    branches: ["main", "design/v3-product-ui", "feature/full-toolbox", "feature/market-db", "feature/owner-plus", "feature/community-locations", "feature/tainan-live-parking", "fix/mobile-home-quality"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -46,6 +46,10 @@ jobs:
           grep -q "COLA GO" index.html
           grep -q "data-view=\"home\"" index.html
           grep -q "bottom-nav" index.html
+          grep -q "core-actions" index.html
+          ! grep -q 'id="installSheet"' index.html
+          ! grep -q 'installSheet' assets/app.js
+          grep -q '加入主畫面：點瀏覽器' assets/app.js
           grep -q "data-view=\"tesla-db\"" index.html
           grep -q "data-view=\"market\"" index.html
           grep -q "data-view=\"warranty\"" index.html
