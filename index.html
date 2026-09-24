@@ -195,8 +195,12 @@
 
       <section class="view" data-view="parking">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">PARKING</span><h1>停車</h1></div></div>
+        <div class="filter-row parking-city-tabs" id="parkingCityTabs">
+          <button class="active" data-parking-city="tainan">臺南</button>
+          <button data-parking-city="taoyuan">桃園</button>
+        </div>
         <div class="live-source-head">
-          <div><span class="mini-label">TAINAN LIVE</span><h2>臺南即時剩餘車位</h2></div>
+          <div><span class="mini-label" id="parkingCityLabel">TAINAN LIVE</span><h2 id="parkingCityTitle">臺南即時剩餘車位</h2></div>
           <span class="updated" id="parkingLiveTime">等待同步</span>
         </div>
         <label class="inline-search parking-search"><svg><use href="#i-search"/></svg><input id="parkingSearch" type="search" placeholder="搜尋停車場、行政區、地址"></label>
