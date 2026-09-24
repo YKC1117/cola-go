@@ -6,6 +6,7 @@ from urllib.request import Request, urlopen
 DONORS={
     "a857a015118742b3ad7fafa48afd42ce":"reddit-tesla-mega-menu",
     "fdc8e8e4e97f4a3689378d4793522c53":"reddit-action-button-menu",
+    "042c5a17a2834196a0d8864663279e96":"reddit-2024-tesla-quick-actions",
 }
 OUT=Path("carkit-sign/inspect")
 OUT.mkdir(parents=True,exist_ok=True)
