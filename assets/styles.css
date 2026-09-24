@@ -254,3 +254,12 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 @media (max-width: 374px) { .view { padding-left: 16px; padding-right: 16px; } .topbar { padding-left: 16px; padding-right: 16px; } .road-now-grid button { padding-left: 10px; padding-right: 10px; } .road-now-grid b { font-size: 17px; } .source-status { gap: 5px; } }
 @media (display-mode: standalone) { .app-shell { min-height: 100dvh; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
+
+.cctv-list{display:grid;gap:0;margin-top:14px}
+.cctv-card{padding:20px 0;border-bottom:1px solid var(--line)}
+.cctv-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.cctv-card-head>div{min-width:0}
+.cctv-card h3{font-size:15px}
+.cctv-card p{font-size:12px;color:var(--muted);line-height:1.6;margin:5px 0 0}
+.cctv-more{font-size:12px;line-height:1.6;color:var(--muted);padding:16px 0;margin:0}
+.cctv-official-head{margin-top:28px}
