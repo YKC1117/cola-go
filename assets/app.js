@@ -568,7 +568,7 @@ function renderParking(){
   }else if(state.parkingRemote.status==="ready"&&state.parkingRemote.city===city){
     const rows=parkingSelectedRows().filter(x=>!query||[x.name,x.town,x.address,x.fare].join(" ").toLowerCase().includes(query));
     $("#parkingLiveTime").textContent=state.parkingRemote.updatedAt||"官方資料";
-    $("#parkingScopeStatus").textContent="TDX 官方停車場資料 · "+state.parkingRemote.items.length+" 筆";
+    $("#parkingScopeStatus").textContent=(state.parkingRemote.stale?"快取資料 · 可能延遲 · ":"TDX 官方停車場資料 · ")+state.parkingRemote.items.length+" 筆";
     root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>找不到符合的停車場</b><p>換個停車場名稱、行政區或地址試試。</p></div>';
   }else{
     $("#parkingLiveTime").textContent="官方資料暫不可用";
@@ -797,7 +797,7 @@ function renderCCTV(){
     (state.cctvRoad==="all"||x.roadNo===state.cctvRoad)&&
     (!q||[x.road,x.direction,x.mile,x.start,x.end,x.id].join(" ").toLowerCase().includes(q))
   );
-  status.textContent=state.cctv.source+" · "+all.length+" 支";
+  status.textContent=state.cctv.source+" · "+all.length+" 支"+(state.cctv.stale?" · 快取資料":"");
   const rows=matched.slice(0,50);
   root.innerHTML=rows.length?rows.map(x=>{
     const title=[x.road,x.mile].filter(Boolean).join(" · ")||("攝影機 "+x.id);
@@ -902,7 +902,7 @@ function parseLiveXml(text,sections){
 }
 
 function buildTunnelFromTraffic(traffic){
-  const tunnel={status:"live",updatedAt:traffic.updatedAt,source:traffic.source,south:[],north:[]};
+  const tunnel={status:traffic.stale?"stale":"live",updatedAt:traffic.updatedAt,source:traffic.source,stale:Boolean(traffic.stale),south:[],north:[]};
   (traffic.highways?.["5"]||traffic.highways?.[5]||[]).forEach(row=>{
     const text=String(row.name||"");
     if(!["坪林","頭城","雪山","石碇"].some(k=>text.includes(k)))return;
@@ -1005,7 +1005,7 @@ function renderTraffic(){
     '</article>'
   ).join(""):'<div class="empty"><b>國 '+state.highway+' 自動同步目前沒有資料</b><p>不顯示假數字；可直接開高公局 1968 查看官方即時路況。</p></div>';
 
-  root.innerHTML=list+official;
+  root.innerHTML=(state.traffic?.stale?'<p class="notice strong">目前顯示最後成功快取，資料可能延遲；可開 1968 交叉確認。</p>':"")+list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
   $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(state.highway));
 }
@@ -1028,7 +1028,7 @@ function renderTunnel(){
     '</article>'
   ).join(""):'<div class="empty"><b>雪隧自動同步目前沒有資料</b><p>直接開 1968 可查看國 5 即時影像與路況。</p></div>';
 
-  root.innerHTML=list+official;
+  root.innerHTML=(state.tunnel?.stale?'<p class="notice strong">目前顯示最後成功快取，資料可能延遲；可開 1968 交叉確認。</p>':"")+list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
   $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad("5"));
 }
