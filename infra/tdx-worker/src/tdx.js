@@ -42,7 +42,7 @@ function extractItems(payload) {
   return [];
 }
 
-export async function fetchTdxPages({ env, token, path, paginate = true, fetchImpl = fetch, onUsage = () => {} }) {
+export async function fetchTdxPages({ env, token, path, paginate = true, fetchImpl = fetch, beforeRequest = () => {}, onUsage = () => {} }) {
   const maxBytes = numericEnv(env, "MAX_UPSTREAM_BYTES", 2097152);
   const pageSize = paginate ? 1000 : 0;
   const maxPages = paginate ? 20 : 1;
