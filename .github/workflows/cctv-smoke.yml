@@ -1,0 +1,59 @@
+name: CCTV source smoke
+
+on:
+  push:
+    branches: ["feature/highway-cctv-live"]
+    paths:
+      - ".github/workflows/cctv-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-cctv:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch official CCTV XML
+        run: |
+          python3 - <<'PY'
+          import urllib.request, xml.etree.ElementTree as ET, json
+          url="https://tisvcloud.freeway.gov.tw/history/motc20/CCTV.xml"
+          req=urllib.request.Request(url,headers={"User-Agent":"COLA-GO/1.0","Accept":"application/xml,text/xml,*/*"})
+          with urllib.request.urlopen(req,timeout=45) as r:
+              data=r.read()
+          print("BYTES",len(data))
+          root=ET.fromstring(data)
+          rows=[]
+          def lname(t): return t.rsplit("}",1)[-1]
+          def txt(n,name):
+              for c in list(n):
+                  if lname(c.tag).lower()==name.lower():
+                      return (c.text or "").strip()
+              return ""
+          for n in root.iter():
+              cid=txt(n,"CCTVID")
+              url=txt(n,"VideoStreamURL")
+              if cid and url:
+                  rows.append({
+                      "id":cid,
+                      "url":url,
+                      "road":txt(n,"RoadName"),
+                      "dir":txt(n,"RoadDirection"),
+                      "mile":txt(n,"LocationMile"),
+                      "lat":txt(n,"PositionLat"),
+                      "lon":txt(n,"PositionLon"),
+                      "start":txt(n,"Start"),
+                      "end":txt(n,"End"),
+                  })
+          print("ROWS",len(rows))
+          assert len(rows)>100
+          open("/tmp/cctv.json","w",encoding="utf-8").write(json.dumps(rows,ensure_ascii=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cctv-source
+          path: /tmp/cctv.json
+          retention-days: 1
