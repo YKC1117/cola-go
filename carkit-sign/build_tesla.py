@@ -301,7 +301,7 @@ auto_end=[
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v0.5｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- Siri：嘿 Siri，特斯拉助手 → 只問「要做什麼？」\n- 語音採精確比對，不用 contains，避免「不要解鎖」誤觸\n- 解鎖、前行李廂、後車廂需再次明確確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用"
+    "WFCommentActionText":"Tesla Driver v0.5｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- Siri：嘿 Siri，特斯拉助手 → 只問「要做什麼？」\n- 語音採精確比對，不用 contains，避免「不要解鎖」誤觸\n- 解鎖、前行李廂、後車廂需再次明確確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
