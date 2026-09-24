@@ -1087,8 +1087,8 @@ function renderTunnel(){
 
   const sourceNote=state.tunnel?.status==="stale"?'<p class="notice">目前顯示官方快取資料，可能較舊；可開 1968 交叉確認。</p>':"";
   root.innerHTML=sourceNote+list+official;
-  $("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
-  $("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad("5"));
+  $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
+  $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad("5"));
 }
 
 function renderMarket(){
