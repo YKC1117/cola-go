@@ -1,0 +1,1 @@
+{"updatedAt":null,"cities":[{"name":"臺南市","status":"source-ready","note":"市府有停車場即時剩餘車位資料；待同步流程接入。"},{"name":"新北市","status":"source-ready","note":"公有路外停車場有即時剩餘資料。"},{"name":"臺中市","status":"source-ready","note":"市府與 TDX 均有剩餘車位資料。"},{"name":"宜蘭縣","status":"source-ready","note":"縣府提供停車場剩餘數資料。"},{"name":"全臺其他縣市","status":"tdx","note":"可接 TDX 免費資料；部分介接需免費 API Key。"}]}
