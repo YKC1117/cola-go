@@ -84,6 +84,7 @@ jobs:
           expect(await page.locator('.sheet').count()===0,'no blocking sheet after install click');
           expect(await page.locator('#installSheet').count()===0,'install click does not recreate blocking sheet');
           pass('install button click completed without blocking UI');
+          await page.locator('#toast').evaluate(el=>el.classList.remove('show'));
 
           const coreViews=['charging','parking','highway','tunnel'];
           for(const view of coreViews){
@@ -160,6 +161,19 @@ jobs:
           }
 
           await page.locator('.brand').click();
+          await page.locator('[data-go="tools"]').first().click();
+          await page.locator('[data-go="warranty"]').click();
+          await page.locator('#warrantyDate').fill('2024-01-15');
+          await page.locator('#warrantyKm').fill('32000');
+          await page.locator('#calcWarrantyBtn').click();
+          expect(await page.locator('#warrantyResult').textContent().then(t=>t.includes('基本車輛有限保固')),'warranty tool works');
+
+          await page.locator('[data-view="warranty"] .back').click();
+          await page.locator('[data-go="connector"]').click();
+          await page.locator('#checkConnectorBtn').click();
+          expect(await page.locator('#connectorResult').textContent().then(t=>t.length>10),'connector tool works');
+
+          await page.locator('.brand').click();
           await page.locator('[data-go="cctv"]').first().click();
           await page.locator('[data-view="cctv"] [data-url]').first().click();
           expect(await page.evaluate(()=>window.__opened.some(x=>x.includes('1968.freeway.gov.tw'))),'CCTV external opens');
@@ -171,6 +185,11 @@ jobs:
             await locBtn.click();
             expect(await page.evaluate(()=>window.__opened.some(x=>x.includes('google.com/maps/search'))),'location map opens');
           }
+
+          const topbarPosition=await page.locator('.topbar').evaluate(el=>getComputedStyle(el).position);
+          expect(['sticky','fixed'].includes(topbarPosition),'topbar remains sticky/fixed',topbarPosition);
+          const navPosition=await page.locator('.bottom-nav').evaluate(el=>getComputedStyle(el).position);
+          expect(navPosition==='fixed','bottom nav remains fixed',navPosition);
 
           const viewports=[
             {name:'home-390x844',w:390,h:844},
@@ -197,7 +216,7 @@ jobs:
           const navBox=await page.locator('.bottom-nav').boundingBox();
           const lastTool=page.locator('.home-more button').last();
           const lastBox=await lastTool.boundingBox();
-          expect(navBox && lastBox && lastBox.bottom <= navBox.y+2,'last home tool can scroll above bottom nav',JSON.stringify({navBox,lastBox}));
+          expect(navBox && lastBox && (lastBox.y+lastBox.height) <= navBox.y+2,'last home tool can scroll above bottom nav',JSON.stringify({navBox,lastBox}));
 
           fs.writeFileSync(out+'/results.json',JSON.stringify(results,null,2));
           console.log(JSON.stringify(results,null,2));
