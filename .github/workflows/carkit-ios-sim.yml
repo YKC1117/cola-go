@@ -80,6 +80,8 @@ jobs:
       - name: Install simulator UI driver
         run: |
           set -euxo pipefail
+          brew tap facebook/fb
+          brew trust facebook/fb
           brew install facebook/fb/idb
           idb list-targets
 
