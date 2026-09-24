@@ -1,7 +1,7 @@
 name: Validate COLA GO V3
 on:
   push:
-    branches: ["main", "design/v3-product-ui"]
+    branches: ["main", "design/v3-product-ui", "feature/full-toolbox"]
   workflow_dispatch:
 permissions:
   contents: read
