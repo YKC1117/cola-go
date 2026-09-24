@@ -123,6 +123,7 @@ Current donor-backed identifiers:
 - CloseWindowIntent
 - SentryModeIntent
 - FlashLightIntent
+- ChargePortIntent
 - FartIntent (not exposed in CarKit main UI)
 
 Known parameter evidence:
@@ -132,14 +133,15 @@ Known parameter evidence:
 - ChargeLimitIntent: `percent` is a numeric string
 - HVACSetTempIntent: `temperature` is a `WFQuantityFieldValue`
 - RearTrunkIntent: donor uses Ask for `rearTrunkAction`
-- DefrostIntent: donor uses Ask for `defrostAction`
+- DefrostIntent: public native donor proves `defrostAction = enable`
+- ChargePortIntent: public native donor proves `chargePortAction = open`
 - SentryModeIntent: donor uses Ask for `vehicleModeAction`
 
 Do not guess fixed enum values for donor-Ask fields.
 
 Still missing native donor structures for:
 - Honk Horn
-- Open/Close Charge Port
+- Close Charge Port
 - Start/Stop Charging
 - Seat Heater
 - Dog Mode
