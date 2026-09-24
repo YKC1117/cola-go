@@ -200,6 +200,12 @@
           <span class="updated" id="parkingLiveTime">等待同步</span>
         </div>
         <label class="inline-search parking-search"><svg><use href="#i-search"/></svg><input id="parkingSearch" type="search" placeholder="搜尋停車場、行政區、地址"></label>
+        <div class="parking-controls">
+          <button id="parkingSortAvailability" aria-pressed="true">剩餘最多</button>
+          <button id="parkingSortNearest" aria-pressed="false">離我最近</button>
+          <button id="parkingHasSpaceOnly" aria-pressed="false">只看有位</button>
+        </div>
+        <p class="parking-location-note" id="parkingLocationNote">定位只在這台裝置計算距離，不會上傳 COLA GO。</p>
         <p class="notice">臺南市政府交通局公開資料會直接顯示官方剩餘格位；沒有取得即時資料時不顯示假空位。</p>
         <div id="liveParkingList" class="parking-live-list"></div>
         <div class="section-head parking-other-head"><div><span class="mini-label">OTHER SOURCES</span><h2>其他縣市</h2></div></div>
