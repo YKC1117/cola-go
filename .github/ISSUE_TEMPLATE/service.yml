@@ -1,0 +1,31 @@
+name: 申請 COLA GO 合作服務
+description: 店家或品牌申請優質服務合作
+title: "[服務合作] "
+body:
+  - type: input
+    id: name
+    attributes: {label: 店家／品牌名稱}
+    validations: {required: true}
+  - type: dropdown
+    id: category
+    attributes: {label: 類型, options: ["輪胎","維修保養","道路救援","包膜／隔熱紙","保險","貸款","充電／停車","車用配件","二手車","其他"]}
+    validations: {required: true}
+  - type: input
+    id: area
+    attributes: {label: 服務地區}
+    validations: {required: true}
+  - type: textarea
+    id: value
+    attributes: {label: 能提供給車主的服務／優惠, placeholder: "請具體寫內容，不接受只有『歡迎合作』"}
+    validations: {required: true}
+  - type: input
+    id: contact
+    attributes: {label: 公開聯絡方式}
+    validations: {required: true}
+  - type: checkboxes
+    id: disclosure
+    attributes:
+      label: 合作原則
+      options:
+        - label: 我同意合作／贊助關係清楚揭露，不要求 COLA GO 偽裝成中立推薦。
+          required: true
