@@ -24,6 +24,9 @@ jobs:
       - name: Refresh Tainan live parking cache
         continue-on-error: true
         run: python3 scripts/sync_tainan_parking.py
+      - name: Refresh Taoyuan live parking cache
+        continue-on-error: true
+        run: python3 scripts/sync_taoyuan_parking.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site
