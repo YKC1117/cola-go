@@ -8,6 +8,12 @@ const state={
   models:[],
   market:{usedCars:[],accessories:[],services:[]},
   road:"all",
+  chargingDirection:"all",
+  chargingConnector:"all",
+  chargingPower:0,
+  chargingOperator:"all",
+  chargingFavoritesOnly:false,
+  chargingFavorites:[],
   highway:"1",
   direction:"south",
   modelFilter:"all",
@@ -142,46 +148,83 @@ function renderAll(){
   $("#tunnelDot").className=state.tunnel?.status==="live"&&snow?"dot ready":"dot pending";
 }
 
+function chargingKey(x){
+  return [x.road,x.name,x.direction].join("|");
+}
+function parseChargingPower(value){
+  const m=String(value||"").match(/\d+(?:\.\d+)?/);
+  return m?Number(m[0]):0;
+}
+function chargingDirectionMatch(x){
+  const d=String(x.direction||"");
+  if(state.chargingDirection==="all")return true;
+  if(state.chargingDirection==="south")return d.includes("南");
+  if(state.chargingDirection==="north")return d.includes("北");
+  if(state.chargingDirection==="shared")return d.includes("雙向");
+  return true;
+}
+function saveChargingFavorites(){
+  try{localStorage.setItem("cola-go-charging-favorites",JSON.stringify(state.chargingFavorites));}catch{}
+}
+function loadChargingFavorites(){
+  try{
+    const rows=JSON.parse(localStorage.getItem("cola-go-charging-favorites")||"[]");
+    state.chargingFavorites=Array.isArray(rows)?rows:[];
+  }catch{state.chargingFavorites=[];}
+}
 function renderCharging(){
   const root=$("#chargingList");
   if(!root)return;
 
-  const q=($("#chargingSearch").value||"").trim().toLowerCase();
-  const rows=state.charging.filter(x=>
-    (state.road==="all"||x.road===state.road) &&
-    (!q||JSON.stringify(x).toLowerCase().includes(q))
-  );
+  const q=($("#chargingSearch")?.value||"").trim().toLowerCase();
+  const rows=state.charging
+    .filter(x=>(state.road==="all"||x.road===state.road))
+    .filter(chargingDirectionMatch)
+    .filter(x=>state.chargingConnector==="all"||(x.connectors||[]).includes(state.chargingConnector))
+    .filter(x=>parseChargingPower(x.power)>=Number(state.chargingPower||0))
+    .filter(x=>state.chargingOperator==="all"||x.operator===state.chargingOperator)
+    .filter(x=>!state.chargingFavoritesOnly||state.chargingFavorites.includes(chargingKey(x)))
+    .filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q))
+    .sort((a,b)=>Number(state.chargingFavorites.includes(chargingKey(b)))-Number(state.chargingFavorites.includes(chargingKey(a))));
 
-  root.innerHTML=rows.length?rows.map(x=>
-    '<article class="list-item">'+
+  const favCount=state.chargingFavorites.length;
+  if($("#chargingFavoriteCount"))$("#chargingFavoriteCount").textContent=favCount;
+  if($("#chargingFavoritesOnly"))$("#chargingFavoritesOnly").setAttribute("aria-pressed",String(state.chargingFavoritesOnly));
+
+  root.innerHTML=rows.length?rows.map(x=>{
+    const key=chargingKey(x);
+    const favorite=state.chargingFavorites.includes(key);
+    const query=encodeURIComponent(x.name+" "+x.location);
+    return '<article class="list-item charging-item">'+
       '<div class="list-head">'+
-        '<div><h3>'+esc(x.name)+'</h3><div class="meta">'+esc(x.direction)+' · '+esc(x.operator)+'</div></div>'+
+        '<div><div class="charging-title-line"><h3>'+esc(x.name)+'</h3><button class="favorite-btn '+(favorite?'active':'')+'" data-charge-favorite="'+esc(key)+'" aria-label="'+(favorite?'取消收藏':'加入收藏')+'" aria-pressed="'+favorite+'">★</button></div><div class="meta">'+esc(x.direction)+' · '+esc(x.operator)+'</div></div>'+
         '<span class="route-tag">國 '+esc(x.road)+'</span>'+
       '</div>'+
+      '<div class="charging-status-line"><span>設備資料</span><small>非即時空槍</small></div>'+
       '<div class="specs">'+
         '<span>'+esc(x.spaces)+' 車位</span>'+
         '<span>'+esc(x.power)+'</span>'+
-        x.connectors.map(c=>'<span>'+esc(c)+'</span>').join("")+
+        (x.connectors||[]).map(c=>'<span>'+esc(c)+'</span>').join("")+
       '</div>'+
       '<div class="location-line"><svg><use href="#i-pin"/></svg><span>'+esc(x.location)+(x.note?" · "+esc(x.note):"")+'</span></div>'+
       '<div class="item-actions">'+
-        '<button class="go" data-nav="'+encodeURIComponent(x.name)+'">導航</button>'+
-        '<button data-camera-road="'+esc(x.road)+'">即時影像</button>'+
-        '<button data-copy="'+esc(x.name)+'">複製</button>'+
+        '<button class="go" data-charge-google="'+query+'">Google</button>'+
+        '<button data-charge-apple="'+query+'">Apple 地圖</button>'+
+        '<button data-camera-road="'+esc(x.road)+'">CCTV</button>'+
       '</div>'+
-    '</article>'
-  ).join(""):'<div class="empty"><b>沒有符合的充電站</b><p>換個服務區、業者或接頭名稱。</p></div>';
+    '</article>';
+  }).join(""):'<div class="empty"><b>沒有符合的充電站</b><p>調整國道、方向、接頭、功率或取消「只看收藏」。</p></div>';
 
-  $$("[data-nav]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.nav,"_blank","noopener"));
-  $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
-  $$("[data-copy]",root).forEach(b=>b.onclick=async()=>{
-    try{
-      await navigator.clipboard.writeText(b.dataset.copy);
-      toast("已複製");
-    }catch{
-      toast("無法複製");
-    }
+  $$("[data-charge-favorite]",root).forEach(b=>b.onclick=()=>{
+    const key=b.dataset.chargeFavorite;
+    const i=state.chargingFavorites.indexOf(key);
+    if(i>=0)state.chargingFavorites.splice(i,1); else state.chargingFavorites.push(key);
+    saveChargingFavorites();
+    renderCharging();
   });
+  $$("[data-charge-google]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.chargeGoogle,"_blank","noopener"));
+  $$("[data-charge-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?q="+b.dataset.chargeApple,"_blank","noopener"));
+  $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
 }
 
 function renderParking(){
@@ -844,6 +887,44 @@ function bindCommunity(){
   });
 }
 
+function bindChargingTools(){
+  loadChargingFavorites();
+
+  const bindSelect=(id,key,transform=v=>v)=>{
+    const el=$("#"+id);
+    if(!el)return;
+    el.onchange=()=>{state[key]=transform(el.value);renderCharging();};
+  };
+  bindSelect("chargingDirection","chargingDirection");
+  bindSelect("chargingConnector","chargingConnector");
+  bindSelect("chargingPower","chargingPower",Number);
+  bindSelect("chargingOperator","chargingOperator");
+
+  $("#chargingFavoritesOnly")?.addEventListener("click",()=>{
+    state.chargingFavoritesOnly=!state.chargingFavoritesOnly;
+    renderCharging();
+  });
+
+  $("#resetChargingFilters")?.addEventListener("click",()=>{
+    state.road="all";
+    state.chargingDirection="all";
+    state.chargingConnector="all";
+    state.chargingPower=0;
+    state.chargingOperator="all";
+    state.chargingFavoritesOnly=false;
+    $("#roadFilter button").forEach((b,i)=>b.classList.toggle("active",i===0));
+    if($("#chargingDirection"))$("#chargingDirection").value="all";
+    if($("#chargingConnector"))$("#chargingConnector").value="all";
+    if($("#chargingPower"))$("#chargingPower").value="0";
+    if($("#chargingOperator"))$("#chargingOperator").value="all";
+    if($("#chargingSearch"))$("#chargingSearch").value="";
+    renderCharging();
+  });
+
+  $("#nearbyGoogle")?.addEventListener("click",()=>window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("電動車充電站"),"_blank","noopener"));
+  $("#nearbyApple")?.addEventListener("click",()=>window.open("https://maps.apple.com/?q="+encodeURIComponent("電動車充電站"),"_blank","noopener"));
+}
+
 function bindFilters(){
   $$("#roadFilter button").forEach(b=>b.onclick=()=>{
     $$("#roadFilter button").forEach(x=>x.classList.remove("active"));
@@ -1239,6 +1320,7 @@ $("#refreshBtn").onclick=()=>{
 
 bindNav();
 bindExternal();
+bindChargingTools();
 bindFilters();
 bindMarket();
 bindCommunity();
