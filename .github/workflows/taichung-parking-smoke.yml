@@ -42,5 +42,9 @@ jobs:
           if rows:
               print("SAMPLE",json.dumps(rows[0],ensure_ascii=False)[:2000])
               print("SAMPLE_KEYS",list(rows[0].keys())[:60])
+              from collections import Counter
+              print("CAR_RGB",dict(Counter(str(x.get("AvailableCarRGB","")) for x in rows)))
+              print("EV_RGB",dict(Counter(str(x.get("EvRGB","")) for x in rows)))
+              print("COORDS",sum(1 for x in rows if x.get("Lat") is not None and x.get("Lng") is not None))
           assert len(rows)>5
           PY
