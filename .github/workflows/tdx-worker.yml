@@ -79,6 +79,7 @@ jobs:
           PY
 
           test "$(curl -sS -o /tmp/query.json -w '%{http_code}'             'http://127.0.0.1:8787/api/v1/freeway/live?%24filter=x')" = "400"
+          test "$(curl -sS -o /tmp/bad-limit.json -w '%{http_code}'             'http://127.0.0.1:8787/api/v1/freeway/live?limit=0')" = "400"
 
           test "$(curl -sS -o /tmp/post.json -w '%{http_code}' -X POST             http://127.0.0.1:8787/api/v1/health)" = "405"
 
