@@ -10,7 +10,7 @@ VD_URL = f"{BASE}/VDLive.xml"
 OUT = Path("data")
 SECTION_CACHE = OUT / "sections-cache.json"
 
-def fetch(url, tries=3, timeout=90):
+def fetch(url, tries=2, timeout=30):
     last = None
     for attempt in range(1, tries + 1):
         try:
@@ -216,7 +216,7 @@ def main():
     )
 
     try:
-        vds = parse_vd(fetch(VD_URL, tries=2, timeout=75))
+        vds = parse_vd(fetch(VD_URL, tries=1, timeout=25))
         (OUT / "vd-live.json").write_text(
             json.dumps({
                 "updatedAt": datetime.now(timezone.utc).isoformat(),
