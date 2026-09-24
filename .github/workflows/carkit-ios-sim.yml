@@ -10,6 +10,7 @@ on:
 jobs:
   probe:
     runs-on: macos-26
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -139,6 +140,13 @@ jobs:
           run_idb idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/tesla-after-add.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-after-add.png
 
+          # Runtime probe: execute the imported Tesla shortcut by name. This
+          # validates the real workflow can enter its Ask for Input path.
+          xcrun simctl openurl "$UDID" "shortcuts://run-shortcut?name=%E7%89%B9%E6%96%AF%E6%8B%89%E5%8A%A9%E6%89%8B" || true
+          sleep 5
+          run_idb idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key frame --udid "$UDID" > /tmp/carkit-probe/tesla-runtime-prompt.json || true
+          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-runtime-prompt.png
+
           # The Tesla app is not available in the stock Simulator. Capture logs
           # so missing Tesla AppIntent metadata is recorded as an environment
           # limitation rather than mistaken for a shortcut-format failure.
@@ -162,6 +170,8 @@ jobs:
           grep -q '"AXLabel":"Search Actions"' /tmp/carkit-probe/oil-after-add.json
           grep -q '"AXLabel":"Search Actions"' /tmp/carkit-probe/tesla-after-add.json
           grep -q '"AXLabel":"特斯拉助手"' /tmp/carkit-probe/tesla-before.json
+          test -s /tmp/carkit-probe/tesla-runtime-prompt.json
+          grep -q '要做什麼' /tmp/carkit-probe/tesla-runtime-prompt.json
           test -s /tmp/carkit-probe/oil-after-add.png
           test -s /tmp/carkit-probe/tesla-after-add.png
           echo "SIGNED_SHORTCUT_IMPORT_UI=PASS"
