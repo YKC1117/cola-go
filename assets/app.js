@@ -863,7 +863,7 @@ function bindFilters(){
   });
 
   $$("#highwayTabs button").forEach(b=>b.onclick=()=>{
-    $$$("#highwayTabs button").forEach(x=>x.classList.remove("active"));
+    $("#highwayTabs button").forEach(x=>x.classList.remove("active"));
     b.classList.add("active");
     state.highway=b.dataset.highway;
     renderTraffic();
