@@ -56,6 +56,7 @@ export async function fetchTdxPages({ env, token, path, paginate = true, fetchIm
       url.searchParams.set("$top", String(pageSize));
       url.searchParams.set("$skip", String(page * pageSize));
     }
+    beforeRequest();
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), numericEnv(env, "TDX_TIMEOUT_MS", 8000));
     let response;
