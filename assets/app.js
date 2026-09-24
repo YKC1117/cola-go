@@ -912,7 +912,7 @@ function bindChargingTools(){
     state.chargingPower=0;
     state.chargingOperator="all";
     state.chargingFavoritesOnly=false;
-    $("#roadFilter button").forEach((b,i)=>b.classList.toggle("active",i===0));
+    $$("#roadFilter button").forEach((b,i)=>b.classList.toggle("active",i===0));
     if($("#chargingDirection"))$("#chargingDirection").value="all";
     if($("#chargingConnector"))$("#chargingConnector").value="all";
     if($("#chargingPower"))$("#chargingPower").value="0";
