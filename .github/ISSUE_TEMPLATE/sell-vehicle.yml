@@ -1,0 +1,51 @@
+name: 免費刊登二手電車
+description: 車主自售或車商刊登電動車
+title: "[售車] "
+body:
+  - type: input
+    id: model
+    attributes: {label: 車款, placeholder: "例如 Tesla Model Y Long Range AWD"}
+    validations: {required: true}
+  - type: input
+    id: year
+    attributes: {label: 年份, placeholder: "例如 2023"}
+    validations: {required: true}
+  - type: input
+    id: mileage
+    attributes: {label: 里程, placeholder: "例如 28000 km"}
+    validations: {required: true}
+  - type: input
+    id: price
+    attributes: {label: 售價, placeholder: "例如 NT$1,450,000"}
+    validations: {required: true}
+  - type: dropdown
+    id: seller
+    attributes: {label: 身分, options: ["車主自售","車商"]}
+    validations: {required: true}
+  - type: textarea
+    id: condition
+    attributes: {label: 車況與配備, placeholder: "顏色、輪圈、EAP/FSD、充電埠、保固、改裝等"}
+    validations: {required: true}
+  - type: dropdown
+    id: accident
+    attributes: {label: 重大事故／泡水／結構損傷, options: ["無","有，並於下方完整說明"]}
+    validations: {required: true}
+  - type: textarea
+    id: history
+    attributes: {label: 維修／事故說明, placeholder: "有則請完整說明；沒有可填無"}
+    validations: {required: true}
+  - type: input
+    id: area
+    attributes: {label: 看車地區, placeholder: "例如 台南永康"}
+    validations: {required: true}
+  - type: input
+    id: contact
+    attributes: {label: 公開聯絡方式, placeholder: "Email、LINE 官方帳號等"}
+    validations: {required: true}
+  - type: checkboxes
+    id: consent
+    attributes:
+      label: 刊登聲明
+      options:
+        - label: 我確認上述資料真實，並同意公開刊登；COLA GO 不代收款、不介入交易。
+          required: true
