@@ -6,6 +6,7 @@ const state={
   parking:null,
   parkingLive:{status:"not-synced",items:[]},
   parkingLiveTaoyuan:{status:"not-synced",items:[]},
+  parkingLiveTaichung:{status:"not-synced",items:[]},
   parkingCity:"tainan",
   parkingSort:"availability",
   parkingHasSpaceOnly:false,
@@ -108,6 +109,7 @@ async function load(){
     getJSON("./data/parking.json"),
     getJSON("./data/parking-live-tainan.json"),
     getJSON("./data/parking-live-taoyuan.json"),
+    getJSON("./data/parking-live-taichung.json"),
     getJSON("./data/tesla-models.json"),
     getJSON("./data/marketplace.json"),
     getJSON("./data/community.json"),
@@ -120,10 +122,11 @@ async function load(){
   if(results[3].status==="fulfilled")state.parking=results[3].value;
   if(results[4].status==="fulfilled")state.parkingLive=results[4].value;
   if(results[5].status==="fulfilled")state.parkingLiveTaoyuan=results[5].value;
-  if(results[6].status==="fulfilled")state.models=results[6].value.models||[];
-  if(results[7].status==="fulfilled")state.market=results[7].value;
-  if(results[8].status==="fulfilled")state.community=results[8].value;
-  if(results[9].status==="fulfilled")state.locations=results[9].value;
+  if(results[6].status==="fulfilled")state.parkingLiveTaichung=results[6].value;
+  if(results[7].status==="fulfilled")state.models=results[7].value.models||[];
+  if(results[8].status==="fulfilled")state.market=results[8].value;
+  if(results[9].status==="fulfilled")state.community=results[9].value;
+  if(results[10].status==="fulfilled")state.locations=results[10].value;
 
   renderAll();
 }
@@ -251,9 +254,18 @@ function parkingDistanceLabel(km){
   return km.toFixed(km<10?1:0)+" km";
 }
 function updateParkingControls(){
-  if($("#parkingSortAvailability"))$("#parkingSortAvailability").setAttribute("aria-pressed",String(state.parkingSort==="availability"));
+  const signalMode=state.parkingCity==="taichung";
+  if($("#parkingSortAvailability")){
+    $("#parkingSortAvailability").textContent=signalMode?"總車格多":"剩餘最多";
+    $("#parkingSortAvailability").setAttribute("aria-pressed",String(state.parkingSort==="availability"));
+  }
   if($("#parkingSortNearest"))$("#parkingSortNearest").setAttribute("aria-pressed",String(state.parkingSort==="nearest"));
-  if($("#parkingHasSpaceOnly"))$("#parkingHasSpaceOnly").setAttribute("aria-pressed",String(state.parkingHasSpaceOnly));
+  if($("#parkingHasSpaceOnly")){
+    if(signalMode)state.parkingHasSpaceOnly=false;
+    $("#parkingHasSpaceOnly").disabled=signalMode;
+    $("#parkingHasSpaceOnly").title=signalMode?"臺中官方原生資料沒有精確剩餘格數":"";
+    $("#parkingHasSpaceOnly").setAttribute("aria-pressed",String(state.parkingHasSpaceOnly));
+  }
   if($("#parkingLocationNote")){
     $("#parkingLocationNote").textContent=state.parkingUserLocation
       ?"目前依你的定位計算距離；定位只存在瀏覽器記憶體，不會上傳。"
@@ -265,16 +277,29 @@ function renderParking(){
   const cityRoot=$("#parkingCities");
   if(!liveRoot||!cityRoot)return;
 
-  const live=(state.parkingCity==="taoyuan"?state.parkingLiveTaoyuan:state.parkingLive)||{status:"not-synced",items:[]};
-  const cityMeta=state.parkingCity==="taoyuan"
-    ?{label:"TAOYUAN LIVE",title:"桃園即時剩餘車位",empty:"桃園即時資料暫時無法取得"}
-    :{label:"TAINAN LIVE",title:"臺南即時剩餘車位",empty:"臺南即時資料暫時無法取得"};
+  const live=(
+    state.parkingCity==="taichung"?state.parkingLiveTaichung:
+    state.parkingCity==="taoyuan"?state.parkingLiveTaoyuan:
+    state.parkingLive
+  )||{status:"not-synced",items:[]};
+  const cityMeta=state.parkingCity==="taichung"
+    ?{label:"TAICHUNG STATUS",title:"臺中官方停車燈號",empty:"臺中官方停車資料暫時無法取得",mode:"signal"}
+    :state.parkingCity==="taoyuan"
+      ?{label:"TAOYUAN LIVE",title:"桃園即時剩餘車位",empty:"桃園即時資料暫時無法取得",mode:"count"}
+      :{label:"TAINAN LIVE",title:"臺南即時剩餘車位",empty:"臺南即時資料暫時無法取得",mode:"count"};
   if($("#parkingCityLabel"))$("#parkingCityLabel").textContent=cityMeta.label;
   if($("#parkingCityTitle"))$("#parkingCityTitle").textContent=cityMeta.title;
   const query=($("#parkingSearch")?.value||"").trim().toLowerCase();
+  if($("#parkingDataNotice")){
+    $("#parkingDataNotice").textContent=cityMeta.mode==="signal"
+      ?"臺中市政府原生 API 目前提供滿車率燈號（G／Y／R／B）與總車格，不提供精確剩餘格數；COLA GO 只顯示官方燈號，不換算成假數字。"
+      :state.parkingCity==="taoyuan"
+        ?"桃園市政府交通局提供即時剩餘車位；部分停車場只回傳「開放中」而沒有數字，COLA GO 會顯示「—」。"
+        :"臺南市政府交通局公開資料會直接顯示官方剩餘格位；沒有取得即時資料時不顯示假空位。";
+  }
   let rows=(live.items||[])
-    .filter(x=>!query||[x.name,x.zone,x.address,x.typeName].join(" ").toLowerCase().includes(query))
-    .filter(x=>!state.parkingHasSpaceOnly||Number(x.car||0)>0)
+    .filter(x=>!query||[x.name,x.zone,x.address,x.typeName,x.keyword].join(" ").toLowerCase().includes(query))
+    .filter(x=>cityMeta.mode==="signal"||!state.parkingHasSpaceOnly||Number(x.car||0)>0)
     .map(x=>{
       const distance=state.parkingUserLocation
         ?parkingDistanceKm(state.parkingUserLocation.lat,state.parkingUserLocation.lng,Number(x.lat),Number(x.lng))
@@ -288,6 +313,8 @@ function renderParking(){
       const bd=b._distance==null?Number.POSITIVE_INFINITY:b._distance;
       return ad-bd||Number(b.car||0)-Number(a.car||0);
     });
+  }else if(cityMeta.mode==="signal"){
+    rows.sort((a,b)=>Number(b.carTotal||0)-Number(a.carTotal||0));
   }else{
     rows.sort((a,b)=>Number(b.car||0)-Number(a.car||0));
   }
@@ -301,24 +328,35 @@ function renderParking(){
       const total=(x.carTotal===null||x.carTotal===undefined||x.carTotal==="")?null:Number(x.carTotal);
       const cls=available==null?"":available>=20?"good":available>=5?"mid":"bad";
       const distance=parkingDistanceLabel(x._distance);
-      const evLabel=state.parkingCity==="taoyuan"?"充電車位":"綠能剩餘";
-      const evValue=state.parkingCity==="taoyuan"
+      const signalLabel={G:"綠燈",Y:"黃燈",R:"紅燈",B:"藍燈"}[String(x.carSignal||"").toUpperCase()]||"—";
+      const signalClass="signal-"+String(x.carSignal||"").toLowerCase();
+      const rightBlock=cityMeta.mode==="signal"
+        ?'<div class="parking-space parking-signal-space"><b class="parking-signal '+signalClass+'">'+esc(signalLabel)+'</b><small>官方滿車率燈號</small></div>'
+        :'<div class="parking-space"><b class="'+cls+'">'+(available==null?"—":available)+'</b><small>汽車剩餘</small></div>';
+      const evLabel=cityMeta.mode==="signal"?"充電車位":state.parkingCity==="taoyuan"?"充電車位":"綠能剩餘";
+      const evValue=cityMeta.mode==="signal"
         ?((x.evTotal===null||x.evTotal===undefined||x.evTotal==="")?"—":money(Number(x.evTotal)))
-        :money(Number(x.green||0));
+        :state.parkingCity==="taoyuan"
+          ?((x.evTotal===null||x.evTotal===undefined||x.evTotal==="")?"—":money(Number(x.evTotal)))
+          :money(Number(x.green||0));
+      const thirdLabel=cityMeta.mode==="signal"?"充電燈號":"營業／收費";
+      const thirdValue=cityMeta.mode==="signal"
+        ?({G:"綠燈",Y:"黃燈",R:"紅燈",B:"藍燈"}[String(x.evSignal||"").toUpperCase()]||"—")
+        :esc(x.chargeTime||"依現場");
       return '<article class="parking-card">'+
-        '<div class="parking-card-top"><div><h3>'+esc(x.name)+'</h3><span class="parking-zone">'+esc(x.zone||x.typeName||(state.parkingCity==="taoyuan"?"桃園":"臺南"))+(distance?' · 距離 '+esc(distance):'')+'</span></div><div class="parking-space"><b class="'+cls+'">'+(available==null?"—":available)+'</b><small>汽車剩餘</small></div></div>'+
+        '<div class="parking-card-top"><div><h3>'+esc(x.name)+'</h3><span class="parking-zone">'+esc(x.zone||x.typeName||(state.parkingCity==="taichung"?"臺中":state.parkingCity==="taoyuan"?"桃園":"臺南"))+(distance?' · 距離 '+esc(distance):'')+'</span></div>'+rightBlock+'</div>'+
         '<div class="parking-specs">'+
           '<div><small>總格數</small><b>'+(total==null?"—":money(total))+'</b></div>'+
           '<div><small>'+evLabel+'</small><b>'+evValue+'</b></div>'+
-          '<div><small>營業／收費</small><b>'+esc(x.chargeTime||"依現場")+'</b></div>'+
+          '<div><small>'+thirdLabel+'</small><b>'+thirdValue+'</b></div>'+
         '</div>'+
-        '<div class="parking-address">'+esc(x.address||"")+(x.chargeFee?' · '+esc(x.chargeFee):"")+'</div>'+
+        '<div class="parking-address">'+esc(x.address||x.keyword||"")+(x.chargeFee?' · '+esc(x.chargeFee):"")+'</div>'+
         '<div class="parking-update">資料時間：'+esc(x.sourceUpdate||live.updatedAt||"—")+'</div>'+
-        '<div class="item-actions"><button class="go" data-parking-map="'+encodeURIComponent(x.address||x.name)+'">Google Maps</button><button data-parking-apple="'+encodeURIComponent(x.address||x.name)+'">Apple 地圖</button></div>'+
+        '<div class="item-actions"><button class="go" data-parking-map="'+encodeURIComponent(x.mapQuery||x.address||x.name)+'">Google Maps</button><button data-parking-apple="'+encodeURIComponent(x.mapQuery||x.address||x.name)+'">Apple 地圖</button></div>'+
       '</article>';
     }).join("");
   }else if(live.status==="live"&&(query||state.parkingHasSpaceOnly)){
-    liveRoot.innerHTML='<div class="empty"><b>沒有符合的臺南停車場</b><p>換個名稱、行政區，或關閉「只看有位」。</p></div>';
+    liveRoot.innerHTML='<div class="empty"><b>沒有符合的'+(state.parkingCity==="taichung"?"臺中":state.parkingCity==="taoyuan"?"桃園":"臺南")+'停車場</b><p>換個名稱、行政區'+(cityMeta.mode==="signal"?"。":"，或關閉「只看有位」。")+'</p></div>';
   }else{
     liveRoot.innerHTML='<div class="market-empty"><b>'+cityMeta.empty+'</b><p>不顯示過期數字。你仍可直接用地圖找附近停車場。</p><div class="item-actions"><button class="go" data-nearby-parking="google">Google Maps</button><button data-nearby-parking="apple">Apple 地圖</button></div></div>';
   }
@@ -365,6 +403,7 @@ function requestParkingLocation(){
 function bindParkingTools(){
   $$("#parkingCityTabs [data-parking-city]").forEach(b=>b.addEventListener("click",()=>{
     state.parkingCity=b.dataset.parkingCity;
+    if(state.parkingCity==="taichung")state.parkingHasSpaceOnly=false;
     $$("#parkingCityTabs [data-parking-city]").forEach(x=>x.classList.toggle("active",x===b));
     if($("#parkingSearch"))$("#parkingSearch").value="";
     renderParking();

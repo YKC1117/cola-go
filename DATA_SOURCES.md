@@ -38,6 +38,10 @@
 - 桃園市路外停車資訊：https://data.gov.tw/dataset/25940
   - 桃園市政府交通局資料頁說明：與市府通訊連線之停車場發布即時剩餘車位，資料每分鐘更新
   - 欄位含停車場名稱、行政區、地址、總車格、充電車位、即時剩餘、經緯度與費率
+- 臺中市路外剩餘車位：https://data.gov.tw/dataset/83931
+  - 原生市府 API：https://motoretag.taichung.gov.tw/DataAPI/api/ParkingAPIV2/Opendata
+  - 欄位提供停車場名稱、座標、汽車滿車率燈號、總汽車格、充電車位燈號與總充電格
+  - 原生 API 不提供精確剩餘格數，因此 COLA GO 只顯示官方 G/Y/R/B 燈號，不換算成假車位數
 
 ## 原則
 - 不使用未經授權的私人 API。

@@ -317,3 +317,10 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .parking-location-note{font-size:11px;line-height:1.55;color:var(--muted);margin:7px 0 2px}
 
 .parking-city-tabs{margin-top:-4px;margin-bottom:18px}
+
+.parking-signal-space{min-width:72px}
+.parking-signal{display:inline-block;font-size:14px!important;line-height:1.2!important;font-weight:650!important;letter-spacing:0!important;padding:7px 9px;border-radius:9px;background:var(--soft);color:var(--muted)}
+.parking-signal.signal-g{background:#e8f2eb;color:#2d7f58}
+.parking-signal.signal-y{background:#f7efd9;color:#a16c13}
+.parking-signal.signal-r{background:#fae9e6;color:#b84e45}
+.parking-signal.signal-b{background:#e9eef7;color:#4b6f9f}

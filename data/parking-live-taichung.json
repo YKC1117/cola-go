@@ -1,0 +1,9 @@
+{
+  "status": "not-synced",
+  "availabilityMode": "signal",
+  "updatedAt": null,
+  "fetchedAt": null,
+  "source": "臺中市政府交通局｜臺中市路外剩餘車位",
+  "sourceUrl": "https://motoretag.taichung.gov.tw/DataAPI/api/ParkingAPIV2/Opendata",
+  "items": []
+}
