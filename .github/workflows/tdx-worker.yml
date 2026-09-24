@@ -23,8 +23,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install npm 11
+        run: npm install --global npm@11
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
       - name: Syntax check
         run: |
           find src test -name '*.js' -print0 | xargs -0 -n1 node --check
