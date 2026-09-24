@@ -173,7 +173,7 @@ function renderCharging(){
   ).join(""):'<div class="empty"><b>沒有符合的充電站</b><p>換個服務區、業者或接頭名稱。</p></div>';
 
   $$("[data-nav]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.nav,"_blank","noopener"));
-  $("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
+  $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
   $$("[data-copy]",root).forEach(b=>b.onclick=async()=>{
     try{
       await navigator.clipboard.writeText(b.dataset.copy);
@@ -437,8 +437,8 @@ function renderCCTV(){
   }).join(""):'<div class="empty"><b>沒有符合的攝影機</b><p>換一條國道或搜尋里程、路段名稱。</p></div>';
 
   if(matched.length>50)root.insertAdjacentHTML("beforeend",'<p class="cctv-more">符合 '+matched.length+' 支，目前先顯示前 50 支；可用搜尋縮小範圍。</p>');
-  $("[data-cctv-stream]",root).forEach(b=>b.onclick=()=>window.open(decodeURIComponent(b.dataset.cctvStream),"_blank","noopener"));
-  $("[data-cctv-map]",root).forEach(b=>b.onclick=()=>{
+  $$("[data-cctv-stream]",root).forEach(b=>b.onclick=()=>window.open(decodeURIComponent(b.dataset.cctvStream),"_blank","noopener"));
+  $$("[data-cctv-map]",root).forEach(b=>b.onclick=()=>{
     const [lat,lon]=b.dataset.cctvMap.split(",");
     window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(lat+","+lon),"_blank","noopener");
   });
@@ -595,7 +595,7 @@ async function ensureClientTraffic(){
 
 function openCCTVForRoad(road){
   state.cctvRoad=String(road||"all");
-  $("#cctvRoadFilter button").forEach(b=>b.classList.toggle("active",b.dataset.cctvRoad===state.cctvRoad));
+  $$("#cctvRoadFilter button").forEach(b=>b.classList.toggle("active",b.dataset.cctvRoad===state.cctvRoad));
   show("cctv");
   renderCCTV();
 }
@@ -620,7 +620,7 @@ function renderTraffic(){
 
   root.innerHTML=list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
-  $("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(state.highway));
+  $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(state.highway));
 }
 
 function renderTunnel(){
@@ -643,7 +643,7 @@ function renderTunnel(){
 
   root.innerHTML=list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
-  $("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad("5"));
+  $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad("5"));
 }
 
 function renderMarket(){
@@ -855,15 +855,15 @@ function bindFilters(){
   if($("#chargingSearch"))$("#chargingSearch").oninput=renderCharging;
   if($("#parkingSearch"))$("#parkingSearch").oninput=renderParking;
   if($("#cctvSearch"))$("#cctvSearch").oninput=renderCCTV;
-  $("#cctvRoadFilter button").forEach(b=>b.onclick=()=>{
-    $("#cctvRoadFilter button").forEach(x=>x.classList.remove("active"));
+  $$("#cctvRoadFilter button").forEach(b=>b.onclick=()=>{
+    $$("#cctvRoadFilter button").forEach(x=>x.classList.remove("active"));
     b.classList.add("active");
     state.cctvRoad=b.dataset.cctvRoad;
     renderCCTV();
   });
 
-  $("#highwayTabs button").forEach(b=>b.onclick=()=>{
-    $$("#highwayTabs button").forEach(x=>x.classList.remove("active"));
+  $$("#highwayTabs button").forEach(b=>b.onclick=()=>{
+    $$$("#highwayTabs button").forEach(x=>x.classList.remove("active"));
     b.classList.add("active");
     state.highway=b.dataset.highway;
     renderTraffic();
