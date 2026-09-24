@@ -1,0 +1,46 @@
+name: Taichung parking source smoke
+
+on:
+  push:
+    branches: ["feature/parking-taichung-live"]
+    paths: [".github/workflows/taichung-parking-smoke.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch Taichung official parking API
+        run: |
+          python3 - <<'PY'
+          import json, urllib.request
+          url="https://motoretag.taichung.gov.tw/DataAPI/api/ParkingAPIV2/Opendata"
+          req=urllib.request.Request(url,headers={"User-Agent":"COLA-GO/1.0","Accept":"application/json"})
+          with urllib.request.urlopen(req,timeout=30) as r:
+              raw=r.read()
+          print("BYTES",len(raw))
+          data=json.loads(raw.decode("utf-8-sig","replace"))
+          print("TYPE",type(data).__name__)
+          if isinstance(data,dict):
+              print("TOP_KEYS",list(data.keys())[:30])
+              rows=None
+              for key in ("data","Data","result","Result","items","Items"):
+                  if isinstance(data.get(key),list):
+                      rows=data[key]; print("ROWS_KEY",key); break
+              if rows is None:
+                  rows=[]
+          elif isinstance(data,list):
+              rows=data
+          else:
+              rows=[]
+          print("ROWS",len(rows))
+          if rows:
+              print("SAMPLE",json.dumps(rows[0],ensure_ascii=False)[:2000])
+              print("SAMPLE_KEYS",list(rows[0].keys())[:60])
+          assert len(rows)>5
+          PY
