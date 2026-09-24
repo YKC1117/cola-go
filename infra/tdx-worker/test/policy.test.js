@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifySnapshot } from "../src/cache.js";
+import { classifySnapshot, snapshotEnvelope } from "../src/cache.js";
 import { assertBudget, pointEstimate } from "../src/budget.js";
 
 describe("snapshot freshness", () => {
@@ -42,5 +42,24 @@ describe("TDX budget protection", () => {
       expect(error.code).toBe("UPSTREAM_UNAVAILABLE");
       expect(error.extra.retryAfterSeconds).toBe(60);
     }
+  });
+});
+
+describe("stale snapshot contract", () => {
+  it("marks stale without rewriting source/fetch timestamps", () => {
+    const original={
+      status:"live",stale:false,updatedAt:"2026-09-25T01:00:00+08:00",
+      fetchedAt:"2026-09-25T01:00:10+08:00",expiresAt:"old",items:[{id:"1"}]
+    };
+    const row={
+      body:JSON.stringify(original),
+      expires_at:Date.parse("2026-09-24T17:01:10Z"),
+      stale_until:Date.parse("2026-09-24T17:10:10Z")
+    };
+    const out=snapshotEnvelope(row,true);
+    expect(out.status).toBe("stale");
+    expect(out.stale).toBe(true);
+    expect(out.updatedAt).toBe(original.updatedAt);
+    expect(out.fetchedAt).toBe(original.fetchedAt);
   });
 });
