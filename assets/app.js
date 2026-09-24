@@ -1,383 +1,477 @@
-const state={view:"home",charging:[],traffic:null,tunnel:null,parking:null,models:[],market:{usedCars:[],accessories:[],services:[]},road:"all",highway:"1",direction:"south",modelFilter:"all",usedFilter:"all",compare:[],installPrompt:null};
+const state={
+  view:"home",
+  charging:[],
+  traffic:null,
+  tunnel:null,
+  parking:null,
+  models:[],
+  market:{usedCars:[],accessories:[],services:[]},
+  road:"all",
+  highway:"1",
+  direction:"south",
+  modelFilter:"all",
+  usedFilter:"all",
+  compare:[],
+  installPrompt:null
+};
+
 const $=(q,r=document)=>r.querySelector(q);
 const $$=(q,r=document)=>Array.from(r.querySelectorAll(q));
 const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
 const money=v=>new Intl.NumberFormat("zh-TW",{maximumFractionDigits:0}).format(Math.round(v||0));
 
-function toast(m){const e=$("#toast");e.textContent=m;e.classList.add("show");clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove("show"),1800)}
-function show(v,push=true){state.view=v;$$(".view").forEach(x=>x.classList.toggle("active",x.dataset.view===v));$$(".bottom-nav button").forEach(x=>x.classList.toggle("active",x.dataset.go===v));window.scrollTo({top:0,behavior:"instant"});if(push)history.replaceState(null,"","#"+v)}
-function bindNav(){$$("[data-go]").forEach(el=>el.onclick=e=>{e.preventDefault();show(el.dataset.go)});addEventListener("hashchange",()=>show(location.hash.slice(1)||"home",false))}
-function bindExternal(){$$("[data-url]").forEach(el=>el.onclick=()=>window.open(el.dataset.url,"_blank","noopener"))}
-async function getJSON(url){const r=await fetch(url,{cache:"no-store"});if(!r.ok)throw Error(url);return r.json()}
-function formatTime(v){if(!v)return"等待資料";const d=new Date(v);if(Number.isNaN(d.getTime()))return v;return new Intl.DateTimeFormat("zh-TW",{hour:"2-digit",minute:"2-digit",hour12:false}).format(d)+" 更新"}
-function avg(rows){const a=(rows||[]).map(x=>Number(x.speed)).filter(v=>v>0&&v<200);return a.length?Math.round(a.reduce((s,v)=>s+v,0)/a.length):null}
-function metricClass(v){return v>=80?"good":v>=50?"mid":"bad"}
+function toast(message){
+  const el=$("#toast");
+  el.textContent=message;
+  el.classList.add("show");
+  clearTimeout(toast.t);
+  toast.t=setTimeout(()=>el.classList.remove("show"),1800);
+}
+
+function show(view,push=true){
+  state.view=view;
+  $$(".view").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
+  $$(".bottom-nav button").forEach(el=>el.classList.toggle("active",el.dataset.go===view));
+  window.scrollTo({top:0,behavior:"instant"});
+  if(push)history.replaceState(null,"","#"+view);
+}
+
+function bindNav(){
+  $$("[data-go]").forEach(el=>{
+    el.onclick=e=>{
+      e.preventDefault();
+      show(el.dataset.go);
+    };
+  });
+  addEventListener("hashchange",()=>show(location.hash.slice(1)||"home",false));
+}
+
+function bindExternal(root=document){
+  $$("[data-url]",root).forEach(el=>{
+    el.onclick=()=>window.open(el.dataset.url,"_blank","noopener");
+  });
+}
+
+async function getJSON(url){
+  const response=await fetch(url,{cache:"no-store"});
+  if(!response.ok)throw new Error(url);
+  return response.json();
+}
+
+function formatTime(value){
+  if(!value)return "等待資料";
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime()))return value;
+  return new Intl.DateTimeFormat("zh-TW",{hour:"2-digit",minute:"2-digit",hour12:false}).format(date)+" 更新";
+}
+
+function avg(rows){
+  const values=(rows||[]).map(x=>Number(x.speed)).filter(v=>v>0&&v<200);
+  return values.length?Math.round(values.reduce((sum,v)=>sum+v,0)/values.length):null;
+}
+
+function metricClass(v){
+  return v>=80?"good":v>=50?"mid":"bad";
+}
 
 async function load(){
-  const r=await Promise.allSettled([getJSON("./data/charging.json"),getJSON("./data/traffic.json"),getJSON("./data/tunnel.json"),getJSON("./data/parking.json"),getJSON("./data/tesla-models.json"),getJSON("./data/marketplace.json")]);
-  if(r[0].status==="fulfilled")state.charging=r[0].value;
-  if(r[1].status==="fulfilled")state.traffic=r[1].value;
-  if(r[2].status==="fulfilled")state.tunnel=r[2].value;
-  if(r[3].status==="fulfilled")state.parking=r[3].value;
-  if(r[4].status==="fulfilled")state.models=r[4].value.models||[];
-  if(r[5].status==="fulfilled")state.market=r[5].value;
+  const results=await Promise.allSettled([
+    getJSON("./data/charging.json"),
+    getJSON("./data/traffic.json"),
+    getJSON("./data/tunnel.json"),
+    getJSON("./data/parking.json"),
+    getJSON("./data/tesla-models.json"),
+    getJSON("./data/marketplace.json")
+  ]);
+
+  if(results[0].status==="fulfilled")state.charging=results[0].value;
+  if(results[1].status==="fulfilled")state.traffic=results[1].value;
+  if(results[2].status==="fulfilled")state.tunnel=results[2].value;
+  if(results[3].status==="fulfilled")state.parking=results[3].value;
+  if(results[4].status==="fulfilled")state.models=results[4].value.models||[];
+  if(results[5].status==="fulfilled")state.market=results[5].value;
+
   renderAll();
 }
+
 function renderAll(){
-  renderCharging();renderParking();renderTraffic();renderTunnel();renderMarket();renderModels();
+  renderCharging();
+  renderParking();
+  renderTraffic();
+  renderTunnel();
+  renderMarket();
+  renderModels();
+
   const live=state.traffic?.status==="live";
   $("#syncState").classList.toggle("ready",live);
   $("#syncText").textContent=live?"即時":"同步中";
   $("#lastUpdate").textContent=formatTime(state.traffic?.updatedAt);
+
   $("#chargeQuick").textContent=state.charging.length?state.charging.length+" 處":"服務區";
   $("#chargeValue").textContent=state.charging.length||"—";
+
   const h1=avg(state.traffic?.highways?.["1"]||[]);
   $("#trafficValue").textContent=h1?h1+" km/h":"—";
   $("#trafficDot").className=live?"dot ready":"dot pending";
   $("#trafficCaption").textContent=live&&h1?"國 1 平均":"可開 1968 即時查看";
+
   const snow=avg([...(state.tunnel?.south||[]),...(state.tunnel?.north||[])]);
   $("#tunnelValue").textContent=snow?snow+" km/h":"—";
   $("#tunnelDot").className=state.tunnel?.status==="live"&&snow?"dot ready":"dot pending";
 }
+
 function renderCharging(){
-  const root=$("#chargingList");if(!root)return;
+  const root=$("#chargingList");
+  if(!root)return;
+
   const q=($("#chargingSearch").value||"").trim().toLowerCase();
-  const rows=state.charging.filter(x=>(state.road==="all"||x.road===state.road)&&(!q||JSON.stringify(x).toLowerCase().includes(q)));
-  root.innerHTML=rows.length?rows.map(x=>'<article class="list-item"><div class="list-head"><div><h3>'+esc(x.name)+'</h3><div class="meta">'+esc(x.direction)+' · '+esc(x.operator)+'</div></div><span class="route-tag">國 '+esc(x.road)+'</span></div><div class="specs"><span>'+esc(x.spaces)+' 車位</span><span>'+esc(x.power)+'</span>'+x.connectors.map(c=>'<span>'+esc(c)+'</span>').join("")+'</div><div class="location-line"><svg><use href="#i-pin"/></svg><span>'+esc(x.location)+(x.note?" · "+esc(x.note):"")+'</span></div><div class="item-actions"><button class="go" data-nav="'+encodeURIComponent(x.name)+'">導航</button><button data-camera>即時影像</button><button data-copy="'+esc(x.name)+'">複製</button></div></article>').join(""):'<div class="empty"><b>沒有符合的充電站</b><p>換個服務區、業者或接頭名稱。</p></div>';
+  const rows=state.charging.filter(x=>
+    (state.road==="all"||x.road===state.road) &&
+    (!q||JSON.stringify(x).toLowerCase().includes(q))
+  );
+
+  root.innerHTML=rows.length?rows.map(x=>
+    '<article class="list-item">'+
+      '<div class="list-head">'+
+        '<div><h3>'+esc(x.name)+'</h3><div class="meta">'+esc(x.direction)+' · '+esc(x.operator)+'</div></div>'+
+        '<span class="route-tag">國 '+esc(x.road)+'</span>'+
+      '</div>'+
+      '<div class="specs">'+
+        '<span>'+esc(x.spaces)+' 車位</span>'+
+        '<span>'+esc(x.power)+'</span>'+
+        x.connectors.map(c=>'<span>'+esc(c)+'</span>').join("")+
+      '</div>'+
+      '<div class="location-line"><svg><use href="#i-pin"/></svg><span>'+esc(x.location)+(x.note?" · "+esc(x.note):"")+'</span></div>'+
+      '<div class="item-actions">'+
+        '<button class="go" data-nav="'+encodeURIComponent(x.name)+'">導航</button>'+
+        '<button data-camera>即時影像</button>'+
+        '<button data-copy="'+esc(x.name)+'">複製</button>'+
+      '</div>'+
+    '</article>'
+  ).join(""):'<div class="empty"><b>沒有符合的充電站</b><p>換個服務區、業者或接頭名稱。</p></div>';
+
   $$("[data-nav]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.nav,"_blank","noopener"));
   $$("[data-camera]",root).forEach(b=>b.onclick=()=>show("cctv"));
-  $$("[data-copy]",root).forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);toast("已複製")}catch{toast("無法複製")}});
+  $$("[data-copy]",root).forEach(b=>b.onclick=async()=>{
+    try{
+      await navigator.clipboard.writeText(b.dataset.copy);
+      toast("已複製");
+    }catch{
+      toast("無法複製");
+    }
+  });
 }
+
 function renderParking(){
-  const root=$("#parkingCities");if(!root)return;
-  const nearby='<article class="list-item"><div class="list-head"><div><h3>找附近停車場</h3><div class="meta">沒有即時來源的地區，直接交給地圖搜尋。</div></div></div><div class="item-actions"><button class="go" data-nearby-parking="google">Google Maps</button><button data-nearby-parking="apple">Apple 地圖</button></div></article>';
-  const cities=(state.parking?.cities||[]).map(x=>'<article class="metric-row"><div><b>'+esc(x.name)+'</b><small>'+esc(x.note)+'</small></div><span class="route-tag">'+(x.status==="source-ready"?"來源已確認":"待整合")+'</span></article>').join("");
+  const root=$("#parkingCities");
+  if(!root)return;
+
+  const nearby=
+    '<article class="list-item">'+
+      '<div class="list-head"><div><h3>找附近停車場</h3><div class="meta">沒有即時來源的地區，直接交給地圖搜尋。</div></div></div>'+
+      '<div class="item-actions"><button class="go" data-nearby-parking="google">Google Maps</button><button data-nearby-parking="apple">Apple 地圖</button></div>'+
+    '</article>';
+
+  const cities=(state.parking?.cities||[]).map(x=>
+    '<article class="metric-row">'+
+      '<div><b>'+esc(x.name)+'</b><small>'+esc(x.note)+'</small></div>'+
+      '<span class="route-tag">'+(x.status==="source-ready"?"來源已確認":"待整合")+'</span>'+
+    '</article>'
+  ).join("");
+
   root.innerHTML=nearby+(cities||'<div class="empty"><b>停車資料尚未載入</b></div>');
+
   $$("[data-nearby-parking]",root).forEach(b=>b.onclick=()=>{
-    const url=b.dataset.nearbyParking==="apple"?"https://maps.apple.com/?q="+encodeURIComponent("停車場"):"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("停車場");
+    const url=b.dataset.nearbyParking==="apple"
+      ?"https://maps.apple.com/?q="+encodeURIComponent("停車場")
+      :"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("停車場");
     window.open(url,"_blank","noopener");
   });
 }
+
 function renderTraffic(){
-  const root=$("#highwayList");if(!root)return;const rows=state.traffic?.highways?.[state.highway]||[];
-  const official='<div class="item-actions"><button class="go" data-official="https://1968.freeway.gov.tw/">1968 即時路況／CCTV</button><button data-open-cctv>影像入口</button></div>';
-  root.innerHTML=(rows.length?rows.map(x=>'<article class="metric-row"><div><b>'+esc(x.name)+'</b><small>'+esc(x.direction||"")+(x.level?" · "+esc(x.level):"")+'</small></div><div class="metric '+metricClass(Number(x.speed))+'">'+Math.round(Number(x.speed))+'<em>km/h</em></div></article>').join(""):'<div class="empty"><b>國 '+state.highway+' 自動同步目前沒有資料</b><p>不顯示假數字；可直接開高公局 1968 查看官方即時路況。</p></div>')+official;
+  const root=$("#highwayList");
+  if(!root)return;
+
+  const rows=state.traffic?.highways?.[state.highway]||[];
+  const official=
+    '<div class="item-actions">'+
+      '<button class="go" data-official="https://1968.freeway.gov.tw/">1968 即時路況／CCTV</button>'+
+      '<button data-open-cctv>影像入口</button>'+
+    '</div>';
+
+  const list=rows.length?rows.map(x=>
+    '<article class="metric-row">'+
+      '<div><b>'+esc(x.name)+'</b><small>'+esc(x.direction||"")+(x.level?" · "+esc(x.level):"")+'</small></div>'+
+      '<div class="metric '+metricClass(Number(x.speed))+'">'+Math.round(Number(x.speed))+'<em>km/h</em></div>'+
+    '</article>'
+  ).join(""):'<div class="empty"><b>國 '+state.highway+' 自動同步目前沒有資料</b><p>不顯示假數字；可直接開高公局 1968 查看官方即時路況。</p></div>';
+
+  root.innerHTML=list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
   $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>show("cctv"));
 }
+
 function renderTunnel(){
-  const root=$("#tunnelList");if(!root)return;const rows=state.tunnel?.[state.direction]||[];
-  const official='<div class="item-actions"><button class="go" data-official="https://1968.freeway.gov.tw/">1968 國 5 即時路況</button><button data-open-cctv>即時影像</button></div>';
-  root.innerHTML=(rows.length?rows.map(x=>'<article class="metric-row"><div><b>'+esc(x.name)+'</b><small>'+esc(x.note||"國 5 即時路段")+'</small></div><div class="metric '+metricClass(Number(x.speed))+'">'+Math.round(Number(x.speed))+'<em>km/h</em></div></article>').join(""):'<div class="empty"><b>雪隧自動同步目前沒有資料</b><p>直接開 1968 可查看國 5 即時影像與路況。</p></div>')+official;
+  const root=$("#tunnelList");
+  if(!root)return;
+
+  const rows=state.tunnel?.[state.direction]||[];
+  const official=
+    '<div class="item-actions">'+
+      '<button class="go" data-official="https://1968.freeway.gov.tw/">1968 國 5 即時路況</button>'+
+      '<button data-open-cctv>即時影像</button>'+
+    '</div>';
+
+  const list=rows.length?rows.map(x=>
+    '<article class="metric-row">'+
+      '<div><b>'+esc(x.name)+'</b><small>'+esc(x.note||"國 5 即時路段")+'</small></div>'+
+      '<div class="metric '+metricClass(Number(x.speed))+'">'+Math.round(Number(x.speed))+'<em>km/h</em></div>'+
+    '</article>'
+  ).join(""):'<div class="empty"><b>雪隧自動同步目前沒有資料</b><p>直接開 1968 可查看國 5 即時影像與路況。</p></div>';
+
+  root.innerHTML=list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
   $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>show("cctv"));
 }
+
 function renderMarket(){
-  const used=state.market?.usedCars||[], acc=state.market?.accessories||[], services=state.market?.services||[];
+  const used=state.market?.usedCars||[];
+  const accessories=state.market?.accessories||[];
+  const services=state.market?.services||[];
+
   if($("#usedCount"))$("#usedCount").textContent=used.length;
-  if($("#accessoryCount"))$("#accessoryCount").textContent=acc.length;
+  if($("#accessoryCount"))$("#accessoryCount").textContent=accessories.length;
   if($("#serviceCount"))$("#serviceCount").textContent=services.length;
+
   const usedRoot=$("#usedCarsList");
   if(usedRoot){
-    const rows=used.filter(x=>state.usedFilter==="all"||x.model===state.usedFilter||(state.usedFilter==="other"&&!["Model 3","Model Y"].includes(x.model)));
-    usedRoot.innerHTML=rows.length?rows.map(x=>'<article class="market-card"><h3>'+esc(x.title||x.model)+'</h3><div class="meta">'+esc(x.year||"")+' · '+esc(x.mileage||"")+' km</div><div class="price">
-  $$("#roadFilter button").forEach(b=>b.onclick=()=>{$$("#roadFilter button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.road=b.dataset.road;renderCharging()});
-  $("#chargingSearch").oninput=renderCharging;
-  $$("#highwayTabs button").forEach(b=>b.onclick=()=>{$$("#highwayTabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.highway=b.dataset.highway;renderTraffic()});
-  $$("#tunnelDirection button").forEach(b=>b.onclick=()=>{$$("#tunnelDirection button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.direction=b.dataset.direction;renderTunnel()});
-}
-function fillRoute(from,to){$("#tripFrom").value=from;$("#tripTo").value=to;show("trip")}
-function bindTrip(){
-  $$("[data-route]").forEach(b=>b.onclick=()=>{const [f,t]=b.dataset.route.split("|");$("#tripFrom").value=f;$("#tripTo").value=t});
-  $$("[data-fill-route]").forEach(b=>b.onclick=()=>{const [f,t]=b.dataset.fillRoute.split("|");fillRoute(f,t)});
-  $("#planTripBtn").onclick=()=>{
-    const from=$("#tripFrom").value.trim()||"目前位置",to=$("#tripTo").value.trim();
-    if(!to)return toast("請先輸入目的地");
-    $("#tripResult").innerHTML='<div class="list-item"><h3>'+esc(from)+' → '+esc(to)+'</h3><div class="meta">先看路況與充電，再直接交給你慣用的地圖導航。</div><div class="item-actions"><button class="go" data-map="google">Google Maps</button><button data-map="apple">Apple 地圖</button></div><div class="item-actions"><button data-next="highway">國道路況</button><button data-next="charging">沿途充電</button><button data-next="parking">停車</button></div></div>';
-    $$("[data-next]",$("#tripResult")).forEach(b=>b.onclick=()=>show(b.dataset.next));
-    $$("[data-map]",$("#tripResult")).forEach(b=>b.onclick=()=>{
-      let url;
-      if(b.dataset.map==="apple"){const s=from==="目前位置"?"":("&saddr="+encodeURIComponent(from));url="https://maps.apple.com/?daddr="+encodeURIComponent(to)+"&dirflg=d"+s}
-      else{const o=from==="目前位置"?"":("&origin="+encodeURIComponent(from));url="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(to)+"&travelmode=driving"+o}
-      window.open(url,"_blank","noopener");
-    });
-  };
-}
+    const rows=used.filter(x=>
+      state.usedFilter==="all" ||
+      x.model===state.usedFilter ||
+      (state.usedFilter==="other"&&!["Model 3","Model Y"].includes(x.model))
+    );
 
-const VIN_WMI={"5YJ":"美國 Tesla","7SA":"美國 Tesla","LRW":"中國上海 Giga Shanghai","XP7":"德國柏林 Giga Berlin","SFZ":"英國（初代 Roadster）","7G2":"美國 Tesla"};
-const VIN_MODEL={"3":"Model 3","S":"Model S","X":"Model X","Y":"Model Y","R":"Roadster","C":"Cybertruck","T":"Semi","A":"Cybercab"};
-const VIN_YEAR={"8":"2008","9":"2009","A":"2010","B":"2011","C":"2012","D":"2013","E":"2014","F":"2015","G":"2016","H":"2017","J":"2018","K":"2019","L":"2020","M":"2021","N":"2022","P":"2023","R":"2024","S":"2025","T":"2026","V":"2027","W":"2028","X":"2029","Y":"2030"};
-const VIN_PLANT={"F":"Fremont","C":"Giga Shanghai","A":"Giga Texas","B":"Giga Berlin","N":"Giga Nevada","1":"Lotus / Hethel"};
-const VIN_BATTERY={"E":"純電／部分車型三元鋰","F":"LFP（部分上海車型）"};
-const VIN_DRIVE={"5":"雙馬達","6":"三馬達","A":"單馬達","B":"雙馬達","C":"雙馬達性能版","D":"單馬達","E":"雙馬達","F":"雙馬達性能版","J":"單馬達","K":"雙馬達","L":"雙馬達性能版","R":"單馬達","S":"單馬達"};
-function bindVin(){
-  const btn=$("#decodeVinBtn");if(!btn)return;
-  btn.onclick=()=>{
-    const vin=$("#vinInput").value.trim().toUpperCase().replace(/\s/g,"");
-    if(!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)){return $("#vinResult").innerHTML='<div class="result-card"><h3>VIN 格式不正確</h3><div class="result-sub">請輸入 17 碼 VIN，VIN 不使用 I、O、Q。</div></div>'}
-    const rows=[
-      ["VIN",vin],["出廠來源",VIN_WMI[vin.slice(0,3)]||"未收錄／請以官方資料為準"],
-      ["車型",VIN_MODEL[vin[3]]||"未辨識"],["電池／燃料碼",VIN_BATTERY[vin[6]]||vin[6]],
-      ["驅動碼",VIN_DRIVE[vin[7]]||vin[7]],["年份",VIN_YEAR[vin[9]]||vin[9]],
-      ["組裝廠",VIN_PLANT[vin[10]]||vin[10]]
-    ];
-    $("#vinResult").innerHTML='<div class="result-card"><h3>解析結果</h3>'+rows.map(r=>'<div class="kv"><span>'+r[0]+'</span><b>'+esc(r[1])+'</b></div>').join("")+'</div>';
-  };
-}
-function runCalc(){
-  const km=Number($("#calcKm")?.value),ep=Number($("#calcElec")?.value),eff=Number($("#calcEff")?.value),fp=Number($("#calcFuel")?.value),fe=Number($("#calcFuelEff")?.value);
-  if(!$("#calcResult")||![km,ep,eff,fp,fe].every(v=>Number.isFinite(v)&&v>=0)||eff<=0||fe<=0)return;
-  const ev=km/eff*ep, fuel=km/fe*fp, save=fuel-ev;
-  $("#calcResult").innerHTML='<h3>估算結果</h3><div class="calc-result-grid"><div class="calc-stat"><small>每月電費</small><b>$'+money(ev)+'</b></div><div class="calc-stat"><small>每月油費</small><b>$'+money(fuel)+'</b></div><div class="calc-stat good"><small>每月差額</small><b>'+((save>=0?"+":"-")+'$'+money(Math.abs(save)))+'</b></div><div class="calc-stat good"><small>五年差額</small><b>'+((save>=0?"+":"-")+'$'+money(Math.abs(save*60)))+'</b></div></div>';
-}
-function bindCalculator(){const b=$("#runCalcBtn");if(!b)return;b.onclick=runCalc;["calcKm","calcElec","calcEff","calcFuel","calcFuelEff"].forEach(id=>$("#"+id)?.addEventListener("input",runCalc));runCalc()}
-
-const checklistItems=["行照、車牌與 VIN 資料一致","保險已生效","鑰匙卡／鑰匙數量確認","全車漆面無明顯刮痕、凹痕或色差","前後與側窗玻璃無裂損","玻璃車頂／天窗外觀正常","四輪輪圈、輪胎無異常傷痕","底盤可見處無脫落或明顯撞傷","車內玻璃與飾板正常","座椅、縫線與內裝無明顯損傷","門窗膠條與開關正常","螢幕、音響、冷氣與燈具可正常操作","充電功能與隨車配件確認"];
-function renderChecklist(){
-  const root=$("#deliveryChecklist");if(!root)return;
-  let saved=[];try{saved=JSON.parse(localStorage.getItem("cola-go-delivery")||"[]")}catch{}
-  root.innerHTML=checklistItems.map((x,i)=>'<label class="check-item '+(saved.includes(i)?"done":"")+'"><input type="checkbox" data-check="'+i+'" '+(saved.includes(i)?"checked":"")+'><span>'+esc(x)+'</span></label>').join("");
-  const update=()=>{const checked=$$("[data-check]",root).filter(x=>x.checked).map(x=>Number(x.dataset.check));localStorage.setItem("cola-go-delivery",JSON.stringify(checked));$("#checkProgress").textContent=checked.length+" / "+checklistItems.length;$$(".check-item",root).forEach((el,i)=>el.classList.toggle("done",checked.includes(i)))};
-  $$("[data-check]",root).forEach(x=>x.onchange=update);update();
-}
-function bindChecklist(){renderChecklist();const b=$("#resetChecklist");if(b)b.onclick=()=>{localStorage.removeItem("cola-go-delivery");renderChecklist()}}
-
-function bindParts(){const b=$("#searchPartBtn");if(!b)return;b.onclick=()=>{const p=$("#partNo").value.trim();if(!p)return toast("先輸入料號");window.open("https://www.google.com/search?q="+encodeURIComponent("Tesla "+p),"_blank","noopener")}}
-
-const luckyGood=new Set([1,3,5,6,7,8,11,13,15,16,17,18,21,23,24,25,29,31,32,33,35]);
-const luckyMixed=new Set([26,27,30]);
-function bindLucky(){const b=$("#luckyBtn");if(!b)return;b.onclick=()=>{const digits=($("#luckyInput").value.match(/\d/g)||[]).slice(-4);if(!digits.length)return toast("請輸入車牌數字");const sum=digits.reduce((s,x)=>s+Number(x),0);const type=luckyGood.has(sum)?"民俗對照常列為吉":luckyMixed.has(sum)?"民俗對照常列為吉凶參半":"民俗對照常列為凶";$("#luckyResult").innerHTML='<div class="result-card"><span class="mini-label">RESULT</span><div class="result-big">'+sum+'</div><b>'+type+'</b><div class="result-sub">數字來源：'+digits.join(" + ")+'</div></div>'}}
-
-function bindInstall(){
-  addEventListener("beforeinstallprompt",e=>{e.preventDefault();state.installPrompt=e});
-  $("#installBtn").onclick=async()=>{if(state.installPrompt){state.installPrompt.prompt();await state.installPrompt.userChoice;state.installPrompt=null;return}const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);$("#installHelp").innerHTML=ios?"在瀏覽器分享選單選「加入主畫面」，之後 COLA GO 會像 App 一樣獨立開啟。":"在 Chrome / Edge 選單選「安裝 COLA GO」或「新增至主畫面」。";$("#installSheet").hidden=false};
-  $("#closeInstall").onclick=$("#installOk").onclick=()=>$("#installSheet").hidden=true;
-  $("#installSheet").onclick=e=>{if(e.target.id==="installSheet")$("#installSheet").hidden=true};
-  if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
-}
-
-$("#refreshBtn").onclick=()=>{toast("重新整理");load()};
-bindNav();bindExternal();bindFilters();bindMarket();bindTrip();bindVin();bindCalculator();bindChecklist();bindParts();bindLucky();bindInstall();
-show(location.hash.slice(1)||"home",false);load();+money(x.price)+'</div></article>').join(""):'<div class="market-empty"><b>目前 0 筆公開車輛</b><p>不放假車、不複製別人的庫存。第一批刊登開放中，車主與車商都可免費送件。</p><button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=sell-vehicle.yml">成為第一批刊登</button></div>';
+    if(rows.length){
+      usedRoot.innerHTML=rows.map(x=>
+        '<article class="market-card">'+
+          '<h3>'+esc(x.title||x.model)+'</h3>'+
+          '<div class="meta">'+esc(x.year||"")+' · '+esc(x.mileage||"")+' km</div>'+
+          '<div class="price">$'+money(x.price)+'</div>'+
+        '</article>'
+      ).join("");
+    }else{
+      usedRoot.innerHTML=
+        '<div class="market-empty">'+
+          '<b>目前 0 筆公開車輛</b>'+
+          '<p>不放假車、不複製別人的庫存。第一批刊登開放中，車主與車商都可免費送件。</p>'+
+          '<button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=sell-vehicle.yml">成為第一批刊登</button>'+
+        '</div>';
+    }
   }
-  const accRoot=$("#accessoryList");
-  if(accRoot)accRoot.innerHTML=acc.length?acc.map(x=>'<article class="market-card"><h3>'+esc(x.title)+'</h3><div class="price">
-  $$("#roadFilter button").forEach(b=>b.onclick=()=>{$$("#roadFilter button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.road=b.dataset.road;renderCharging()});
-  $("#chargingSearch").oninput=renderCharging;
-  $$("#highwayTabs button").forEach(b=>b.onclick=()=>{$$("#highwayTabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.highway=b.dataset.highway;renderTraffic()});
-  $$("#tunnelDirection button").forEach(b=>b.onclick=()=>{$$("#tunnelDirection button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.direction=b.dataset.direction;renderTunnel()});
-}
-function fillRoute(from,to){$("#tripFrom").value=from;$("#tripTo").value=to;show("trip")}
-function bindTrip(){
-  $$("[data-route]").forEach(b=>b.onclick=()=>{const [f,t]=b.dataset.route.split("|");$("#tripFrom").value=f;$("#tripTo").value=t});
-  $$("[data-fill-route]").forEach(b=>b.onclick=()=>{const [f,t]=b.dataset.fillRoute.split("|");fillRoute(f,t)});
-  $("#planTripBtn").onclick=()=>{
-    const from=$("#tripFrom").value.trim()||"目前位置",to=$("#tripTo").value.trim();
-    if(!to)return toast("請先輸入目的地");
-    $("#tripResult").innerHTML='<div class="list-item"><h3>'+esc(from)+' → '+esc(to)+'</h3><div class="meta">先看路況與充電，再直接交給你慣用的地圖導航。</div><div class="item-actions"><button class="go" data-map="google">Google Maps</button><button data-map="apple">Apple 地圖</button></div><div class="item-actions"><button data-next="highway">國道路況</button><button data-next="charging">沿途充電</button><button data-next="parking">停車</button></div></div>';
-    $$("[data-next]",$("#tripResult")).forEach(b=>b.onclick=()=>show(b.dataset.next));
-    $$("[data-map]",$("#tripResult")).forEach(b=>b.onclick=()=>{
-      let url;
-      if(b.dataset.map==="apple"){const s=from==="目前位置"?"":("&saddr="+encodeURIComponent(from));url="https://maps.apple.com/?daddr="+encodeURIComponent(to)+"&dirflg=d"+s}
-      else{const o=from==="目前位置"?"":("&origin="+encodeURIComponent(from));url="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(to)+"&travelmode=driving"+o}
-      window.open(url,"_blank","noopener");
-    });
-  };
-}
 
-const VIN_WMI={"5YJ":"美國 Tesla","7SA":"美國 Tesla","LRW":"中國上海 Giga Shanghai","XP7":"德國柏林 Giga Berlin","SFZ":"英國（初代 Roadster）","7G2":"美國 Tesla"};
-const VIN_MODEL={"3":"Model 3","S":"Model S","X":"Model X","Y":"Model Y","R":"Roadster","C":"Cybertruck","T":"Semi","A":"Cybercab"};
-const VIN_YEAR={"8":"2008","9":"2009","A":"2010","B":"2011","C":"2012","D":"2013","E":"2014","F":"2015","G":"2016","H":"2017","J":"2018","K":"2019","L":"2020","M":"2021","N":"2022","P":"2023","R":"2024","S":"2025","T":"2026","V":"2027","W":"2028","X":"2029","Y":"2030"};
-const VIN_PLANT={"F":"Fremont","C":"Giga Shanghai","A":"Giga Texas","B":"Giga Berlin","N":"Giga Nevada","1":"Lotus / Hethel"};
-const VIN_BATTERY={"E":"純電／部分車型三元鋰","F":"LFP（部分上海車型）"};
-const VIN_DRIVE={"5":"雙馬達","6":"三馬達","A":"單馬達","B":"雙馬達","C":"雙馬達性能版","D":"單馬達","E":"雙馬達","F":"雙馬達性能版","J":"單馬達","K":"雙馬達","L":"雙馬達性能版","R":"單馬達","S":"單馬達"};
-function bindVin(){
-  const btn=$("#decodeVinBtn");if(!btn)return;
-  btn.onclick=()=>{
-    const vin=$("#vinInput").value.trim().toUpperCase().replace(/\s/g,"");
-    if(!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)){return $("#vinResult").innerHTML='<div class="result-card"><h3>VIN 格式不正確</h3><div class="result-sub">請輸入 17 碼 VIN，VIN 不使用 I、O、Q。</div></div>'}
-    const rows=[
-      ["VIN",vin],["出廠來源",VIN_WMI[vin.slice(0,3)]||"未收錄／請以官方資料為準"],
-      ["車型",VIN_MODEL[vin[3]]||"未辨識"],["電池／燃料碼",VIN_BATTERY[vin[6]]||vin[6]],
-      ["驅動碼",VIN_DRIVE[vin[7]]||vin[7]],["年份",VIN_YEAR[vin[9]]||vin[9]],
-      ["組裝廠",VIN_PLANT[vin[10]]||vin[10]]
-    ];
-    $("#vinResult").innerHTML='<div class="result-card"><h3>解析結果</h3>'+rows.map(r=>'<div class="kv"><span>'+r[0]+'</span><b>'+esc(r[1])+'</b></div>').join("")+'</div>';
-  };
-}
-function runCalc(){
-  const km=Number($("#calcKm")?.value),ep=Number($("#calcElec")?.value),eff=Number($("#calcEff")?.value),fp=Number($("#calcFuel")?.value),fe=Number($("#calcFuelEff")?.value);
-  if(!$("#calcResult")||![km,ep,eff,fp,fe].every(v=>Number.isFinite(v)&&v>=0)||eff<=0||fe<=0)return;
-  const ev=km/eff*ep, fuel=km/fe*fp, save=fuel-ev;
-  $("#calcResult").innerHTML='<h3>估算結果</h3><div class="calc-result-grid"><div class="calc-stat"><small>每月電費</small><b>$'+money(ev)+'</b></div><div class="calc-stat"><small>每月油費</small><b>$'+money(fuel)+'</b></div><div class="calc-stat good"><small>每月差額</small><b>'+((save>=0?"+":"-")+'$'+money(Math.abs(save)))+'</b></div><div class="calc-stat good"><small>五年差額</small><b>'+((save>=0?"+":"-")+'$'+money(Math.abs(save*60)))+'</b></div></div>';
-}
-function bindCalculator(){const b=$("#runCalcBtn");if(!b)return;b.onclick=runCalc;["calcKm","calcElec","calcEff","calcFuel","calcFuelEff"].forEach(id=>$("#"+id)?.addEventListener("input",runCalc));runCalc()}
+  const accessoryRoot=$("#accessoryList");
+  if(accessoryRoot){
+    if(accessories.length){
+      accessoryRoot.innerHTML=accessories.map(x=>
+        '<article class="market-card"><h3>'+esc(x.title)+'</h3><div class="price">$'+money(x.price)+'</div></article>'
+      ).join("");
+    }else{
+      accessoryRoot.innerHTML=
+        '<div class="market-empty">'+
+          '<b>目前 0 筆二手配件</b>'+
+          '<p>免費刊登已開放，不收刊登費、不收成交佣金。</p>'+
+          '<button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=accessory.yml">刊登第一件配件</button>'+
+        '</div>';
+    }
+  }
 
-const checklistItems=["行照、車牌與 VIN 資料一致","保險已生效","鑰匙卡／鑰匙數量確認","全車漆面無明顯刮痕、凹痕或色差","前後與側窗玻璃無裂損","玻璃車頂／天窗外觀正常","四輪輪圈、輪胎無異常傷痕","底盤可見處無脫落或明顯撞傷","車內玻璃與飾板正常","座椅、縫線與內裝無明顯損傷","門窗膠條與開關正常","螢幕、音響、冷氣與燈具可正常操作","充電功能與隨車配件確認"];
-function renderChecklist(){
-  const root=$("#deliveryChecklist");if(!root)return;
-  let saved=[];try{saved=JSON.parse(localStorage.getItem("cola-go-delivery")||"[]")}catch{}
-  root.innerHTML=checklistItems.map((x,i)=>'<label class="check-item '+(saved.includes(i)?"done":"")+'"><input type="checkbox" data-check="'+i+'" '+(saved.includes(i)?"checked":"")+'><span>'+esc(x)+'</span></label>').join("");
-  const update=()=>{const checked=$$("[data-check]",root).filter(x=>x.checked).map(x=>Number(x.dataset.check));localStorage.setItem("cola-go-delivery",JSON.stringify(checked));$("#checkProgress").textContent=checked.length+" / "+checklistItems.length;$$(".check-item",root).forEach((el,i)=>el.classList.toggle("done",checked.includes(i)))};
-  $$("[data-check]",root).forEach(x=>x.onchange=update);update();
-}
-function bindChecklist(){renderChecklist();const b=$("#resetChecklist");if(b)b.onclick=()=>{localStorage.removeItem("cola-go-delivery");renderChecklist()}}
-
-function bindParts(){const b=$("#searchPartBtn");if(!b)return;b.onclick=()=>{const p=$("#partNo").value.trim();if(!p)return toast("先輸入料號");window.open("https://www.google.com/search?q="+encodeURIComponent("Tesla "+p),"_blank","noopener")}}
-
-const luckyGood=new Set([1,3,5,6,7,8,11,13,15,16,17,18,21,23,24,25,29,31,32,33,35]);
-const luckyMixed=new Set([26,27,30]);
-function bindLucky(){const b=$("#luckyBtn");if(!b)return;b.onclick=()=>{const digits=($("#luckyInput").value.match(/\d/g)||[]).slice(-4);if(!digits.length)return toast("請輸入車牌數字");const sum=digits.reduce((s,x)=>s+Number(x),0);const type=luckyGood.has(sum)?"民俗對照常列為吉":luckyMixed.has(sum)?"民俗對照常列為吉凶參半":"民俗對照常列為凶";$("#luckyResult").innerHTML='<div class="result-card"><span class="mini-label">RESULT</span><div class="result-big">'+sum+'</div><b>'+type+'</b><div class="result-sub">數字來源：'+digits.join(" + ")+'</div></div>'}}
-
-function bindInstall(){
-  addEventListener("beforeinstallprompt",e=>{e.preventDefault();state.installPrompt=e});
-  $("#installBtn").onclick=async()=>{if(state.installPrompt){state.installPrompt.prompt();await state.installPrompt.userChoice;state.installPrompt=null;return}const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);$("#installHelp").innerHTML=ios?"在瀏覽器分享選單選「加入主畫面」，之後 COLA GO 會像 App 一樣獨立開啟。":"在 Chrome / Edge 選單選「安裝 COLA GO」或「新增至主畫面」。";$("#installSheet").hidden=false};
-  $("#closeInstall").onclick=$("#installOk").onclick=()=>$("#installSheet").hidden=true;
-  $("#installSheet").onclick=e=>{if(e.target.id==="installSheet")$("#installSheet").hidden=true};
-  if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
-}
-
-$("#refreshBtn").onclick=()=>{toast("重新整理");load()};
-bindNav();bindExternal();bindFilters();bindTrip();bindVin();bindCalculator();bindChecklist();bindParts();bindLucky();bindInstall();
-show(location.hash.slice(1)||"home",false);load();+money(x.price)+'</div></article>').join(""):'<div class="market-empty"><b>目前 0 筆二手配件</b><p>免費刊登已開放，不收刊登費、不收成交佣金。</p><button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=accessory.yml">刊登第一件配件</button></div>';
   const serviceRoot=$("#serviceList");
-  if(serviceRoot)serviceRoot.innerHTML=services.length?services.map(x=>'<article class="market-card"><h3>'+esc(x.name)+'</h3><div class="meta">'+esc(x.category||"")+'</div></article>').join(""):'<div class="market-empty"><b>合作服務招募中</b><p>先審核合作內容與對車主的實用性，再公開上架。</p><button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=service.yml">申請合作服務</button></div>';
-  bindExternal();
+  if(serviceRoot){
+    if(services.length){
+      serviceRoot.innerHTML=services.map(x=>
+        '<article class="market-card"><h3>'+esc(x.name)+'</h3><div class="meta">'+esc(x.category||"")+'</div></article>'
+      ).join("");
+    }else{
+      serviceRoot.innerHTML=
+        '<div class="market-empty">'+
+          '<b>合作服務招募中</b>'+
+          '<p>先審核合作內容與對車主的實用性，再公開上架。</p>'+
+          '<button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=service.yml">申請合作服務</button>'+
+        '</div>';
+    }
+  }
+
+  bindExternal(document);
 }
+
 function renderModels(){
-  const root=$("#modelList");if(!root)return;
+  const root=$("#modelList");
+  if(!root)return;
+
   const rows=state.models.filter(x=>state.modelFilter==="all"||x.family===state.modelFilter);
+
   root.innerHTML=rows.map(x=>{
     const selected=state.compare.includes(x.id);
-    return '<article class="model-card"><div class="model-top"><div><h3>'+esc(x.name)+'</h3><small>'+esc(x.year)+' · '+esc(x.drive)+' · '+esc(x.origin)+'</small></div><div class="model-price">'+(x.price?'
-  $$("#roadFilter button").forEach(b=>b.onclick=()=>{$$("#roadFilter button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.road=b.dataset.road;renderCharging()});
-  $("#chargingSearch").oninput=renderCharging;
-  $$("#highwayTabs button").forEach(b=>b.onclick=()=>{$$("#highwayTabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.highway=b.dataset.highway;renderTraffic()});
-  $$("#tunnelDirection button").forEach(b=>b.onclick=()=>{$$("#tunnelDirection button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.direction=b.dataset.direction;renderTunnel()});
-}
-function fillRoute(from,to){$("#tripFrom").value=from;$("#tripTo").value=to;show("trip")}
-function bindTrip(){
-  $$("[data-route]").forEach(b=>b.onclick=()=>{const [f,t]=b.dataset.route.split("|");$("#tripFrom").value=f;$("#tripTo").value=t});
-  $$("[data-fill-route]").forEach(b=>b.onclick=()=>{const [f,t]=b.dataset.fillRoute.split("|");fillRoute(f,t)});
-  $("#planTripBtn").onclick=()=>{
-    const from=$("#tripFrom").value.trim()||"目前位置",to=$("#tripTo").value.trim();
-    if(!to)return toast("請先輸入目的地");
-    $("#tripResult").innerHTML='<div class="list-item"><h3>'+esc(from)+' → '+esc(to)+'</h3><div class="meta">先看路況與充電，再直接交給你慣用的地圖導航。</div><div class="item-actions"><button class="go" data-map="google">Google Maps</button><button data-map="apple">Apple 地圖</button></div><div class="item-actions"><button data-next="highway">國道路況</button><button data-next="charging">沿途充電</button><button data-next="parking">停車</button></div></div>';
-    $$("[data-next]",$("#tripResult")).forEach(b=>b.onclick=()=>show(b.dataset.next));
-    $$("[data-map]",$("#tripResult")).forEach(b=>b.onclick=()=>{
-      let url;
-      if(b.dataset.map==="apple"){const s=from==="目前位置"?"":("&saddr="+encodeURIComponent(from));url="https://maps.apple.com/?daddr="+encodeURIComponent(to)+"&dirflg=d"+s}
-      else{const o=from==="目前位置"?"":("&origin="+encodeURIComponent(from));url="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(to)+"&travelmode=driving"+o}
-      window.open(url,"_blank","noopener");
-    });
-  };
-}
-
-const VIN_WMI={"5YJ":"美國 Tesla","7SA":"美國 Tesla","LRW":"中國上海 Giga Shanghai","XP7":"德國柏林 Giga Berlin","SFZ":"英國（初代 Roadster）","7G2":"美國 Tesla"};
-const VIN_MODEL={"3":"Model 3","S":"Model S","X":"Model X","Y":"Model Y","R":"Roadster","C":"Cybertruck","T":"Semi","A":"Cybercab"};
-const VIN_YEAR={"8":"2008","9":"2009","A":"2010","B":"2011","C":"2012","D":"2013","E":"2014","F":"2015","G":"2016","H":"2017","J":"2018","K":"2019","L":"2020","M":"2021","N":"2022","P":"2023","R":"2024","S":"2025","T":"2026","V":"2027","W":"2028","X":"2029","Y":"2030"};
-const VIN_PLANT={"F":"Fremont","C":"Giga Shanghai","A":"Giga Texas","B":"Giga Berlin","N":"Giga Nevada","1":"Lotus / Hethel"};
-const VIN_BATTERY={"E":"純電／部分車型三元鋰","F":"LFP（部分上海車型）"};
-const VIN_DRIVE={"5":"雙馬達","6":"三馬達","A":"單馬達","B":"雙馬達","C":"雙馬達性能版","D":"單馬達","E":"雙馬達","F":"雙馬達性能版","J":"單馬達","K":"雙馬達","L":"雙馬達性能版","R":"單馬達","S":"單馬達"};
-function bindVin(){
-  const btn=$("#decodeVinBtn");if(!btn)return;
-  btn.onclick=()=>{
-    const vin=$("#vinInput").value.trim().toUpperCase().replace(/\s/g,"");
-    if(!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)){return $("#vinResult").innerHTML='<div class="result-card"><h3>VIN 格式不正確</h3><div class="result-sub">請輸入 17 碼 VIN，VIN 不使用 I、O、Q。</div></div>'}
-    const rows=[
-      ["VIN",vin],["出廠來源",VIN_WMI[vin.slice(0,3)]||"未收錄／請以官方資料為準"],
-      ["車型",VIN_MODEL[vin[3]]||"未辨識"],["電池／燃料碼",VIN_BATTERY[vin[6]]||vin[6]],
-      ["驅動碼",VIN_DRIVE[vin[7]]||vin[7]],["年份",VIN_YEAR[vin[9]]||vin[9]],
-      ["組裝廠",VIN_PLANT[vin[10]]||vin[10]]
-    ];
-    $("#vinResult").innerHTML='<div class="result-card"><h3>解析結果</h3>'+rows.map(r=>'<div class="kv"><span>'+r[0]+'</span><b>'+esc(r[1])+'</b></div>').join("")+'</div>';
-  };
-}
-function runCalc(){
-  const km=Number($("#calcKm")?.value),ep=Number($("#calcElec")?.value),eff=Number($("#calcEff")?.value),fp=Number($("#calcFuel")?.value),fe=Number($("#calcFuelEff")?.value);
-  if(!$("#calcResult")||![km,ep,eff,fp,fe].every(v=>Number.isFinite(v)&&v>=0)||eff<=0||fe<=0)return;
-  const ev=km/eff*ep, fuel=km/fe*fp, save=fuel-ev;
-  $("#calcResult").innerHTML='<h3>估算結果</h3><div class="calc-result-grid"><div class="calc-stat"><small>每月電費</small><b>$'+money(ev)+'</b></div><div class="calc-stat"><small>每月油費</small><b>$'+money(fuel)+'</b></div><div class="calc-stat good"><small>每月差額</small><b>'+((save>=0?"+":"-")+'$'+money(Math.abs(save)))+'</b></div><div class="calc-stat good"><small>五年差額</small><b>'+((save>=0?"+":"-")+'$'+money(Math.abs(save*60)))+'</b></div></div>';
-}
-function bindCalculator(){const b=$("#runCalcBtn");if(!b)return;b.onclick=runCalc;["calcKm","calcElec","calcEff","calcFuel","calcFuelEff"].forEach(id=>$("#"+id)?.addEventListener("input",runCalc));runCalc()}
-
-const checklistItems=["行照、車牌與 VIN 資料一致","保險已生效","鑰匙卡／鑰匙數量確認","全車漆面無明顯刮痕、凹痕或色差","前後與側窗玻璃無裂損","玻璃車頂／天窗外觀正常","四輪輪圈、輪胎無異常傷痕","底盤可見處無脫落或明顯撞傷","車內玻璃與飾板正常","座椅、縫線與內裝無明顯損傷","門窗膠條與開關正常","螢幕、音響、冷氣與燈具可正常操作","充電功能與隨車配件確認"];
-function renderChecklist(){
-  const root=$("#deliveryChecklist");if(!root)return;
-  let saved=[];try{saved=JSON.parse(localStorage.getItem("cola-go-delivery")||"[]")}catch{}
-  root.innerHTML=checklistItems.map((x,i)=>'<label class="check-item '+(saved.includes(i)?"done":"")+'"><input type="checkbox" data-check="'+i+'" '+(saved.includes(i)?"checked":"")+'><span>'+esc(x)+'</span></label>').join("");
-  const update=()=>{const checked=$$("[data-check]",root).filter(x=>x.checked).map(x=>Number(x.dataset.check));localStorage.setItem("cola-go-delivery",JSON.stringify(checked));$("#checkProgress").textContent=checked.length+" / "+checklistItems.length;$$(".check-item",root).forEach((el,i)=>el.classList.toggle("done",checked.includes(i)))};
-  $$("[data-check]",root).forEach(x=>x.onchange=update);update();
-}
-function bindChecklist(){renderChecklist();const b=$("#resetChecklist");if(b)b.onclick=()=>{localStorage.removeItem("cola-go-delivery");renderChecklist()}}
-
-function bindParts(){const b=$("#searchPartBtn");if(!b)return;b.onclick=()=>{const p=$("#partNo").value.trim();if(!p)return toast("先輸入料號");window.open("https://www.google.com/search?q="+encodeURIComponent("Tesla "+p),"_blank","noopener")}}
-
-const luckyGood=new Set([1,3,5,6,7,8,11,13,15,16,17,18,21,23,24,25,29,31,32,33,35]);
-const luckyMixed=new Set([26,27,30]);
-function bindLucky(){const b=$("#luckyBtn");if(!b)return;b.onclick=()=>{const digits=($("#luckyInput").value.match(/\d/g)||[]).slice(-4);if(!digits.length)return toast("請輸入車牌數字");const sum=digits.reduce((s,x)=>s+Number(x),0);const type=luckyGood.has(sum)?"民俗對照常列為吉":luckyMixed.has(sum)?"民俗對照常列為吉凶參半":"民俗對照常列為凶";$("#luckyResult").innerHTML='<div class="result-card"><span class="mini-label">RESULT</span><div class="result-big">'+sum+'</div><b>'+type+'</b><div class="result-sub">數字來源：'+digits.join(" + ")+'</div></div>'}}
-
-function bindInstall(){
-  addEventListener("beforeinstallprompt",e=>{e.preventDefault();state.installPrompt=e});
-  $("#installBtn").onclick=async()=>{if(state.installPrompt){state.installPrompt.prompt();await state.installPrompt.userChoice;state.installPrompt=null;return}const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);$("#installHelp").innerHTML=ios?"在瀏覽器分享選單選「加入主畫面」，之後 COLA GO 會像 App 一樣獨立開啟。":"在 Chrome / Edge 選單選「安裝 COLA GO」或「新增至主畫面」。";$("#installSheet").hidden=false};
-  $("#closeInstall").onclick=$("#installOk").onclick=()=>$("#installSheet").hidden=true;
-  $("#installSheet").onclick=e=>{if(e.target.id==="installSheet")$("#installSheet").hidden=true};
-  if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
-}
-
-$("#refreshBtn").onclick=()=>{toast("重新整理");load()};
-bindNav();bindExternal();bindFilters();bindTrip();bindVin();bindCalculator();bindChecklist();bindParts();bindLucky();bindInstall();
-show(location.hash.slice(1)||"home",false);load();+money(x.price):'官方價待確認')+'</div></div><div class="model-specs"><div><small>續航</small><b>'+(x.range?x.range+' km':'—')+'</b></div><div><small>0-100</small><b>'+(x.accel?x.accel+' s':'—')+'</b></div><div><small>驅動</small><b>'+esc(x.drive||"—")+'</b></div><div><small>快充</small><b>'+(x.supercharge?x.supercharge+' kW':'—')+'</b></div></div><div class="model-actions"><button data-compare="'+esc(x.id)+'" class="'+(selected?'selected':'')+'">'+(selected?'已加入比較':'加入比較')+'</button><button data-url="'+esc(x.source)+'">官方來源</button></div></article>';
+    return '<article class="model-card">'+
+      '<div class="model-top">'+
+        '<div><h3>'+esc(x.name)+'</h3><small>'+esc(x.year)+' · '+esc(x.drive)+' · '+esc(x.origin)+'</small></div>'+
+        '<div class="model-price">'+(x.price?'$'+money(x.price):'官方價待確認')+'</div>'+
+      '</div>'+
+      '<div class="model-specs">'+
+        '<div><small>續航</small><b>'+(x.range?x.range+' km':'—')+'</b></div>'+
+        '<div><small>0-100</small><b>'+(x.accel?x.accel+' s':'—')+'</b></div>'+
+        '<div><small>驅動</small><b>'+esc(x.drive||"—")+'</b></div>'+
+        '<div><small>快充</small><b>'+(x.supercharge?x.supercharge+' kW':'—')+'</b></div>'+
+      '</div>'+
+      '<div class="model-actions">'+
+        '<button data-compare="'+esc(x.id)+'" class="'+(selected?'selected':'')+'">'+(selected?'已加入比較':'加入比較')+'</button>'+
+        '<button data-url="'+esc(x.source)+'">官方來源</button>'+
+      '</div>'+
+    '</article>';
   }).join("");
-  $("[data-compare]",root).forEach(b=>b.onclick=()=>toggleCompare(b.dataset.compare));
-  bindExternal();
+
+  $$("[data-compare]",root).forEach(b=>b.onclick=()=>toggleCompare(b.dataset.compare));
+  bindExternal(root);
   updateCompareTray();
 }
+
 function toggleCompare(id){
-  const i=state.compare.indexOf(id);
-  if(i>=0)state.compare.splice(i,1);
-  else if(state.compare.length<3)state.compare.push(id);
-  else return toast("最多比較 3 款");
+  const index=state.compare.indexOf(id);
+  if(index>=0){
+    state.compare.splice(index,1);
+  }else if(state.compare.length<3){
+    state.compare.push(id);
+  }else{
+    toast("最多比較 3 款");
+    return;
+  }
   renderModels();
 }
+
 function updateCompareTray(){
-  const tray=$("#compareTray");if(!tray)return;
+  const tray=$("#compareTray");
+  if(!tray)return;
   tray.hidden=state.compare.length<2;
   $("#compareCount").textContent=state.compare.length+" / 3";
 }
+
 function openCompare(){
   const rows=state.compare.map(id=>state.models.find(x=>x.id===id)).filter(Boolean);
   if(rows.length<2)return toast("至少選 2 款");
-  const fields=[["價格",x=>x.price?"$"+money(x.price):"—"],["續航",x=>x.range?x.range+" km "+(x.rangeStandard||""):"—"],["0-100",x=>x.accel?x.accel+" 秒":"—"],["驅動",x=>x.drive||"—"],["最高時速",x=>x.topSpeed?x.topSpeed+" km/h":"—"],["超充上限",x=>x.supercharge?x.supercharge+" kW":"—"],["座位",x=>x.seats?x.seats+" 人":"—"]];
-  $("#compareResult").innerHTML='<div class="compare-table"><table><thead><tr><th>項目</th>'+rows.map(x=>'<th>'+esc(x.name)+'</th>').join("")+'</tr></thead><tbody>'+fields.map(f=>'<tr><td>'+f[0]+'</td>'+rows.map(x=>'<td>'+esc(f[1](x))+'</td>').join("")+'</tr>').join("")+'</tbody></table></div><p class="compare-source">價格與規格會變動，購車前請再開「官方來源」確認 Tesla 台灣最新資訊。</p>';
+
+  const fields=[
+    ["價格",x=>x.price?"$"+money(x.price):"—"],
+    ["續航",x=>x.range?x.range+" km "+(x.rangeStandard||""):"—"],
+    ["0-100",x=>x.accel?x.accel+" 秒":"—"],
+    ["驅動",x=>x.drive||"—"],
+    ["最高時速",x=>x.topSpeed?x.topSpeed+" km/h":"—"],
+    ["超充上限",x=>x.supercharge?x.supercharge+" kW":"—"],
+    ["座位",x=>x.seats?x.seats+" 人":"—"]
+  ];
+
+  $("#compareResult").innerHTML=
+    '<div class="compare-table"><table>'+
+      '<thead><tr><th>項目</th>'+rows.map(x=>'<th>'+esc(x.name)+'</th>').join("")+'</tr></thead>'+
+      '<tbody>'+fields.map(field=>
+        '<tr><td>'+field[0]+'</td>'+rows.map(x=>'<td>'+esc(field[1](x))+'</td>').join("")+'</tr>'
+      ).join("")+'</tbody>'+
+    '</table></div>'+
+    '<p class="compare-source">價格與規格會變動，購車前請再開「官方來源」確認 Tesla 台灣最新資訊。</p>';
+
   $("#compareResult").scrollIntoView({behavior:"smooth",block:"start"});
-}
-function bindMarket(){
-  $("[data-used-filter]").forEach(b=>b.onclick=()=>{$("[data-used-filter]").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.usedFilter=b.dataset.usedFilter;renderMarket()});
-  $("#modelFilter button").forEach(b=>b.onclick=()=>{$("#modelFilter button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.modelFilter=b.dataset.modelFilter;renderModels()});
-  $("#clearCompare")?.addEventListener("click",()=>{state.compare=[];$("#compareResult").innerHTML="";renderModels()});
-  $("#openCompare")?.addEventListener("click",openCompare);
 }
 
 function bindFilters(){
-  $$("#roadFilter button").forEach(b=>b.onclick=()=>{$$("#roadFilter button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.road=b.dataset.road;renderCharging()});
-  $("#chargingSearch").oninput=renderCharging;
-  $$("#highwayTabs button").forEach(b=>b.onclick=()=>{$$("#highwayTabs button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.highway=b.dataset.highway;renderTraffic()});
-  $$("#tunnelDirection button").forEach(b=>b.onclick=()=>{$$("#tunnelDirection button").forEach(x=>x.classList.remove("active"));b.classList.add("active");state.direction=b.dataset.direction;renderTunnel()});
+  $$("#roadFilter button").forEach(b=>b.onclick=()=>{
+    $$("#roadFilter button").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    state.road=b.dataset.road;
+    renderCharging();
+  });
+
+  if($("#chargingSearch"))$("#chargingSearch").oninput=renderCharging;
+
+  $$("#highwayTabs button").forEach(b=>b.onclick=()=>{
+    $$("#highwayTabs button").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    state.highway=b.dataset.highway;
+    renderTraffic();
+  });
+
+  $$("#tunnelDirection button").forEach(b=>b.onclick=()=>{
+    $$("#tunnelDirection button").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    state.direction=b.dataset.direction;
+    renderTunnel();
+  });
 }
-function fillRoute(from,to){$("#tripFrom").value=from;$("#tripTo").value=to;show("trip")}
+
+function bindMarket(){
+  $$("[data-used-filter]").forEach(b=>b.onclick=()=>{
+    $$("[data-used-filter]").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    state.usedFilter=b.dataset.usedFilter;
+    renderMarket();
+  });
+
+  $$("#modelFilter button").forEach(b=>b.onclick=()=>{
+    $$("#modelFilter button").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    state.modelFilter=b.dataset.modelFilter;
+    renderModels();
+  });
+
+  $("#clearCompare")?.addEventListener("click",()=>{
+    state.compare=[];
+    $("#compareResult").innerHTML="";
+    renderModels();
+  });
+
+  $("#openCompare")?.addEventListener("click",openCompare);
+}
+
+function fillRoute(from,to){
+  $("#tripFrom").value=from;
+  $("#tripTo").value=to;
+  show("trip");
+}
+
 function bindTrip(){
-  $$("[data-route]").forEach(b=>b.onclick=()=>{const [f,t]=b.dataset.route.split("|");$("#tripFrom").value=f;$("#tripTo").value=t});
-  $$("[data-fill-route]").forEach(b=>b.onclick=()=>{const [f,t]=b.dataset.fillRoute.split("|");fillRoute(f,t)});
+  $$("[data-route]").forEach(b=>b.onclick=()=>{
+    const parts=b.dataset.route.split("|");
+    $("#tripFrom").value=parts[0];
+    $("#tripTo").value=parts[1];
+  });
+
+  $$("[data-fill-route]").forEach(b=>b.onclick=()=>{
+    const parts=b.dataset.fillRoute.split("|");
+    fillRoute(parts[0],parts[1]);
+  });
+
   $("#planTripBtn").onclick=()=>{
-    const from=$("#tripFrom").value.trim()||"目前位置",to=$("#tripTo").value.trim();
+    const from=$("#tripFrom").value.trim()||"目前位置";
+    const to=$("#tripTo").value.trim();
     if(!to)return toast("請先輸入目的地");
-    $("#tripResult").innerHTML='<div class="list-item"><h3>'+esc(from)+' → '+esc(to)+'</h3><div class="meta">先看路況與充電，再直接交給你慣用的地圖導航。</div><div class="item-actions"><button class="go" data-map="google">Google Maps</button><button data-map="apple">Apple 地圖</button></div><div class="item-actions"><button data-next="highway">國道路況</button><button data-next="charging">沿途充電</button><button data-next="parking">停車</button></div></div>';
+
+    $("#tripResult").innerHTML=
+      '<div class="list-item">'+
+        '<h3>'+esc(from)+' → '+esc(to)+'</h3>'+
+        '<div class="meta">先看路況與充電，再直接交給你慣用的地圖導航。</div>'+
+        '<div class="item-actions"><button class="go" data-map="google">Google Maps</button><button data-map="apple">Apple 地圖</button></div>'+
+        '<div class="item-actions"><button data-next="highway">國道路況</button><button data-next="charging">沿途充電</button><button data-next="parking">停車</button></div>'+
+      '</div>';
+
     $$("[data-next]",$("#tripResult")).forEach(b=>b.onclick=()=>show(b.dataset.next));
     $$("[data-map]",$("#tripResult")).forEach(b=>b.onclick=()=>{
       let url;
-      if(b.dataset.map==="apple"){const s=from==="目前位置"?"":("&saddr="+encodeURIComponent(from));url="https://maps.apple.com/?daddr="+encodeURIComponent(to)+"&dirflg=d"+s}
-      else{const o=from==="目前位置"?"":("&origin="+encodeURIComponent(from));url="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(to)+"&travelmode=driving"+o}
+      if(b.dataset.map==="apple"){
+        const start=from==="目前位置"?"":"&saddr="+encodeURIComponent(from);
+        url="https://maps.apple.com/?daddr="+encodeURIComponent(to)+"&dirflg=d"+start;
+      }else{
+        const origin=from==="目前位置"?"":"&origin="+encodeURIComponent(from);
+        url="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(to)+"&travelmode=driving"+origin;
+      }
       window.open(url,"_blank","noopener");
     });
   };
@@ -389,52 +483,200 @@ const VIN_YEAR={"8":"2008","9":"2009","A":"2010","B":"2011","C":"2012","D":"2013
 const VIN_PLANT={"F":"Fremont","C":"Giga Shanghai","A":"Giga Texas","B":"Giga Berlin","N":"Giga Nevada","1":"Lotus / Hethel"};
 const VIN_BATTERY={"E":"純電／部分車型三元鋰","F":"LFP（部分上海車型）"};
 const VIN_DRIVE={"5":"雙馬達","6":"三馬達","A":"單馬達","B":"雙馬達","C":"雙馬達性能版","D":"單馬達","E":"雙馬達","F":"雙馬達性能版","J":"單馬達","K":"雙馬達","L":"雙馬達性能版","R":"單馬達","S":"單馬達"};
+
 function bindVin(){
-  const btn=$("#decodeVinBtn");if(!btn)return;
+  const btn=$("#decodeVinBtn");
+  if(!btn)return;
+
   btn.onclick=()=>{
     const vin=$("#vinInput").value.trim().toUpperCase().replace(/\s/g,"");
-    if(!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)){return $("#vinResult").innerHTML='<div class="result-card"><h3>VIN 格式不正確</h3><div class="result-sub">請輸入 17 碼 VIN，VIN 不使用 I、O、Q。</div></div>'}
+    if(!/^[A-HJ-NPR-Z0-9]{17}$/.test(vin)){
+      $("#vinResult").innerHTML='<div class="result-card"><h3>VIN 格式不正確</h3><div class="result-sub">請輸入 17 碼 VIN，VIN 不使用 I、O、Q。</div></div>';
+      return;
+    }
+
     const rows=[
-      ["VIN",vin],["出廠來源",VIN_WMI[vin.slice(0,3)]||"未收錄／請以官方資料為準"],
-      ["車型",VIN_MODEL[vin[3]]||"未辨識"],["電池／燃料碼",VIN_BATTERY[vin[6]]||vin[6]],
-      ["驅動碼",VIN_DRIVE[vin[7]]||vin[7]],["年份",VIN_YEAR[vin[9]]||vin[9]],
+      ["VIN",vin],
+      ["出廠來源",VIN_WMI[vin.slice(0,3)]||"未收錄／請以官方資料為準"],
+      ["車型",VIN_MODEL[vin[3]]||"未辨識"],
+      ["電池／燃料碼",VIN_BATTERY[vin[6]]||vin[6]],
+      ["驅動碼",VIN_DRIVE[vin[7]]||vin[7]],
+      ["年份",VIN_YEAR[vin[9]]||vin[9]],
       ["組裝廠",VIN_PLANT[vin[10]]||vin[10]]
     ];
-    $("#vinResult").innerHTML='<div class="result-card"><h3>解析結果</h3>'+rows.map(r=>'<div class="kv"><span>'+r[0]+'</span><b>'+esc(r[1])+'</b></div>').join("")+'</div>';
+
+    $("#vinResult").innerHTML=
+      '<div class="result-card"><h3>解析結果</h3>'+
+      rows.map(r=>'<div class="kv"><span>'+r[0]+'</span><b>'+esc(r[1])+'</b></div>').join("")+
+      '</div>';
   };
 }
+
 function runCalc(){
-  const km=Number($("#calcKm")?.value),ep=Number($("#calcElec")?.value),eff=Number($("#calcEff")?.value),fp=Number($("#calcFuel")?.value),fe=Number($("#calcFuelEff")?.value);
-  if(!$("#calcResult")||![km,ep,eff,fp,fe].every(v=>Number.isFinite(v)&&v>=0)||eff<=0||fe<=0)return;
-  const ev=km/eff*ep, fuel=km/fe*fp, save=fuel-ev;
-  $("#calcResult").innerHTML='<h3>估算結果</h3><div class="calc-result-grid"><div class="calc-stat"><small>每月電費</small><b>$'+money(ev)+'</b></div><div class="calc-stat"><small>每月油費</small><b>$'+money(fuel)+'</b></div><div class="calc-stat good"><small>每月差額</small><b>'+((save>=0?"+":"-")+'$'+money(Math.abs(save)))+'</b></div><div class="calc-stat good"><small>五年差額</small><b>'+((save>=0?"+":"-")+'$'+money(Math.abs(save*60)))+'</b></div></div>';
-}
-function bindCalculator(){const b=$("#runCalcBtn");if(!b)return;b.onclick=runCalc;["calcKm","calcElec","calcEff","calcFuel","calcFuelEff"].forEach(id=>$("#"+id)?.addEventListener("input",runCalc));runCalc()}
+  const km=Number($("#calcKm")?.value);
+  const electricity=Number($("#calcElec")?.value);
+  const efficiency=Number($("#calcEff")?.value);
+  const fuelPrice=Number($("#calcFuel")?.value);
+  const fuelEfficiency=Number($("#calcFuelEff")?.value);
 
-const checklistItems=["行照、車牌與 VIN 資料一致","保險已生效","鑰匙卡／鑰匙數量確認","全車漆面無明顯刮痕、凹痕或色差","前後與側窗玻璃無裂損","玻璃車頂／天窗外觀正常","四輪輪圈、輪胎無異常傷痕","底盤可見處無脫落或明顯撞傷","車內玻璃與飾板正常","座椅、縫線與內裝無明顯損傷","門窗膠條與開關正常","螢幕、音響、冷氣與燈具可正常操作","充電功能與隨車配件確認"];
+  if(!$("#calcResult"))return;
+  if(![km,electricity,efficiency,fuelPrice,fuelEfficiency].every(v=>Number.isFinite(v)&&v>=0))return;
+  if(efficiency<=0||fuelEfficiency<=0)return;
+
+  const ev=km/efficiency*electricity;
+  const fuel=km/fuelEfficiency*fuelPrice;
+  const save=fuel-ev;
+
+  $("#calcResult").innerHTML=
+    '<h3>估算結果</h3>'+
+    '<div class="calc-result-grid">'+
+      '<div class="calc-stat"><small>每月電費</small><b>$'+money(ev)+'</b></div>'+
+      '<div class="calc-stat"><small>每月油費</small><b>$'+money(fuel)+'</b></div>'+
+      '<div class="calc-stat good"><small>每月差額</small><b>'+(save>=0?"+":"-")+'$'+money(Math.abs(save))+'</b></div>'+
+      '<div class="calc-stat good"><small>五年差額</small><b>'+(save>=0?"+":"-")+'$'+money(Math.abs(save*60))+'</b></div>'+
+    '</div>';
+}
+
+function bindCalculator(){
+  const btn=$("#runCalcBtn");
+  if(!btn)return;
+  btn.onclick=runCalc;
+  ["calcKm","calcElec","calcEff","calcFuel","calcFuelEff"].forEach(id=>$("#"+id)?.addEventListener("input",runCalc));
+  runCalc();
+}
+
+const checklistItems=[
+  "行照、車牌與 VIN 資料一致",
+  "保險已生效",
+  "鑰匙卡／鑰匙數量確認",
+  "全車漆面無明顯刮痕、凹痕或色差",
+  "前後與側窗玻璃無裂損",
+  "玻璃車頂／天窗外觀正常",
+  "四輪輪圈、輪胎無異常傷痕",
+  "底盤可見處無脫落或明顯撞傷",
+  "車內玻璃與飾板正常",
+  "座椅、縫線與內裝無明顯損傷",
+  "門窗膠條與開關正常",
+  "螢幕、音響、冷氣與燈具可正常操作",
+  "充電功能與隨車配件確認"
+];
+
 function renderChecklist(){
-  const root=$("#deliveryChecklist");if(!root)return;
-  let saved=[];try{saved=JSON.parse(localStorage.getItem("cola-go-delivery")||"[]")}catch{}
-  root.innerHTML=checklistItems.map((x,i)=>'<label class="check-item '+(saved.includes(i)?"done":"")+'"><input type="checkbox" data-check="'+i+'" '+(saved.includes(i)?"checked":"")+'><span>'+esc(x)+'</span></label>').join("");
-  const update=()=>{const checked=$$("[data-check]",root).filter(x=>x.checked).map(x=>Number(x.dataset.check));localStorage.setItem("cola-go-delivery",JSON.stringify(checked));$("#checkProgress").textContent=checked.length+" / "+checklistItems.length;$$(".check-item",root).forEach((el,i)=>el.classList.toggle("done",checked.includes(i)))};
-  $$("[data-check]",root).forEach(x=>x.onchange=update);update();
-}
-function bindChecklist(){renderChecklist();const b=$("#resetChecklist");if(b)b.onclick=()=>{localStorage.removeItem("cola-go-delivery");renderChecklist()}}
+  const root=$("#deliveryChecklist");
+  if(!root)return;
 
-function bindParts(){const b=$("#searchPartBtn");if(!b)return;b.onclick=()=>{const p=$("#partNo").value.trim();if(!p)return toast("先輸入料號");window.open("https://www.google.com/search?q="+encodeURIComponent("Tesla "+p),"_blank","noopener")}}
+  let saved=[];
+  try{
+    saved=JSON.parse(localStorage.getItem("cola-go-delivery")||"[]");
+  }catch{}
+
+  root.innerHTML=checklistItems.map((item,i)=>
+    '<label class="check-item '+(saved.includes(i)?"done":"")+'">'+
+      '<input type="checkbox" data-check="'+i+'" '+(saved.includes(i)?"checked":"")+'>'+
+      '<span>'+esc(item)+'</span>'+
+    '</label>'
+  ).join("");
+
+  const update=()=>{
+    const checked=$$("[data-check]",root).filter(x=>x.checked).map(x=>Number(x.dataset.check));
+    localStorage.setItem("cola-go-delivery",JSON.stringify(checked));
+    $("#checkProgress").textContent=checked.length+" / "+checklistItems.length;
+    $$(".check-item",root).forEach((el,i)=>el.classList.toggle("done",checked.includes(i)));
+  };
+
+  $$("[data-check]",root).forEach(x=>x.onchange=update);
+  update();
+}
+
+function bindChecklist(){
+  renderChecklist();
+  const btn=$("#resetChecklist");
+  if(btn)btn.onclick=()=>{
+    localStorage.removeItem("cola-go-delivery");
+    renderChecklist();
+  };
+}
+
+function bindParts(){
+  const btn=$("#searchPartBtn");
+  if(!btn)return;
+  btn.onclick=()=>{
+    const part=$("#partNo").value.trim();
+    if(!part)return toast("先輸入料號");
+    window.open("https://www.google.com/search?q="+encodeURIComponent("Tesla "+part),"_blank","noopener");
+  };
+}
 
 const luckyGood=new Set([1,3,5,6,7,8,11,13,15,16,17,18,21,23,24,25,29,31,32,33,35]);
 const luckyMixed=new Set([26,27,30]);
-function bindLucky(){const b=$("#luckyBtn");if(!b)return;b.onclick=()=>{const digits=($("#luckyInput").value.match(/\d/g)||[]).slice(-4);if(!digits.length)return toast("請輸入車牌數字");const sum=digits.reduce((s,x)=>s+Number(x),0);const type=luckyGood.has(sum)?"民俗對照常列為吉":luckyMixed.has(sum)?"民俗對照常列為吉凶參半":"民俗對照常列為凶";$("#luckyResult").innerHTML='<div class="result-card"><span class="mini-label">RESULT</span><div class="result-big">'+sum+'</div><b>'+type+'</b><div class="result-sub">數字來源：'+digits.join(" + ")+'</div></div>'}}
 
-function bindInstall(){
-  addEventListener("beforeinstallprompt",e=>{e.preventDefault();state.installPrompt=e});
-  $("#installBtn").onclick=async()=>{if(state.installPrompt){state.installPrompt.prompt();await state.installPrompt.userChoice;state.installPrompt=null;return}const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);$("#installHelp").innerHTML=ios?"在瀏覽器分享選單選「加入主畫面」，之後 COLA GO 會像 App 一樣獨立開啟。":"在 Chrome / Edge 選單選「安裝 COLA GO」或「新增至主畫面」。";$("#installSheet").hidden=false};
-  $("#closeInstall").onclick=$("#installOk").onclick=()=>$("#installSheet").hidden=true;
-  $("#installSheet").onclick=e=>{if(e.target.id==="installSheet")$("#installSheet").hidden=true};
-  if("serviceWorker"in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
+function bindLucky(){
+  const btn=$("#luckyBtn");
+  if(!btn)return;
+
+  btn.onclick=()=>{
+    const digits=($("#luckyInput").value.match(/\d/g)||[]).slice(-4);
+    if(!digits.length)return toast("請輸入車牌數字");
+
+    const sum=digits.reduce((s,x)=>s+Number(x),0);
+    const type=luckyGood.has(sum)?"民俗對照常列為吉":luckyMixed.has(sum)?"民俗對照常列為吉凶參半":"民俗對照常列為凶";
+
+    $("#luckyResult").innerHTML=
+      '<div class="result-card">'+
+        '<span class="mini-label">RESULT</span>'+
+        '<div class="result-big">'+sum+'</div>'+
+        '<b>'+type+'</b>'+
+        '<div class="result-sub">數字來源：'+digits.join(" + ")+'</div>'+
+      '</div>';
+  };
 }
 
-$("#refreshBtn").onclick=()=>{toast("重新整理");load()};
-bindNav();bindExternal();bindFilters();bindTrip();bindVin();bindCalculator();bindChecklist();bindParts();bindLucky();bindInstall();
-show(location.hash.slice(1)||"home",false);load();
+function bindInstall(){
+  addEventListener("beforeinstallprompt",e=>{
+    e.preventDefault();
+    state.installPrompt=e;
+  });
+
+  $("#installBtn").onclick=async()=>{
+    if(state.installPrompt){
+      state.installPrompt.prompt();
+      await state.installPrompt.userChoice;
+      state.installPrompt=null;
+      return;
+    }
+
+    const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);
+    $("#installHelp").innerHTML=ios
+      ?"在瀏覽器分享選單選「加入主畫面」，之後 COLA GO 會像 App 一樣獨立開啟。"
+      :"在 Chrome / Edge 選單選「安裝 COLA GO」或「新增至主畫面」。";
+    $("#installSheet").hidden=false;
+  };
+
+  $("#closeInstall").onclick=$("#installOk").onclick=()=>$("#installSheet").hidden=true;
+  $("#installSheet").onclick=e=>{
+    if(e.target.id==="installSheet")$("#installSheet").hidden=true;
+  };
+
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  }
+}
+
+$("#refreshBtn").onclick=()=>{
+  toast("重新整理");
+  load();
+};
+
+bindNav();
+bindExternal();
+bindFilters();
+bindMarket();
+bindTrip();
+bindVin();
+bindCalculator();
+bindChecklist();
+bindParts();
+bindLucky();
+bindInstall();
+show(location.hash.slice(1)||"home",false);
+load();
