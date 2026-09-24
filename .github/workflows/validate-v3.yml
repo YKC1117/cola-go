@@ -1,7 +1,7 @@
 name: Validate COLA GO V3
 on:
   push:
-    branches: ["main", "design/v3-product-ui", "feature/full-toolbox", "feature/market-db"]
+    branches: ["main", "design/v3-product-ui", "feature/full-toolbox", "feature/market-db", "feature/owner-plus"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,3 +33,5 @@ jobs:
           grep -q "bottom-nav" index.html
           grep -q "data-view=\"tesla-db\"" index.html
           grep -q "data-view=\"market\"" index.html
+          grep -q "data-view=\"warranty\"" index.html
+          grep -q "data-view=\"connector\"" index.html
