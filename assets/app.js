@@ -5,6 +5,9 @@ const state={
   tunnel:null,
   parking:null,
   parkingLive:{status:"not-synced",items:[]},
+  parkingSort:"availability",
+  parkingHasSpaceOnly:false,
+  parkingUserLocation:null,
   models:[],
   market:{usedCars:[],accessories:[],services:[]},
   road:"all",
@@ -229,6 +232,30 @@ function renderCharging(){
   $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
 }
 
+function parkingDistanceKm(lat1,lon1,lat2,lon2){
+  const a=Number(lat1),b=Number(lon1),c=Number(lat2),d=Number(lon2);
+  if(![a,b,c,d].every(Number.isFinite))return null;
+  const rad=x=>x*Math.PI/180;
+  const R=6371;
+  const dLat=rad(c-a),dLon=rad(d-b);
+  const h=Math.sin(dLat/2)**2+Math.cos(rad(a))*Math.cos(rad(c))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function parkingDistanceLabel(km){
+  if(km==null||!Number.isFinite(km))return "";
+  if(km<1)return Math.round(km*1000)+" m";
+  return km.toFixed(km<10?1:0)+" km";
+}
+function updateParkingControls(){
+  if($("#parkingSortAvailability"))$("#parkingSortAvailability").setAttribute("aria-pressed",String(state.parkingSort==="availability"));
+  if($("#parkingSortNearest"))$("#parkingSortNearest").setAttribute("aria-pressed",String(state.parkingSort==="nearest"));
+  if($("#parkingHasSpaceOnly"))$("#parkingHasSpaceOnly").setAttribute("aria-pressed",String(state.parkingHasSpaceOnly));
+  if($("#parkingLocationNote")){
+    $("#parkingLocationNote").textContent=state.parkingUserLocation
+      ?"目前依你的定位計算距離；定位只存在瀏覽器記憶體，不會上傳。"
+      :"定位只在這台裝置計算距離，不會上傳 COLA GO。";
+  }
+}
 function renderParking(){
   const liveRoot=$("#liveParkingList");
   const cityRoot=$("#parkingCities");
@@ -236,10 +263,27 @@ function renderParking(){
 
   const live=state.parkingLive||{status:"not-synced",items:[]};
   const query=($("#parkingSearch")?.value||"").trim().toLowerCase();
-  const rows=(live.items||[])
+  let rows=(live.items||[])
     .filter(x=>!query||[x.name,x.zone,x.address,x.typeName].join(" ").toLowerCase().includes(query))
-    .sort((a,b)=>Number(b.car||0)-Number(a.car||0));
+    .filter(x=>!state.parkingHasSpaceOnly||Number(x.car||0)>0)
+    .map(x=>{
+      const distance=state.parkingUserLocation
+        ?parkingDistanceKm(state.parkingUserLocation.lat,state.parkingUserLocation.lng,Number(x.lat),Number(x.lng))
+        :null;
+      return {...x,_distance:distance};
+    });
 
+  if(state.parkingSort==="nearest"&&state.parkingUserLocation){
+    rows.sort((a,b)=>{
+      const ad=a._distance==null?Number.POSITIVE_INFINITY:a._distance;
+      const bd=b._distance==null?Number.POSITIVE_INFINITY:b._distance;
+      return ad-bd||Number(b.car||0)-Number(a.car||0);
+    });
+  }else{
+    rows.sort((a,b)=>Number(b.car||0)-Number(a.car||0));
+  }
+
+  updateParkingControls();
   $("#parkingLiveTime").textContent=live.status==="live"?(live.updatedAt||"官方即時"):"暫無即時資料";
 
   if(live.status==="live"&&rows.length){
@@ -247,8 +291,9 @@ function renderParking(){
       const available=Number(x.car||0);
       const total=Number(x.carTotal||0);
       const cls=available>=20?"good":available>=5?"mid":"bad";
+      const distance=parkingDistanceLabel(x._distance);
       return '<article class="parking-card">'+
-        '<div class="parking-card-top"><div><h3>'+esc(x.name)+'</h3><span class="parking-zone">'+esc(x.zone||x.typeName||"臺南")+'</span></div><div class="parking-space"><b class="'+cls+'">'+available+'</b><small>汽車剩餘</small></div></div>'+
+        '<div class="parking-card-top"><div><h3>'+esc(x.name)+'</h3><span class="parking-zone">'+esc(x.zone||x.typeName||"臺南")+(distance?' · 距離 '+esc(distance):'')+'</span></div><div class="parking-space"><b class="'+cls+'">'+available+'</b><small>汽車剩餘</small></div></div>'+
         '<div class="parking-specs">'+
           '<div><small>總格數</small><b>'+money(total)+'</b></div>'+
           '<div><small>綠能剩餘</small><b>'+money(Number(x.green||0))+'</b></div>'+
@@ -259,8 +304,8 @@ function renderParking(){
         '<div class="item-actions"><button class="go" data-parking-map="'+encodeURIComponent(x.address||x.name)+'">Google Maps</button><button data-parking-apple="'+encodeURIComponent(x.address||x.name)+'">Apple 地圖</button></div>'+
       '</article>';
     }).join("");
-  }else if(live.status==="live"&&query){
-    liveRoot.innerHTML='<div class="empty"><b>找不到符合的臺南停車場</b><p>換個停車場名稱、行政區或地址試試。</p></div>';
+  }else if(live.status==="live"&&(query||state.parkingHasSpaceOnly)){
+    liveRoot.innerHTML='<div class="empty"><b>沒有符合的臺南停車場</b><p>換個名稱、行政區，或關閉「只看有位」。</p></div>';
   }else{
     liveRoot.innerHTML='<div class="market-empty"><b>臺南即時資料暫時無法取得</b><p>不顯示過期數字。你仍可直接用地圖找附近停車場。</p><div class="item-actions"><button class="go" data-nearby-parking="google">Google Maps</button><button data-nearby-parking="apple">Apple 地圖</button></div></div>';
   }
@@ -279,6 +324,50 @@ function renderParking(){
   ).join("")||'<div class="empty"><b>其他縣市資料尚未載入</b></div>';
 }
 
+function requestParkingLocation(){
+  if(!navigator.geolocation){
+    toast("此瀏覽器無法取得定位");
+    return;
+  }
+  const btn=$("#parkingSortNearest");
+  if(btn)btn.disabled=true;
+  toast("正在取得定位…");
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      state.parkingUserLocation={lat:pos.coords.latitude,lng:pos.coords.longitude};
+      state.parkingSort="nearest";
+      if(btn)btn.disabled=false;
+      renderParking();
+      toast("已依距離排序");
+    },
+    ()=>{
+      state.parkingSort="availability";
+      if(btn)btn.disabled=false;
+      updateParkingControls();
+      toast("沒有定位權限，維持剩餘車位排序");
+    },
+    {enableHighAccuracy:true,timeout:8000,maximumAge:60000}
+  );
+}
+function bindParkingTools(){
+  $("#parkingSortAvailability")?.addEventListener("click",()=>{
+    state.parkingSort="availability";
+    renderParking();
+  });
+  $("#parkingSortNearest")?.addEventListener("click",()=>{
+    if(state.parkingUserLocation){
+      state.parkingSort="nearest";
+      renderParking();
+    }else{
+      requestParkingLocation();
+    }
+  });
+  $("#parkingHasSpaceOnly")?.addEventListener("click",()=>{
+    state.parkingHasSpaceOnly=!state.parkingHasSpaceOnly;
+    renderParking();
+  });
+  updateParkingControls();
+}
 
 const TDX_BASE="https://tdx.transportdata.tw/api/basic/v2/Road/Traffic";
 const TISV_BASE="https://tisvcloud.freeway.gov.tw/history/motc20";
@@ -1451,6 +1540,7 @@ $("#refreshBtn").onclick=()=>{
 bindNav();
 bindExternal();
 bindChargingTools();
+bindParkingTools();
 bindFilters();
 bindMarket();
 bindCommunity();
