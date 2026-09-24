@@ -1,0 +1,66 @@
+name: New Taipei parking source smoke
+
+on:
+  push:
+    branches: ["feature/parking-newtaipei-live"]
+    paths: [".github/workflows/newtaipei-parking-smoke.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch and join official New Taipei parking CSVs
+        run: |
+          python3 - <<'PY'
+          import csv, io, json, urllib.request
+
+          STATIC="https://data.ntpc.gov.tw/api/datasets/b1464ef0-9c7c-4a6f-abf7-6bdf32847e68/csv/file"
+          LIVE="https://data.ntpc.gov.tw/api/datasets/e09b35a5-a738-48cc-b0f5-570b67ad9c78/csv/file"
+
+          def fetch(url):
+              req=urllib.request.Request(url,headers={"User-Agent":"COLA-GO/1.0","Accept":"text/csv,*/*"})
+              with urllib.request.urlopen(req,timeout=30) as r:
+                  raw=r.read()
+              for enc in ("utf-8-sig","utf-8","cp950","big5"):
+                  try:
+                      text=raw.decode(enc)
+                      rows=list(csv.DictReader(io.StringIO(text)))
+                      if rows and rows[0]:
+                          return rows,enc,len(raw)
+                  except Exception:
+                      pass
+              raise RuntimeError("cannot decode csv")
+
+          static,se,sbytes=fetch(STATIC)
+          live,le,lbytes=fetch(LIVE)
+          print("STATIC_ROWS",len(static),"ENC",se,"BYTES",sbytes)
+          print("LIVE_ROWS",len(live),"ENC",le,"BYTES",lbytes)
+          print("STATIC_KEYS",list(static[0].keys()))
+          print("LIVE_KEYS",list(live[0].keys()))
+          print("STATIC_SAMPLE",json.dumps(static[0],ensure_ascii=False)[:2500])
+          print("LIVE_SAMPLE",json.dumps(live[0],ensure_ascii=False)[:1200])
+
+          def norm_id(row):
+              for k in ("ID","Id","id"):
+                  if row.get(k):
+                      return str(row[k]).strip()
+              return ""
+          smap={norm_id(x):x for x in static if norm_id(x)}
+          lmap={norm_id(x):x for x in live if norm_id(x)}
+          common=set(smap)&set(lmap)
+          print("COMMON_IDS",len(common))
+          if common:
+              sid=next(iter(common))
+              print("JOIN_SAMPLE_ID",sid)
+              print("JOIN_STATIC",json.dumps(smap[sid],ensure_ascii=False)[:2000])
+              print("JOIN_LIVE",json.dumps(lmap[sid],ensure_ascii=False)[:1000])
+          assert len(static)>50
+          assert len(live)>20
+          assert len(common)>20
+          PY
