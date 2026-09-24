@@ -92,21 +92,7 @@ jobs:
           set -uxo pipefail
           UDID="${{ steps.sim.outputs.udid }}"
           run_idb() {
-            python3 - "$@" <<'PY'
-import subprocess, sys
-cmd=sys.argv[1:]
-print("RUN_IDB",cmd,flush=True)
-try:
-    cp=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=35)
-    print(cp.stdout)
-    print("RETURN",cp.returncode)
-    raise SystemExit(cp.returncode)
-except subprocess.TimeoutExpired as e:
-    print("IDB_TIMEOUT",cmd)
-    if e.stdout:
-        print(e.stdout)
-    raise SystemExit(124)
-PY
+            python3 -c 'import subprocess,sys; cmd=sys.argv[1:]; print("RUN_IDB "+repr(cmd),file=sys.stderr,flush=True); try:\n p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=35); sys.stdout.write(p.stdout or ""); print("RETURN "+str(p.returncode),file=sys.stderr); raise SystemExit(p.returncode)\nexcept subprocess.TimeoutExpired as e:\n sys.stdout.write((e.stdout or "") if isinstance(e.stdout,str) else ""); print("IDB_TIMEOUT "+repr(cmd),file=sys.stderr); raise SystemExit(124)' "$@"
           }
 
           mkdir -p /tmp/carkit-probe
