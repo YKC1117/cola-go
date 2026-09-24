@@ -631,6 +631,99 @@ function bindLucky(){
   };
 }
 
+
+function addYears(date,years){
+  const d=new Date(date);
+  d.setFullYear(d.getFullYear()+years);
+  return d;
+}
+function fmtDate(date){
+  if(!(date instanceof Date)||Number.isNaN(date.getTime()))return "—";
+  return new Intl.DateTimeFormat("zh-TW",{year:"numeric",month:"2-digit",day:"2-digit"}).format(date);
+}
+function warrantyRow(name,years,kmLimit,start,currentKm){
+  const end=addYears(start,years);
+  const now=new Date();
+  now.setHours(0,0,0,0);
+  const endDay=new Date(end);endDay.setHours(0,0,0,0);
+  const dayLeft=Math.ceil((endDay-now)/86400000);
+  const kmLeft=kmLimit==null?null:Math.max(0,kmLimit-currentKm);
+  const timeExpired=dayLeft<0;
+  const kmExpired=kmLimit!=null&&currentKm>=kmLimit;
+  const expired=timeExpired||kmExpired;
+  return {name,years,kmLimit,end,dayLeft,kmLeft,expired,timeExpired,kmExpired};
+}
+function renderWarrantyRow(row){
+  const stateText=row.expired?"至少一項門檻已到":"換算仍在範圍";
+  const stateClass=row.expired?"expired":"";
+  const timeText=row.dayLeft>=0?Math.floor(row.dayLeft/30)+" 個月左右":"已超過 "+Math.abs(row.dayLeft)+" 天";
+  const kmText=row.kmLimit==null?"不限里程":(row.kmExpired?"已達 "+money(row.kmLimit)+" km":"剩約 "+money(row.kmLeft)+" km");
+  return '<article class="warranty-item"><div class="w-head"><h3>'+esc(row.name)+'</h3><span class="warranty-state '+stateClass+'">'+stateText+'</span></div><div class="warranty-meta"><div><small>日期門檻</small><b>'+fmtDate(row.end)+'</b><small>'+timeText+'</small></div><div><small>里程門檻</small><b>'+(row.kmLimit==null?"不限里程":money(row.kmLimit)+" km")+'</b><small>'+kmText+'</small></div></div></article>';
+}
+function bindWarranty(){
+  const btn=$("#calcWarrantyBtn");
+  if(!btn)return;
+  btn.onclick=()=>{
+    const key=$("#warrantyModel").value;
+    const dateValue=$("#warrantyDate").value;
+    const km=Number($("#warrantyKm").value);
+    if(!dateValue)return toast("請先選交車日期");
+    if(!Number.isFinite(km)||km<0)return toast("請輸入目前里程");
+    const start=new Date(dateValue+"T00:00:00");
+    if(Number.isNaN(start.getTime()))return toast("日期格式不正確");
+    const batteryLimits={"y-rwd":160000,"3-lr":192000,"3-perf":192000,"y-lr":192000,"y-perf":192000,"sx":240000};
+    const rows=[
+      warrantyRow("基本車輛有限保固",4,80000,start,km),
+      warrantyRow("SRS 安全氣囊系統",5,100000,start,km)
+    ];
+    if(batteryLimits[key]){
+      rows.push(warrantyRow("電池與驅動單元",8,batteryLimits[key],start,km));
+    }
+    rows.push(warrantyRow("車體鏽蝕有限保固",12,null,start,km));
+    const warning=key==="other"?'<div class="info-box"><b>電池／驅動保固未計入</b><p>你選了其他／不確定車型，因各版本里程門檻不同，COLA GO 不自行猜測。請開官方保固頁確認。</p></div>':"";
+    $("#warrantyResult").innerHTML='<div class="warranty-list">'+rows.map(renderWarrantyRow).join("")+'</div>'+warning+'<p class="notice">判斷規則：年限或里程只要其中一個先到，就可能超出該項保固範圍；實際資格仍以 Tesla 車輛紀錄與條款為準。</p>';
+  };
+}
+function connectorDecision(vehicle,charger){
+  if(vehicle==="unknown"){
+    return {type:"verify",badge:"先確認車端",title:"先確認你的充電口",text:"同一品牌、不同年份或市場可能使用不同接頭。先確認車端規格，再判斷是否能直接充電。"};
+  }
+  if(charger==="dc-ccs2"){
+    if(vehicle==="tesla-ccs2"||vehicle==="ev-ccs2")return {type:"direct",badge:"可直接使用",title:"接頭直接相容",text:"車端與充電設備都是 CCS2。實際充電仍受站點、車輛通訊協定與營運商規則影響。"};
+    if(vehicle==="tesla-nacs")return {type:"adapter",badge:"需要確認轉接",title:"不能直接插 CCS2",text:"NACS 車端使用 CCS2 充電設備通常需要相容轉接器，而且必須確認你的車款、年份與軟硬體是否支援。"};
+    return {type:"no",badge:"不可直接使用",title:"接頭不同",text:"目前選擇的車端接頭不是 CCS2，不能把不同規格的 DC 接頭直接互插。"};
+  }
+  if(charger==="dc-ccs1"){
+    if(vehicle==="ccs1")return {type:"direct",badge:"可直接使用",title:"CCS1 直接相容",text:"車端與設備同為 CCS1；實際啟動仍依營運商與車款通訊相容性。"};
+    return {type:"no",badge:"不可直接使用",title:"DC 接頭不同",text:"CCS1 與 CCS2／NACS 不是可直接互插的相同接頭。若要轉接，必須使用車廠明確支援的 DC 轉接方案。"};
+  }
+  if(charger==="ac-type2"){
+    if(vehicle==="tesla-ccs2"||vehicle==="ev-ccs2"||vehicle==="type2")return {type:"direct",badge:"通常可直接使用",title:"Type 2 AC 相容",text:"CCS2 車端的交流部分採 Type 2 介面，一般可使用 Type 2 AC 充電。仍請確認站點線材與車款規格。"};
+    if(vehicle==="tesla-nacs"||vehicle==="j1772")return {type:"adapter",badge:"需要轉接／確認",title:"接頭不同",text:"可能需要對應 AC 轉接器；請使用車廠或充電產品明確支援的方案。"};
+    return {type:"verify",badge:"需要確認",title:"請確認 AC 介面",text:"目前選擇不足以確認可直接使用。"};
+  }
+  if(charger==="ac-j1772"){
+    if(vehicle==="j1772")return {type:"direct",badge:"可直接使用",title:"J1772 直接相容",text:"車端與設備同為 J1772 / Type 1 AC。"};
+    if(vehicle==="tesla-nacs")return {type:"adapter",badge:"需要轉接",title:"需使用相容 J1772 轉接器",text:"Tesla 官方有 J1772 轉接器產品指南；仍要確認你的車輛與轉接器版本。"};
+    return {type:"adapter",badge:"需要轉接／確認",title:"AC 接頭不同",text:"Type 2／CCS2 與 J1772 不是直接互插，需依車款使用正確 AC 轉接方案。"};
+  }
+  if(charger==="tesla-supercharger"){
+    if(vehicle==="tesla-ccs2")return {type:"direct",badge:"Tesla 車主",title:"使用 Tesla 導航／App 確認站點",text:"台灣 Tesla 車輛可依車輛導航或 Tesla App 查看可使用的超級充電站；不同站點與充電座規格可能不同。"};
+    if(vehicle==="ev-ccs2")return {type:"verify",badge:"部分站點可用",title:"先在 Tesla App 確認站點",text:"Tesla 已在台灣開放部分超級充電站給非 Tesla 電動車。是否可用要看該站點、車輛接頭／轉接支援與 Tesla App 顯示，不應只看外觀判定。"};
+    if(vehicle==="tesla-nacs")return {type:"direct",badge:"依站點規格",title:"以 Tesla 導航／App 為準",text:"NACS Tesla 可使用相容的 Tesla 超級充電站；若遇到不同規格站點，請以車輛導航或 Tesla App 的可用站點為準。"};
+    return {type:"verify",badge:"不能只看接頭判定",title:"先確認 Tesla App 與轉接支援",text:"非 Tesla 超充支援涉及站點類型、車端規格與車廠支援的 DC 轉接器。不要使用未經車廠支援的方式硬轉接。"};
+  }
+  return {type:"verify",badge:"需要確認",title:"目前無法直接判定",text:"請以車廠與充電設備營運商的相容資訊為準。"};
+}
+function bindConnector(){
+  const btn=$("#checkConnectorBtn");
+  if(!btn)return;
+  btn.onclick=()=>{
+    const result=connectorDecision($("#vehicleConnector").value,$("#chargerConnector").value);
+    $("#connectorResult").innerHTML='<div class="compat-card"><span class="compat-badge '+result.type+'">'+esc(result.badge)+'</span><h3>'+esc(result.title)+'</h3><p>'+esc(result.text)+'</p><div class="compat-notes">安全原則：DC 快充轉接器必須確認車廠與設備明確支援；「物理上插得進去」不代表協定與安全條件相容。</div></div>';
+  };
+}
+
 function bindInstall(){
   addEventListener("beforeinstallprompt",e=>{
     e.preventDefault();
@@ -677,6 +770,8 @@ bindCalculator();
 bindChecklist();
 bindParts();
 bindLucky();
+bindWarranty();
+bindConnector();
 bindInstall();
 show(location.hash.slice(1)||"home",false);
 load();

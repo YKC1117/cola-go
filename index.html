@@ -175,6 +175,8 @@
           <button data-go="parts"><span><svg><use href="#i-tools"/></svg></span><b>Tesla 零件</b><small>官方目錄與料號</small></button>
           <button data-go="plate"><span><svg><use href="#i-car"/></svg></span><b>選牌標牌</b><small>官方監理入口</small></button>
           <button data-go="lucky"><span><svg><use href="#i-hash"/></svg></span><b>車牌數字</b><small>快速加總參考</small></button>
+          <button data-go="warranty"><span><svg><use href="#i-clipboard"/></svg></span><b>保固剩餘</b><small>日期＋里程一起算</small></button>
+          <button data-go="connector"><span><svg><use href="#i-bolt"/></svg></span><b>充電接頭</b><small>相容性快速判斷</small></button>
           <button data-go="cctv"><span><svg><use href="#i-camera"/></svg></span><b>即時影像</b><small>國道／省道 CCTV</small></button>
         </div>
       </section>
@@ -246,6 +248,62 @@
         <p class="notice">這是民俗娛樂參考，不影響車輛安全、價值或實際運勢。</p>
       </section>
 
+
+
+      <section class="view" data-view="warranty">
+        <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">WARRANTY</span><h1>保固剩餘</h1></div></div>
+        <div class="tool-form">
+          <label><small>車型／版本</small>
+            <select id="warrantyModel">
+              <option value="y-rwd">Model Y 後輪驅動</option>
+              <option value="3-lr">Model 3 Long Range 後輪驅動</option>
+              <option value="3-perf">Model 3 Performance 全輪驅動</option>
+              <option value="y-lr">Model Y Long Range 全輪驅動</option>
+              <option value="y-perf">Model Y Performance 全輪驅動</option>
+              <option value="sx">Model S / Model X</option>
+              <option value="other">其他／不確定</option>
+            </select>
+          </label>
+          <label><small>交車／首次領牌日期</small><input id="warrantyDate" type="date"></label>
+          <label><small>目前里程 km</small><input id="warrantyKm" type="number" min="0" step="1" placeholder="例如 32000"></label>
+          <button class="primary" id="calcWarrantyBtn">計算剩餘保固</button>
+        </div>
+        <div id="warrantyResult"></div>
+        <div class="info-box"><b>怎麼看結果</b><p>所有保固都是依 Tesla 公布的「年限或里程，以先到者為準」。本工具只做時間／里程換算，不取代 Tesla 對實際保固資格的判定。</p></div>
+        <button class="external-btn secondary" data-url="https://www.tesla.com/zh_TW/support/vehicle-warranty">Tesla 台灣官方保固說明<svg><use href="#i-external"/></svg></button>
+      </section>
+
+      <section class="view" data-view="connector">
+        <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">CHARGING COMPATIBILITY</span><h1>充電接頭</h1></div></div>
+        <div class="tool-form">
+          <label><small>你的車端接頭</small>
+            <select id="vehicleConnector">
+              <option value="tesla-ccs2">Tesla 台灣 CCS2</option>
+              <option value="tesla-nacs">Tesla NACS／舊規格</option>
+              <option value="ev-ccs2">非 Tesla CCS2</option>
+              <option value="ccs1">CCS1</option>
+              <option value="type2">Type 2 AC</option>
+              <option value="j1772">J1772 / Type 1 AC</option>
+              <option value="unknown">不確定</option>
+            </select>
+          </label>
+          <label><small>想使用的充電設備</small>
+            <select id="chargerConnector">
+              <option value="tesla-supercharger">Tesla 超級充電</option>
+              <option value="dc-ccs2">CCS2 公共快充</option>
+              <option value="dc-ccs1">CCS1 公共快充</option>
+              <option value="ac-type2">Type 2 AC 慢充</option>
+              <option value="ac-j1772">J1772 / Type 1 AC 慢充</option>
+            </select>
+          </label>
+          <button class="primary" id="checkConnectorBtn">檢查相容性</button>
+        </div>
+        <div id="connectorResult"></div>
+        <div class="stack-actions">
+          <button class="external-btn secondary" data-url="https://www.tesla.com/zh_tw/support/charging/supercharging-other-evs">非 Tesla 使用超充官方說明<svg><use href="#i-external"/></svg></button>
+          <button class="external-btn secondary" data-url="https://www.tesla.com/zh_tw/support/charging/product-guides">Tesla 充電／轉接器產品指南<svg><use href="#i-external"/></svg></button>
+        </div>
+      </section>
 
       <section class="view" data-view="market">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">MARKET</span><h1>買車・賣車・配件</h1></div></div>
