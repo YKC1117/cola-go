@@ -68,8 +68,39 @@ jobs:
               "SwordFish","TSLAMARS","intents-remote-image-proxy"
           ]:
               assert private not in tblob, f"private donor value leaked: {private}"
-          assert "WFWorkflowImportQuestions" not in tblob
           assert "我的 Tesla" not in tblob
+
+          actions=tesla["WFWorkflowActions"]
+          questions=tesla.get("WFWorkflowImportQuestions",[])
+          vehicle_action_indexes=[
+              i for i,a in enumerate(actions)
+              if a.get("WFWorkflowActionIdentifier","").startswith("com.teslamotors.TeslaApp.")
+              and "vehicle" in a.get("WFWorkflowActionParameters",{})
+          ]
+          assert questions, "Tesla vehicle import questions missing"
+          assert len(questions)==len(vehicle_action_indexes), (
+              len(questions), len(vehicle_action_indexes)
+          )
+          assert len(questions) <= 20, f"too many vehicle setup questions: {len(questions)}"
+          for q in questions:
+              assert q.get("Category")=="Parameter", q
+              assert q.get("ParameterKey")=="vehicle", q
+              assert "DefaultValue" not in q, "public shortcut must not embed a donor/default Tesla"
+              idx=q.get("ActionIndex")
+              assert isinstance(idx,int) and idx in vehicle_action_indexes, q
+              target=actions[idx]
+              assert target.get("WFWorkflowActionParameters",{}).get("vehicle")=={
+                  "Value":{"Type":"Ask"},
+                  "WFSerializationType":"WFTextTokenAttachment"
+              }, q
+              assert "Tesla" in q.get("Text",""), q
+          assert sorted(q["ActionIndex"] for q in questions)==sorted(vehicle_action_indexes)
+
+          tesla_intent_count=sum(
+              1 for a in actions
+              if a.get("WFWorkflowActionIdentifier","").startswith("com.teslamotors.TeslaApp.")
+          )
+          assert tesla_intent_count <= 25, f"Tesla AppIntent duplication regressed: {tesla_intent_count}"
 
           actions=tesla["WFWorkflowActions"]
           bundle="com.teslamotors.TeslaApp"
