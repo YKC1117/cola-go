@@ -104,17 +104,17 @@ jobs:
           sleep 2
           xcrun simctl openurl "$UDID" "file://$OIL_PATH"
           sleep 4
-          idb ui describe-all --key AXLabel --key frame > /tmp/carkit-probe/oil-before.json || true
+          idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/oil-before.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-before.png
-          idb ui tap "Add Shortcut"
+          idb ui tap "Add Shortcut" --udid "$UDID"
           sleep 6
-          idb ui describe-all --key AXLabel --key frame > /tmp/carkit-probe/oil-after-add.json || true
+          idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/oil-after-add.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-after-add.png
 
           # Confirm Oil exists in the library/editor by asking Shortcuts to open it.
           xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B" || true
           sleep 5
-          idb ui describe-all --key AXLabel --key frame > /tmp/carkit-probe/oil-opened.json || true
+          idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/oil-opened.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-opened.png
 
           # Tesla: direct file, tap Add Shortcut, then inspect setup/import questions.
@@ -123,11 +123,11 @@ jobs:
           sleep 2
           xcrun simctl openurl "$UDID" "file://$TESLA_PATH"
           sleep 4
-          idb ui describe-all --key AXLabel --key frame > /tmp/carkit-probe/tesla-before.json || true
+          idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/tesla-before.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-before.png
-          idb ui tap "Add Shortcut"
+          idb ui tap "Add Shortcut" --udid "$UDID"
           sleep 6
-          idb ui describe-all --key AXLabel --key frame > /tmp/carkit-probe/tesla-after-add.json || true
+          idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/tesla-after-add.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-after-add.png
 
           # The Tesla app is not available in the stock Simulator. Capture logs
