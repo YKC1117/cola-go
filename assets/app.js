@@ -356,7 +356,7 @@ function renderParking(){
       '</article>';
     }).join("");
   }else if(live.status==="live"&&(query||state.parkingHasSpaceOnly)){
-    liveRoot.innerHTML='<div class="empty"><b>沒有符合的臺南停車場</b><p>換個名稱、行政區，或關閉「只看有位」。</p></div>';
+    liveRoot.innerHTML='<div class="empty"><b>沒有符合的'+(state.parkingCity==="taichung"?"臺中":state.parkingCity==="taoyuan"?"桃園":"臺南")+'停車場</b><p>換個名稱、行政區'+(cityMeta.mode==="signal"?"。":"，或關閉「只看有位」。")+'</p></div>';
   }else{
     liveRoot.innerHTML='<div class="market-empty"><b>'+cityMeta.empty+'</b><p>不顯示過期數字。你仍可直接用地圖找附近停車場。</p><div class="item-actions"><button class="go" data-nearby-parking="google">Google Maps</button><button data-nearby-parking="apple">Apple 地圖</button></div></div>';
   }
@@ -404,7 +404,7 @@ function bindParkingTools(){
   $$("#parkingCityTabs [data-parking-city]").forEach(b=>b.addEventListener("click",()=>{
     state.parkingCity=b.dataset.parkingCity;
     if(state.parkingCity==="taichung")state.parkingHasSpaceOnly=false;
-    $("#parkingCityTabs [data-parking-city]").forEach(x=>x.classList.toggle("active",x===b));
+    $$("#parkingCityTabs [data-parking-city]").forEach(x=>x.classList.toggle("active",x===b));
     if($("#parkingSearch"))$("#parkingSearch").value="";
     renderParking();
   }));
