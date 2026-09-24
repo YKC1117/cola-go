@@ -1,0 +1,170 @@
+name: Highway CCTV QA
+
+on:
+  push:
+    branches: ["feature/highway-cctv-live"]
+    paths:
+      - "index.html"
+      - "assets/app.js"
+      - "assets/styles.css"
+      - "sw.js"
+      - ".github/workflows/highway-cctv-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax check
+        run: |
+          node --check assets/app.js
+          node --check sw.js
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium webkit
+      - name: Start app
+        run: |
+          python3 -m http.server 4173 >/tmp/server.log 2>&1 &
+          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/server.log
+          exit 1
+      - name: Run live-data mocked regressions
+        run: |
+          cat > highway-cctv-qa.mjs <<'EOF'
+          import { chromium, webkit } from 'playwright';
+          import fs from 'node:fs';
+
+          const base='http://127.0.0.1:4173/';
+          const out='qa-highway-cctv';
+          fs.mkdirSync(out,{recursive:true});
+
+          const cctvJson={
+            CCTVs:[
+              {CCTVID:'CCTV-N5-001',VideoStreamURL:'https://example.test/n5-live.mjpg',RoadName:'國道5號',RoadDirection:'S',LocationMile:'28K',PositionLat:24.91,PositionLon:121.71,Start:'石碇',End:'坪林'},
+              {CCTVID:'CCTV-N1-001',VideoStreamURL:'https://example.test/n1-live.mjpg',RoadName:'國道1號',RoadDirection:'N',LocationMile:'319K',PositionLat:23.02,PositionLon:120.22,Start:'永康',End:'台南'}
+            ]
+          };
+          const sectionJson={
+            Sections:[
+              {SectionID:'N5-001',SectionName:'石碇 → 坪林',RoadName:'國道5號',RoadDirection:'S',Start:'石碇',End:'坪林'},
+              {SectionID:'N1-001',SectionName:'永康 → 台南',RoadName:'國道1號',RoadDirection:'S',Start:'永康',End:'台南'}
+            ]
+          };
+          const liveJson={
+            LiveTraffics:[
+              {SectionID:'N5-001',TravelSpeed:65,CongestionLevel:1,DataCollectTime:'2026-09-24T23:15:00+08:00'},
+              {SectionID:'N1-001',TravelSpeed:88,CongestionLevel:0,DataCollectTime:'2026-09-24T23:15:00+08:00'}
+            ]
+          };
+          const cctvXml=`<?xml version="1.0" encoding="UTF-8"?>
+          <root><CCTV><CCTVID>XML-N3-001</CCTVID><VideoStreamURL>https://example.test/n3-live.mjpg</VideoStreamURL><RoadName>國道3號</RoadName><RoadDirection>N</RoadDirection><LocationMile>350K</LocationMile><PositionLat>22.99</PositionLat><PositionLon>120.25</PositionLon><Start>關廟</Start><End>田寮</End></CCTV></root>`;
+
+          async function setup(browserType,mode){
+            const browser=await browserType.launch({headless:true});
+            const context=await browser.newContext({viewport:{width:430,height:932},isMobile:true,hasTouch:true});
+            await context.addInitScript(()=>{
+              window.__opened=[];
+              window.open=(url)=>{window.__opened.push(String(url));return null;};
+              sessionStorage.clear();
+            });
+
+            if(mode==='tdx-success'){
+              await context.route('**/api/basic/v2/Road/Traffic/CCTV/Freeway*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cctvJson)}));
+              await context.route('**/api/basic/v2/Road/Traffic/Section/Freeway*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(sectionJson)}));
+              await context.route('**/api/basic/v2/Road/Traffic/Live/Freeway*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(liveJson)}));
+            }else if(mode==='xml-cctv'){
+              await context.route('**/api/basic/v2/Road/Traffic/CCTV/Freeway*',r=>r.abort());
+              await context.route('**/history/motc20/CCTV.xml',r=>r.fulfill({status:200,contentType:'application/xml',body:cctvXml}));
+            }else if(mode==='all-fail'){
+              await context.route('**/api/basic/v2/Road/Traffic/**',r=>r.abort());
+              await context.route('**/history/motc20/**',r=>r.abort());
+            }
+            return {browser,context,page:await context.newPage()};
+          }
+
+          async function successScenario(browserType,label){
+            const {browser,page}=await setup(browserType,'tdx-success');
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e)));
+            await page.goto(base,{waitUntil:'networkidle'});
+
+            await page.locator('[data-go="cctv"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#cctvSourceState')?.textContent.includes('2 支'));
+            if(await page.locator('.cctv-card').count()!==2)throw new Error(label+' CCTV count');
+            await page.locator('#cctvRoadFilter [data-cctv-road="5"]').click();
+            if(await page.locator('.cctv-card').count()!==1)throw new Error(label+' CCTV road filter');
+            if(!(await page.locator('.cctv-card').first().textContent()).includes('國道5號'))throw new Error(label+' CCTV filter content');
+            await page.locator('[data-cctv-stream]').click();
+            if(!(await page.evaluate(()=>window.__opened.some(x=>x.includes('n5-live.mjpg')))))throw new Error(label+' CCTV stream open');
+            await page.locator('[data-cctv-map]').click();
+            if(!(await page.evaluate(()=>window.__opened.some(x=>x.includes('google.com/maps/search')))))throw new Error(label+' CCTV map open');
+            await page.screenshot({path:out+'/cctv-'+label+'.png',fullPage:true});
+
+            await page.locator('.brand').click();
+            await page.locator('[data-go="highway"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#highwayList')?.textContent.includes('永康 → 台南'));
+            await page.locator('#highwayTabs [data-highway="1"]').click();
+            const highwayText=await page.locator('#highwayList').textContent();
+            if(!highwayText.includes('88')||!highwayText.includes('永康 → 台南'))throw new Error(label+' highway live render');
+
+            await page.locator('[data-view="highway"] .back').click();
+            await page.locator('[data-go="tunnel"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#tunnelList')?.textContent.includes('石碇 → 坪林'));
+            const tunnelText=await page.locator('#tunnelList').textContent();
+            if(!tunnelText.includes('65'))throw new Error(label+' tunnel live render');
+            if(errors.length)throw new Error(label+' page errors '+errors.join(' | '));
+            await browser.close();
+          }
+
+          async function xmlFallbackScenario(){
+            const {browser,page}=await setup(chromium,'xml-cctv');
+            await page.goto(base,{waitUntil:'networkidle'});
+            await page.locator('[data-go="cctv"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#cctvSourceState')?.textContent.includes('1 支'));
+            const text=await page.locator('#cctvList').textContent();
+            if(!text.includes('國道3號')||!text.includes('350K'))throw new Error('XML fallback render');
+            await page.locator('[data-cctv-stream]').click();
+            if(!(await page.evaluate(()=>window.__opened.some(x=>x.includes('n3-live.mjpg')))))throw new Error('XML stream open');
+            await browser.close();
+          }
+
+          async function failureScenario(){
+            const {browser,page}=await setup(chromium,'all-fail');
+            await page.goto(base,{waitUntil:'networkidle'});
+            await page.locator('[data-go="cctv"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#cctvSourceState')?.textContent.includes('暫時無法讀取'));
+            if(await page.locator('.cctv-card').count())throw new Error('failure path must not show fake CCTV');
+            const links=await page.locator('[data-view="cctv"] [data-url]').count();
+            if(links<2)throw new Error('official CCTV fallbacks missing');
+
+            await page.locator('.brand').click();
+            await page.locator('[data-go="highway"]').first().click();
+            await page.waitForTimeout(300);
+            const text=await page.locator('#highwayList').textContent();
+            if(!text.includes('1968'))throw new Error('highway official fallback missing');
+            await browser.close();
+          }
+
+          await successScenario(chromium,'chromium');
+          await successScenario(webkit,'webkit');
+          await xmlFallbackScenario();
+          await failureScenario();
+          console.log('HIGHWAY_CCTV_QA_SUCCESS');
+          EOF
+          node highway-cctv-qa.mjs
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: highway-cctv-qa
+          path: qa-highway-cctv
+          retention-days: 2
