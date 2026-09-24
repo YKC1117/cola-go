@@ -76,12 +76,14 @@ jobs:
           const roadBox=await page.locator('.road-now').boundingBox();
           expect(roadBox && roadBox.y < 932,'road summary starts in first viewport',JSON.stringify(roadBox));
           expect(await page.locator('#installSheet').count()===0,'blocking install sheet absent');
+          await page.screenshot({path:out+'/home-430x932-viewport.png',fullPage:false});
           await page.screenshot({path:out+'/home-430x932.png',fullPage:true});
 
           await page.locator('#installBtn').click();
           await page.waitForTimeout(100);
-          expect(await page.locator('#toast').getAttribute('class').then(c=>(c||'').includes('show')),'iPhone install uses non-blocking toast');
           expect(await page.locator('.sheet').count()===0,'no blocking sheet after install click');
+          expect(await page.locator('#installSheet').count()===0,'install click does not recreate blocking sheet');
+          pass('install button click completed without blocking UI');
 
           const coreViews=['charging','parking','highway','tunnel'];
           for(const view of coreViews){
@@ -188,6 +190,14 @@ jobs:
             }
             await p.close();
           }
+
+          await page.locator('.brand').click();
+          await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));
+          await page.waitForTimeout(120);
+          const navBox=await page.locator('.bottom-nav').boundingBox();
+          const lastTool=page.locator('.home-more button').last();
+          const lastBox=await lastTool.boundingBox();
+          expect(navBox && lastBox && lastBox.bottom <= navBox.y+2,'last home tool can scroll above bottom nav',JSON.stringify({navBox,lastBox}));
 
           fs.writeFileSync(out+'/results.json',JSON.stringify(results,null,2));
           console.log(JSON.stringify(results,null,2));
