@@ -8,7 +8,7 @@ TEAM="PS9EBAM2PU"
 BUNDLE="com.teslamotors.TeslaApp"
 
 def uid(seed):
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, "CarKitTW/TeslaDriver/v0.3/"+seed)).upper()
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "CarKitTW/TeslaDriver/v0.4/"+seed)).upper()
 
 def ao(u,n):
     return {"WFSerializationType":"WFTextTokenAttachment","Value":{"Type":"ActionOutput","OutputUUID":u,"OutputName":n}}
@@ -18,6 +18,42 @@ def ask():
 
 def act(i,p=None):
     return {"WFWorkflowActionIdentifier":i,"WFWorkflowActionParameters":p or {}}
+
+def shortcut_input_condition(value,yes_actions,no_actions,seed,label):
+    g=uid(seed+"-group")
+    input_ref={
+      "Type":"Variable",
+      "Variable":{
+        "Value":{"Type":"ExtensionInput"},
+        "WFSerializationType":"WFTextTokenAttachment"
+      }
+    }
+    return [
+      act("is.workflow.actions.comment",{
+        "UUID":uid(seed+"-comment"),
+        "WFCommentActionText":f"{label}\n- 讀取傳入捷徑的文字模式\n- 符合時直接執行車機自動流程，不顯示主選單"
+      }),
+      act("is.workflow.actions.conditional",{
+        "UUID":uid(seed+"-start"),
+        "GroupingIdentifier":g,
+        "WFControlFlowMode":0,
+        "WFCondition":4,
+        "WFConditionalActionString":value,
+        "WFInput":input_ref
+      }),
+      *yes_actions,
+      act("is.workflow.actions.conditional",{
+        "UUID":uid(seed+"-else"),
+        "GroupingIdentifier":g,
+        "WFControlFlowMode":1
+      }),
+      *no_actions,
+      act("is.workflow.actions.conditional",{
+        "UUID":uid(seed+"-end"),
+        "GroupingIdentifier":g,
+        "WFControlFlowMode":2
+      })
+    ]
 
 def app(bundle,seed):
     return act("is.workflow.actions.openapp",{"UUID":uid(seed),"WFAppIdentifier":bundle})
@@ -78,9 +114,14 @@ lock=tesla("LockUnlockIntent","lock",{"vehicleControlType":"lock"})
 unlock=tesla("LockUnlockIntent","unlock",{"vehicleControlType":"unlock"})
 frunk=tesla("FrontTrunkIntent","frunk")
 rear=tesla("RearTrunkIntent","rear",{"rearTrunkAction":ask()})
-pre_start=tesla("PreconditionIntent","pre-start",{"preconditionAction":"start"},show=False)
-pre_stop=tesla("PreconditionIntent","pre-stop",{"preconditionAction":"stop"},show=False)
-defrost=tesla("DefrostIntent","defrost",{"defrostAction":ask()})
+def pre_start_action(seed):
+    return tesla("PreconditionIntent",seed,{"preconditionAction":"start"},show=False)
+
+def pre_stop_action(seed):
+    return tesla("PreconditionIntent",seed,{"preconditionAction":"stop"},show=False)
+
+def defrost_action(seed):
+    return tesla("DefrostIntent",seed,{"defrostAction":ask()})
 vent=tesla("VentIntent","vent")
 closewin=tesla("CloseWindowIntent","close-window")
 sentry=tesla("SentryModeIntent","sentry",{"vehicleModeAction":ask()})
@@ -105,10 +146,10 @@ temp_menu=menu("車室溫度",["22°C","23°C","24°C"],{
 },"temp-menu")
 
 climate_menu=menu("空調 / 車室",["開始預冷 / 預熱","停止預冷 / 預熱","設定溫度","除霜"],{
-    "開始預冷 / 預熱":[pre_start],
-    "停止預冷 / 預熱":[pre_stop],
+    "開始預冷 / 預熱":[pre_start_action("climate-pre-start")],
+    "停止預冷 / 預熱":[pre_stop_action("climate-pre-stop")],
     "設定溫度":temp_menu,
-    "除霜":[defrost],
+    "除霜":[defrost_action("climate-defrost")],
 },"climate-menu")
 
 door_menu=menu("車門控制",["鎖車","解鎖"],{
@@ -147,13 +188,13 @@ nav_menu=menu("導航",["Apple 地圖","Google Maps","Waze"],{
 more_menu=menu("更多功能",["Tesla App","車窗","除霜","趣味放屁","高速公路1968"],{
     "Tesla App":[app(BUNDLE,"tesla-app")],
     "車窗":window_menu,
-    "除霜":[defrost],
+    "除霜":[defrost_action("more-defrost")],
     "趣味放屁":[fart],
     "高速公路1968":[app("tw.gov.freeway1968Ver2.Freeway1968HD","tesla-1968")],
 },"more-menu")
 
 prepare=[
-    pre_start,
+    pre_start_action("prepare-pre-start"),
     temp_action(23,"prepare-temp23"),
     app("tw.com.ainvest.outpack","prepare-shield"),
     act("is.workflow.actions.notification",{
@@ -179,10 +220,31 @@ main_branches={
     "更多":more_menu,
 }
 
+manual_menu=menu("Tesla Driver｜今天要做什麼？",main_items,main_branches,"main-menu")
+
+auto_start=[
+  app("tw.com.ainvest.outpack","auto-start-shield")
+]
+
+auto_cur=uid("auto-end-current-location")
+auto_end=[
+  act("is.workflow.actions.getcurrentlocation",{"UUID":auto_cur}),
+  act("is.workflow.actions.setparkedcar",{
+    "UUID":uid("auto-end-set-parked-car"),
+    "WFLocation":ao(auto_cur,"Current Location"),
+    "WFSetParkedCarNotes":"Tesla Driver 自動記錄"
+  })
+]
+
+auto_end_route=shortcut_input_condition(
+  "AUTO_END",auto_end,manual_menu,
+  "route-auto-end","辨識下車自動化"
+)
+
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v0.3｜Tesla × Apple 智慧車用捷徑\n- 使用 Tesla App 原生 Shortcuts / AppIntent 車控\n- 解鎖與前行李廂等物理操作保留人工確認\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用 °C 溫度數值，這裡沒有進行單位換算"
+    "WFCommentActionText":"Tesla Driver v0.4｜Tesla × Apple 智慧車用捷徑\n- 使用 Tesla App 原生 Shortcuts / AppIntent 車控\n- 解鎖與前行李廂等物理操作保留人工確認\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用 °C 溫度數值，這裡沒有進行單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
@@ -193,14 +255,17 @@ actions=[
     "WFTextActionText":"我的 Tesla"
   })
 ]
-actions += menu("Tesla Driver｜今天要做什麼？",main_items,main_branches,"main-menu")
+actions += shortcut_input_condition(
+  "AUTO_START",auto_start,auto_end_route,
+  "route-auto-start","辨識 Tesla Bluetooth 上車自動化"
+)
 
 wf={
  "WFWorkflowClientVersion":"3400.0",
  "WFWorkflowMinimumClientVersion":900,
  "WFWorkflowMinimumClientVersionString":"900",
  "WFWorkflowTypes":["NCWidget","WatchKit"],
- "WFWorkflowInputContentItemClasses":[],
+ "WFWorkflowInputContentItemClasses":["WFStringContentItem"],
  "WFWorkflowOutputContentItemClasses":[],
  "WFWorkflowIcon":{"WFWorkflowIconGlyphNumber":59511,"WFWorkflowIconStartColor":4274264319},
  "WFWorkflowImportQuestions":[{
@@ -214,6 +279,6 @@ wf={
 }
 
 data=plistlib.dumps(wf,fmt=plistlib.FMT_XML,sort_keys=False)
-p=OUT/"Tesla-Driver-v0.3.shortcut.xml"
+p=OUT/"Tesla-Driver-v0.4.shortcut.xml"
 p.write_bytes(data)
 print(p,len(actions),len(data))
