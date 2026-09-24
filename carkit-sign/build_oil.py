@@ -124,3 +124,5 @@ data=plistlib.dumps(wf,fmt=plistlib.FMT_XML,sort_keys=False)
 p=OUT/"Oil-Driver-v0.3.shortcut.xml"
 p.write_bytes(data)
 print(p, len(actions), len(data))
+
+# trigger Tesla donor inspection
