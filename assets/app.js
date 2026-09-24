@@ -19,7 +19,9 @@ const state={
   cctv:{status:"idle",items:[],source:"",error:""},
   cctvRoad:"all",
   cctvLoading:false,
+  cctvLastAttempt:0,
   trafficFallbackStatus:"idle",
+  trafficFallbackAt:0,
   installPrompt:null
 };
 
@@ -164,14 +166,14 @@ function renderCharging(){
       '<div class="location-line"><svg><use href="#i-pin"/></svg><span>'+esc(x.location)+(x.note?" · "+esc(x.note):"")+'</span></div>'+
       '<div class="item-actions">'+
         '<button class="go" data-nav="'+encodeURIComponent(x.name)+'">導航</button>'+
-        '<button data-camera>即時影像</button>'+
+        '<button data-camera-road="'+esc(x.road)+'">即時影像</button>'+
         '<button data-copy="'+esc(x.name)+'">複製</button>'+
       '</div>'+
     '</article>'
   ).join(""):'<div class="empty"><b>沒有符合的充電站</b><p>換個服務區、業者或接頭名稱。</p></div>';
 
   $$("[data-nav]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.nav,"_blank","noopener"));
-  $$("[data-camera]",root).forEach(b=>b.onclick=()=>show("cctv"));
+  $("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
   $$("[data-copy]",root).forEach(b=>b.onclick=async()=>{
     try{
       await navigator.clipboard.writeText(b.dataset.copy);
@@ -283,8 +285,15 @@ function xmlObjects(text,idField,requiredField){
   return Array.from(doc.getElementsByTagName("*")).filter(node=>childText(node,idField)&&childText(node,requiredField));
 }
 
+function safeHttpUrl(value){
+  try{
+    const url=new URL(String(value||""));
+    return /^https?:$/.test(url.protocol)?url.href:"";
+  }catch{return "";}
+}
+
 function normalizeCCTVObject(x){
-  const stream=x.VideoStreamURL||x.videoStreamURL||x.StreamURL||x.streamURL||"";
+  const stream=safeHttpUrl(x.VideoStreamURL||x.videoStreamURL||x.StreamURL||x.streamURL||"");
   const id=x.CCTVID||x.CCTVId||x.cctvId||x.id||"";
   if(!id||!stream)return null;
   const roadName=x.RoadName||x.roadName||"";
@@ -337,6 +346,8 @@ function parseCCTVXml(text){
 
 async function ensureCCTV(){
   if(state.cctv.status==="ready"||state.cctvLoading)return;
+  if(state.cctv.status==="unavailable"&&Date.now()-state.cctvLastAttempt<60000)return;
+  state.cctvLastAttempt=Date.now();
   state.cctvLoading=true;
   state.cctv={...state.cctv,status:"loading",error:""};
   renderCCTV();
@@ -530,8 +541,10 @@ function buildTunnelFromTraffic(traffic){
 }
 
 async function ensureClientTraffic(){
-  if(state.traffic?.status==="live"||state.trafficFallbackStatus==="loading"||state.trafficFallbackStatus==="done")return;
+  if(state.traffic?.status==="live"||state.trafficFallbackStatus==="loading")return;
+  if(state.trafficFallbackStatus==="failed"&&Date.now()-state.trafficFallbackAt<60000)return;
   state.trafficFallbackStatus="loading";
+  state.trafficFallbackAt=Date.now();
 
   try{
     const cached=JSON.parse(sessionStorage.getItem("cola-go-traffic-client-v1")||"null");
@@ -574,10 +587,17 @@ async function ensureClientTraffic(){
     try{sessionStorage.setItem("cola-go-traffic-client-v1",JSON.stringify({savedAt:Date.now(),traffic:state.traffic,tunnel:state.tunnel}));}catch{}
     renderAll();
   }else{
-    state.trafficFallbackStatus="done";
+    state.trafficFallbackStatus="failed";
     renderTraffic();
     renderTunnel();
   }
+}
+
+function openCCTVForRoad(road){
+  state.cctvRoad=String(road||"all");
+  $("#cctvRoadFilter button").forEach(b=>b.classList.toggle("active",b.dataset.cctvRoad===state.cctvRoad));
+  show("cctv");
+  renderCCTV();
 }
 
 function renderTraffic(){
@@ -600,7 +620,7 @@ function renderTraffic(){
 
   root.innerHTML=list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
-  $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>show("cctv"));
+  $("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(state.highway));
 }
 
 function renderTunnel(){
@@ -623,7 +643,7 @@ function renderTunnel(){
 
   root.innerHTML=list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
-  $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>show("cctv"));
+  $("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad("5"));
 }
 
 function renderMarket(){
