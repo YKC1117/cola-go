@@ -26,7 +26,8 @@ jobs:
 
       - name: Install Playwright Chromium
         run: |
-          npm --yes exec playwright@1.55.0 install --with-deps chromium
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
 
       - name: Start static server
         run: |
@@ -196,7 +197,7 @@ jobs:
           if(failed.length) process.exit(1);
           EOF
 
-          npm --yes exec --package=playwright@1.55.0 -- node /tmp/visual-qa.mjs
+          node /tmp/visual-qa.mjs
 
       - name: Upload QA screenshots
         if: always()
