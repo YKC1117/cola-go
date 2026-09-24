@@ -56,14 +56,18 @@ function withCors(response, headers) {
   return result;
 }
 
-function pageEnvelope(envelope, url) {
+function parsePaging(url) {
   const limitRaw = url.searchParams.get("limit");
   const cursorRaw = url.searchParams.get("cursor");
   const limit = limitRaw == null ? 500 : Number(limitRaw);
   const offset = cursorRaw == null ? 0 : Number(cursorRaw);
   if (!Number.isInteger(limit) || limit < 1 || limit > 1000) throw new AppError(400, "INVALID_QUERY", "limit must be an integer from 1 to 1000");
   if (!Number.isInteger(offset) || offset < 0) throw new AppError(400, "INVALID_QUERY", "cursor must be a non-negative integer");
+  return { limit, offset };
+}
 
+function pageEnvelope(envelope, paging) {
+  const { limit, offset } = paging;
   const items = Array.isArray(envelope.items) ? envelope.items : [];
   const end = Math.min(items.length, offset + limit);
   return {
@@ -144,9 +148,8 @@ export default {
         return jsonResponse(capabilitiesResponse(), 200, cors);
       }
 
+      const paging = parsePaging(url);
       const routeUrl = new URL(url);
-      const limit = routeUrl.searchParams.get("limit");
-      const cursor = routeUrl.searchParams.get("cursor");
       routeUrl.searchParams.delete("limit");
       routeUrl.searchParams.delete("cursor");
       const route = matchRoute(routeUrl);
@@ -164,10 +167,7 @@ export default {
         return jsonResponse(result.body, result.httpStatus || 503, cors);
       }
 
-      const pagingUrl = new URL(url);
-      if (limit != null) pagingUrl.searchParams.set("limit", limit);
-      if (cursor != null) pagingUrl.searchParams.set("cursor", cursor);
-      const body = pageEnvelope(result.envelope, pagingUrl);
+      const body = pageEnvelope(result.envelope, paging);
 
       const maxPublicBytes = numericEnv(env, "MAX_PUBLIC_BYTES", 524288);
       const encoded = JSON.stringify(body);
