@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { requestToken, fetchTdxPages } from "../src/tdx.js";
+import { requestToken, fetchTdxPages, withOneAuthRefresh } from "../src/tdx.js";
 
 const env={
   TDX_CLIENT_ID:"client",
@@ -95,5 +95,42 @@ describe("TDX data client", () => {
       env,token:"t",path:"/v2/Road/Traffic/Live/Freeway",
       fetchImpl:async()=>new Response("<html>",{status:200})
     })).rejects.toMatchObject({code:"UPSTREAM_SCHEMA_INVALID"});
+  });
+});
+
+describe("single auth refresh policy", () => {
+  it("refreshes once after a token rejection", async () => {
+    const tokens=[];
+    let calls=0;
+    const result=await withOneAuthRefresh({
+      getToken: async(force)=>{tokens.push(force); return force?"fresh":"old";},
+      request: async(token)=>{
+        calls++;
+        if(token==="old") {
+          const error=new Error("401");
+          error.name="AppError";
+          Object.setPrototypeOf(error, (await import("../src/errors.js")).AppError.prototype);
+          error.extra={refreshToken:true};
+          throw error;
+        }
+        return "ok";
+      }
+    });
+    expect(result).toBe("ok");
+    expect(tokens).toEqual([false,true]);
+    expect(calls).toBe(2);
+  });
+
+  it("does not loop if refreshed token is also rejected", async () => {
+    let calls=0;
+    await expect(withOneAuthRefresh({
+      getToken: async(force)=>force?"fresh":"old",
+      request: async()=>{
+        calls++;
+        const {AppError}=await import("../src/errors.js");
+        throw new AppError(503,"UPSTREAM_AUTH_FAILED","bad",{refreshToken:true});
+      }
+    })).rejects.toMatchObject({code:"UPSTREAM_AUTH_FAILED"});
+    expect(calls).toBe(2);
   });
 });
