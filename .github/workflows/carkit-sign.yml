@@ -14,6 +14,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Inspect Tesla charging donor
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json, plistlib
+          from urllib.request import Request, urlopen
+
+          sid="56db63f833fb4201a83c648cfaf89b72"
+          api=f"https://www.icloud.com/shortcuts/api/records/{sid}"
+          with urlopen(Request(api,headers={"User-Agent":"Mozilla/5.0"}),timeout=30) as r:
+              meta=json.load(r)
+          rec=meta["records"][0] if isinstance(meta,dict) and "records" in meta else meta
+          fields=rec["fields"]
+          name=fields.get("name",{}).get("value",sid)
+          url=fields["shortcut"]["value"]["downloadURL"].replace("${f}","shortcut.plist")
+          with urlopen(Request(url,headers={"User-Agent":"Mozilla/5.0"}),timeout=30) as r:
+              raw=r.read()
+          wf=plistlib.loads(raw)
+          print("DONOR",sid,name,"actions",len(wf.get("WFWorkflowActions",[])))
+          for i,a in enumerate(wf.get("WFWorkflowActions",[])):
+              ident=a.get("WFWorkflowActionIdentifier","")
+              params=a.get("WFWorkflowActionParameters",{})
+              blob=json.dumps({"index":i,"identifier":ident,"params":params},ensure_ascii=False,default=str)
+              if "tesla" in blob.lower() or "appintent" in blob.lower():
+                  print("TESLA_ACTION",blob[:12000])
+          PY
+
       - name: Build shortcuts
         run: |
           set -euxo pipefail
