@@ -114,6 +114,24 @@ jobs:
           xcrun simctl io "$UDID" screenshot "$EV/after-setup.png"
           cat "$EV/after-setup.json" || true
 
+          idb ui tap "Ask Each Time" --udid "$UDID"
+          sleep 4
+          idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > "$EV/vehicle-picker.json" || true
+          xcrun simctl io "$UDID" screenshot "$EV/vehicle-picker.png"
+          cat "$EV/vehicle-picker.json" || true
+
+          idb ui tap "測試車 A" --udid "$UDID"
+          sleep 3
+          idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > "$EV/after-vehicle-a.json" || true
+          xcrun simctl io "$UDID" screenshot "$EV/after-vehicle-a.png"
+          cat "$EV/after-vehicle-a.json" || true
+
+          idb ui tap "Add Shortcut" --udid "$UDID"
+          sleep 6
+          idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > "$EV/after-import.json" || true
+          xcrun simctl io "$UDID" screenshot "$EV/after-import.png"
+          cat "$EV/after-import.json" || true
+
       - name: Upload vehicle picker evidence
         if: always()
         uses: actions/upload-artifact@v4
