@@ -163,8 +163,13 @@ PASS-able without hardware:
 - signing
 - AEA1
 
+Simulator-verified:
+- signed 油車助手 opens the iOS Shortcuts share sheet, accepts Add Shortcut, and reaches the shortcut editor
+- signed 特斯拉助手 opens the iOS Shortcuts share sheet, accepts Add Shortcut, and reaches the shortcut editor
+- this proves file/signing/import compatibility in the iOS Simulator, not real-device Tesla functionality
+
 Must remain NOT RUN without real Apple/Tesla environment:
-- iPhone shortcut import
+- physical iPhone import
 - Tesla Vehicle AppEntity picker
 - single-car selection
 - multi-car selection consistency
@@ -191,3 +196,14 @@ Public-release consequence:
 - Do not claim one vehicle selection configures the whole Tesla shortcut.
 - Do not embed donor vehicle entities.
 - Multi-car vehicle consistency remains release-blocking until a safe, understandable install flow is proven or real-device tested.
+
+
+## iOS Simulator import evidence
+
+GitHub Actions Run #7 (CarKit iOS Simulator Probe):
+- signed Oil shortcut: Add Shortcut page visible -> Add Shortcut -> editor visible: PASS
+- signed Tesla shortcut: Add Shortcut page visible -> Add Shortcut -> editor visible: PASS
+- Shortcuts app accepted both AEA1 files: PASS
+- Tesla AppIntent execution: NOT RUN because the stock Simulator does not contain Tesla.app
+- Tesla logs explicitly report com.teslamotors.TeslaApp missing from linkd / LaunchServices, which is treated as an environment limitation rather than a shortcut-format failure
+- Tesla vehicle import picker: NOT RUN because Tesla AppEntity metadata is unavailable without the Tesla app
