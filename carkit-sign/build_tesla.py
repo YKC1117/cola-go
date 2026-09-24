@@ -4,7 +4,7 @@ from pathlib import Path
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
 
-VERSION="0.6"
+VERSION="0.7"
 TEAM="PS9EBAM2PU"
 BUNDLE="com.teslamotors.TeslaApp"
 
@@ -13,6 +13,9 @@ def uid(seed):
 
 def ao(u,n):
     return {"WFSerializationType":"WFTextTokenAttachment","Value":{"Type":"ActionOutput","OutputUUID":u,"OutputName":n}}
+
+def named_var(name):
+    return {"WFSerializationType":"WFTextTokenAttachment","Value":{"Type":"Variable","VariableName":name}}
 
 def cond_action_output(u,n):
     return {"Type":"Variable","Variable":ao(u,n)}
@@ -87,9 +90,10 @@ def menu(prompt,items,branches,seed):
         "WFCommentActionText":f"{prompt}\n- 顯示：此功能選單\n- 輸入：使用者選擇\n- 輸出：執行對應動作"
       }),
       act("is.workflow.actions.choosefrommenu",{
-      "UUID":uid(seed+"-start"),"GroupingIdentifier":g,"WFControlFlowMode":0,
-      "WFMenuPrompt":prompt,"WFMenuItems":items
-    })]
+        "UUID":uid(seed+"-start"),"GroupingIdentifier":g,"WFControlFlowMode":0,
+        "WFMenuPrompt":prompt,"WFMenuItems":items
+      })
+    ]
     for x,item in enumerate(items):
       out.append(act("is.workflow.actions.choosefrommenu",{
         "UUID":uid(f"{seed}-case-{x}"),"GroupingIdentifier":g,
@@ -113,9 +117,9 @@ def tesla(intent,seed,extra=None,vehicle_mode="ask",show_when_run=None):
     }
     # Public-share safety:
     # - never embed donor VIN/name/image.
-    # - for intents whose public donors contain a Vehicle AppEntity, use Apple's
-    #   Ask token as the runtime candidate until iPhone/Tesla runtime verification.
-    # - intents observed in public donors without a vehicle parameter keep it omitted.
+    # - vehicle-backed intents use Ask as a runtime fallback.
+    # - install-time Import Questions target these same vehicle parameters.
+    # - donor exceptions that omit vehicle remain omitted.
     if vehicle_mode == "ask":
         p["vehicle"]=ask_token()
     elif vehicle_mode not in (False,None):
@@ -126,7 +130,7 @@ def tesla(intent,seed,extra=None,vehicle_mode="ask",show_when_run=None):
         p["ShowWhenRun"]=show_when_run
     return act(f"{BUNDLE}.{intent}",p)
 
-# Tesla native actions for which public donor evidence exists.
+# ---- donor-backed Tesla actions ----
 def lock_action(seed):
     return tesla("LockUnlockIntent",seed,{"vehicleControlType":"lock"})
 
@@ -137,7 +141,6 @@ def frunk_action(seed):
     return tesla("FrontTrunkIntent",seed)
 
 def rear_action(seed):
-    # rearTrunkAction fixed enum values are not guessed; donor uses Ask.
     return tesla("RearTrunkIntent",seed,{"rearTrunkAction":ask_token()})
 
 def pre_start_action(seed):
@@ -147,29 +150,24 @@ def pre_stop_action(seed):
     return tesla("PreconditionIntent",seed,{"preconditionAction":"stop"},show_when_run=False)
 
 def defrost_action(seed):
-    # Public native donors prove "enable".
     return tesla("DefrostIntent",seed,{"defrostAction":"enable"})
 
 def defrost_stop_action(seed):
-    # Public native donor 21f9... proves "disable".
     return tesla("DefrostIntent",seed,{"defrostAction":"disable"})
 
 def seat_heater_high_action(seed):
-    # Public native donors prove frontLeft + high and omit vehicle.
     return tesla("HVACSeatHeaterIntent",seed,{
       "seat":"frontLeft",
       "level":"high"
     },vehicle_mode=False,show_when_run=False)
 
 def seat_heater_off_action(seed):
-    # Public native donor 21f9... proves frontLeft + off and omits vehicle.
     return tesla("HVACSeatHeaterIntent",seed,{
       "seat":"frontLeft",
       "level":"off"
     },vehicle_mode=False,show_when_run=False)
 
 def open_charge_port_action(seed):
-    # Public native donor fdc8... proves ChargePortIntent + chargePortAction "open".
     return tesla("ChargePortIntent",seed,{"chargePortAction":"open"})
 
 def vent_action(seed):
@@ -179,11 +177,10 @@ def close_window_action(seed):
     return tesla("CloseWindowIntent",seed)
 
 def sentry_action(seed):
-    # vehicleModeAction fixed enum values are not guessed; donor uses Ask.
     return tesla("SentryModeIntent",seed,{"vehicleModeAction":ask_token()})
 
 def flash_action(seed):
-    # Public donor omits vehicle for FlashLightIntent. Do not invent one.
+    # Public donor omits vehicle for FlashLightIntent.
     return tesla("FlashLightIntent",seed,vehicle_mode=False)
 
 def temp_action(c,seed):
@@ -195,14 +192,12 @@ def temp_action(c,seed):
     },show_when_run=False)
 
 def charge_limit_action(pct,seed):
-    # Public donors omit vehicle for ChargeLimitIntent. Multi-car targeting is NOT RUN.
+    # Public donor omits vehicle for ChargeLimitIntent.
     return tesla("ChargeLimitIntent",seed,{"percent":str(pct)},vehicle_mode=False,show_when_run=False)
 
 def confirm_then(prompt,action_factory,seed):
     q,qid=ask_text(prompt+" 請說「確認」。",seed+"-ask")
     out=[q]
-    # Only explicit affirmative words execute. Cancellation, blank, negation and
-    # unknown text fall through to immediate cancellation.
     for i,word in enumerate(["確認","確定","是"]):
         out += if_exact(
             cond_action_output(qid,"Provided Input"),
@@ -216,17 +211,38 @@ def confirm_then(prompt,action_factory,seed):
 def route_aliases(input_uuid,aliases,action_factory,seed):
     out=[]
     for i,word in enumerate(aliases):
-        actions=action_factory(f"{seed}-{i}")
         out += if_exact(
             cond_action_output(input_uuid,"Provided Input"),
             word,
-            [*actions,exit_shortcut()],
+            [*action_factory(f"{seed}-{i}"),exit_shortcut()],
             f"{seed}-alias-{i}"
         )
     return out
 
-def one(action):
-    return [action]
+def set_command(value,seed):
+    text_uuid=uid(seed+"-text")
+    return [
+      act("is.workflow.actions.gettext",{
+        "UUID":text_uuid,
+        "WFTextActionText":value
+      }),
+      act("is.workflow.actions.setvariable",{
+        "UUID":uid(seed+"-set"),
+        "WFVariableName":"Command",
+        "WFInput":ao(text_uuid,"Text")
+      })
+    ]
+
+def normalize_aliases(input_uuid,aliases,command,seed):
+    out=[]
+    for i,word in enumerate(aliases):
+        out += if_exact(
+            cond_action_output(input_uuid,"Provided Input"),
+            word,
+            set_command(command,f"{seed}-set-{i}"),
+            f"{seed}-alias-{i}"
+        )
+    return out
 
 def find_parked_car(seed):
     parked=uid(seed+"-parked")
@@ -237,91 +253,89 @@ def find_parked_car(seed):
       act("is.workflow.actions.openurl",{"UUID":uid(seed+"-open"),"WFInput":ao(maps,"Maps URL")})
     ]
 
-# ----- Touch menu -----
+# ---- touch menus: Tesla controls set one canonical command instead of duplicating AppIntents ----
 temp_menu=menu("車室溫度",["22°C","23°C","24°C"],{
-    "22°C":[temp_action(22,"menu-temp22")],
-    "23°C":[temp_action(23,"menu-temp23")],
-    "24°C":[temp_action(24,"menu-temp24")],
+    "22°C":set_command("TEMP_22","menu-temp22"),
+    "23°C":set_command("TEMP_23","menu-temp23"),
+    "24°C":set_command("TEMP_24","menu-temp24"),
 },"temp-menu")
 
-climate_menu=menu("空調 / 車室",["開始預冷 / 預熱","停止預冷 / 預熱","設定溫度","除霜","停止除霜","駕駛座加熱","關閉座椅加熱"],{
-    "開始預冷 / 預熱":[pre_start_action("menu-pre-start")],
-    "停止預冷 / 預熱":[pre_stop_action("menu-pre-stop")],
+climate_menu=menu("空調 / 車室",[
+    "開始預冷 / 預熱","停止預冷 / 預熱","設定溫度",
+    "除霜","停止除霜","駕駛座加熱","關閉座椅加熱"
+],{
+    "開始預冷 / 預熱":set_command("PRE_START","menu-pre-start"),
+    "停止預冷 / 預熱":set_command("PRE_STOP","menu-pre-stop"),
     "設定溫度":temp_menu,
-    "除霜":[defrost_action("menu-defrost")],
-    "停止除霜":[defrost_stop_action("menu-defrost-stop")],
-    "駕駛座加熱":[seat_heater_high_action("menu-seat-high")],
-    "關閉座椅加熱":[seat_heater_off_action("menu-seat-off")],
+    "除霜":set_command("DEFROST_ON","menu-defrost"),
+    "停止除霜":set_command("DEFROST_OFF","menu-defrost-stop"),
+    "駕駛座加熱":set_command("SEAT_HIGH","menu-seat-high"),
+    "關閉座椅加熱":set_command("SEAT_OFF","menu-seat-off"),
 },"climate-menu")
 
 door_menu=menu("車門控制",["鎖車","解鎖"],{
-    "鎖車":[lock_action("menu-lock")],
-    "解鎖":confirm_then("確定要解鎖 Tesla？",unlock_action,"menu-unlock"),
+    "鎖車":set_command("LOCK","menu-lock"),
+    "解鎖":set_command("UNLOCK","menu-unlock"),
 },"door-menu")
 
 trunk_menu=menu("行李廂",["前行李廂","後車廂"],{
-    "前行李廂":confirm_then("確定要開啟前行李廂？",frunk_action,"menu-frunk"),
-    "後車廂":confirm_then("確定要操作後車廂？",rear_action,"menu-rear"),
+    "前行李廂":set_command("FRUNK","menu-frunk"),
+    "後車廂":set_command("REAR","menu-rear"),
 },"trunk-menu")
 
-charge_menu=menu("充電中心",["開啟充電孔","充電上限 80%","充電上限 90%","Tesla App 充電","找充電站"],{
-    "開啟充電孔":[open_charge_port_action("menu-charge-port-open")],
-    "充電上限 80%":[charge_limit_action(80,"menu-charge80")],
-    "充電上限 90%":[charge_limit_action(90,"menu-charge90")],
-    "Tesla App 充電":[app(BUNDLE,"menu-tesla-app-charge")],
-    "找充電站":menu("找充電站",["Apple 地圖","AmpGO","PlugShare"],{
-        "Apple 地圖":url_open("https://maps.apple.com/?q=%E9%9B%BB%E5%8B%95%E8%BB%8A%E5%85%85%E9%9B%BB%E7%AB%99","menu-charge-maps"),
-        "AmpGO":url_open("https://apps.apple.com/tw/app/id6470348628","menu-ampgo-store"),
-        "PlugShare":[app("com.xatori.plugshare","menu-plugshare")],
-    },"charge-stations-menu"),
+charge_station_menu=menu("找充電站",["Apple 地圖","AmpGO","PlugShare"],{
+    "Apple 地圖":[*url_open("https://maps.apple.com/?q=%E9%9B%BB%E5%8B%95%E8%BB%8A%E5%85%85%E9%9B%BB%E7%AB%99","menu-charge-maps"),exit_shortcut()],
+    "AmpGO":[*url_open("https://apps.apple.com/tw/app/id6470348628","menu-ampgo-store"),exit_shortcut()],
+    "PlugShare":[app("com.xatori.plugshare","menu-plugshare"),exit_shortcut()],
+},"charge-stations-menu")
+
+charge_menu=menu("充電中心",[
+    "開啟充電孔","充電上限 80%","充電上限 90%","Tesla App 充電","找充電站"
+],{
+    "開啟充電孔":set_command("CHARGE_PORT_OPEN","menu-charge-port-open"),
+    "充電上限 80%":set_command("CHARGE_80","menu-charge80"),
+    "充電上限 90%":set_command("CHARGE_90","menu-charge90"),
+    "Tesla App 充電":[app(BUNDLE,"menu-tesla-app-charge"),exit_shortcut()],
+    "找充電站":charge_station_menu,
 },"charge-menu")
 
 window_menu=menu("車窗",["通風","關閉車窗"],{
-    "通風":[vent_action("menu-vent")],
-    "關閉車窗":[close_window_action("menu-close-window")],
+    "通風":set_command("VENT","menu-vent"),
+    "關閉車窗":set_command("WINDOW_CLOSE","menu-close-window"),
 },"window-menu")
 
 nav_menu=menu("導航",["Apple 地圖","Google Maps","Waze"],{
-    "Apple 地圖":[app("com.apple.Maps","menu-nav-apple")],
-    "Google Maps":[app("com.google.Maps","menu-nav-google")],
-    "Waze":[app("com.waze.iphone","menu-nav-waze")],
+    "Apple 地圖":[app("com.apple.Maps","menu-nav-apple"),exit_shortcut()],
+    "Google Maps":[app("com.google.Maps","menu-nav-google"),exit_shortcut()],
+    "Waze":[app("com.waze.iphone","menu-nav-waze"),exit_shortcut()],
 },"nav-menu")
 
 more_menu=menu("更多功能",["Tesla App","車窗","高速公路1968"],{
-    "Tesla App":[app(BUNDLE,"menu-tesla-app")],
+    "Tesla App":[app(BUNDLE,"menu-tesla-app"),exit_shortcut()],
     "車窗":window_menu,
-    "高速公路1968":[app("tw.gov.freeway1968Ver2.Freeway1968HD","menu-1968")],
+    "高速公路1968":[app("tw.gov.freeway1968Ver2.Freeway1968HD","menu-1968"),exit_shortcut()],
 },"more-menu")
-
-prepare_menu_actions=[
-    pre_start_action("menu-prepare-precondition"),
-    app("tw.com.ainvest.outpack","menu-prepare-shield")
-]
 
 main_items=[
     "準備出發","空調 / 車室","行李廂","車門控制","充電",
     "神盾","導航","找我的車","閃燈尋車","哨兵模式","更多"
 ]
 main_branches={
-    "準備出發":prepare_menu_actions,
+    "準備出發":set_command("PREPARE","menu-prepare"),
     "空調 / 車室":climate_menu,
     "行李廂":trunk_menu,
     "車門控制":door_menu,
     "充電":charge_menu,
-    "神盾":[app("tw.com.ainvest.outpack","menu-shield")],
+    "神盾":[app("tw.com.ainvest.outpack","menu-shield"),exit_shortcut()],
     "導航":nav_menu,
-    "找我的車":find_parked_car("menu-find-parked-car"),
-    "閃燈尋車":[flash_action("menu-flash-find")],
-    "哨兵模式":[sentry_action("menu-sentry")],
+    "找我的車":[*find_parked_car("menu-find-parked-car"),exit_shortcut()],
+    "閃燈尋車":set_command("FLASH","menu-flash-find"),
+    "哨兵模式":set_command("SENTRY","menu-sentry"),
     "更多":more_menu,
 }
 manual_menu=menu("Tesla Driver｜要做什麼？",main_items,main_branches,"main-menu")
 
-# ----- Safe automation route -----
-# iOS 27 exposes Bluetooth CONNECT as a Shortcuts trigger, but not a Bluetooth
-# disconnect trigger. Tesla AUTO_END is therefore intentionally not generated.
-# Apple Maps can create the Parked Car marker when the vehicle Bluetooth link
-# disconnects, so "找我的車" reads that system marker instead.
+# ---- safe automation ----
 auto_start=[
     app("tw.com.ainvest.outpack","auto-start-shield"),
     exit_shortcut()
@@ -330,94 +344,144 @@ auto_start=[
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v0.6｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- Siri：嘿 Siri，特斯拉助手 → 只問「要做什麼？」\n- 語音採精確比對，不用 contains，避免「不要解鎖」誤觸\n- 解鎖、前行李廂、後車廂需再次明確確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- Tesla 藍牙自動化只使用 Connect；iOS 27 無 Bluetooth Disconnect trigger\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ChargePortIntent/open、DefrostIntent enable/disable、駕駛座加熱 high/off 已由公開原生 donor 驗證\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
+    "WFCommentActionText":"Tesla Driver v0.7｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- Siri：嘿 Siri，特斯拉助手 → 只問「要做什麼？」\n- 語音同義詞只做解析；每種 Tesla 車控只保留一個真正 AppIntent\n- 解鎖、前行李廂、後車廂需再次明確確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- vehicle-backed Tesla AppIntent 會建立安裝時 Import Question；未設定時仍保留 Ask Each Time 安全 fallback\n- Tesla 藍牙自動化只使用 Connect；不偽造 Bluetooth Disconnect\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
-    "WFCommentActionText":"Shortcuts generated by Shortcuts Playground. May contain mistakes. Always check the shortcut's actions first.\n\nThis shortcut was created via the following user prompt:\n\n> CarKit TW Tesla Driver：Tesla 原生 AppIntent、Siri 短口令、安全確認與台灣車用工具。"
+    "WFCommentActionText":"Shortcuts generated by Shortcuts Playground. May contain mistakes. Always check the shortcut's actions first.\n\nThis shortcut was created via the following user prompt:\n\n> CarKit TW Tesla Driver：Tesla 原生 AppIntent、Siri 短口令、安全確認、多車安裝綁定與台灣車用工具。"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("vehicle-status"),
-    "WFCommentActionText":"Tesla 選車狀態：\n- 已移除『手填車名當 vehicle』方案。\n- 有 Vehicle AppEntity 的 donor Intent 改用 Apple Ask token 作 runtime 選車候選。\n- ChargeLimitIntent / FlashLightIntent 依 donor 證據維持無 vehicle。\n- 單車 / 多車實際選車一致性需要 iPhone + Tesla App / 車輛環境驗證，現在標示 NOT RUN。"
+    "WFCommentActionText":"Tesla 選車策略：\n- 不使用手填車名、VIN 或 donor 車輛資料。\n- 每個需要 vehicle 的唯一 Tesla AppIntent 建立 Parameter Import Question。\n- 使用者安裝時應對所有問題選同一台 Tesla；多車帳號不假設自動繼承。\n- 若 Import Question 未完成，action 仍是 Ask Each Time，不會自動猜車。"
   })
 ]
 
-# AUTO_START only. Sensitive Tesla actions are not reachable here.
-# No Tesla AUTO_END is generated because iOS has no Bluetooth-disconnect trigger.
+# AUTO_START only; no physical Tesla control is reachable here.
 actions += if_exact(cond_extension_input(),"AUTO_START",auto_start,"route-auto-start")
 
-# ----- Siri / text command entry -----
+# Always initialize canonical command to empty text.
+actions += set_command("","command-init")
+
 voice,voice_id=ask_text("要做什麼？","voice-command")
 actions.append(voice)
 
-# Simple, exact aliases.
-actions += route_aliases(voice_id,["預冷","冷氣","開冷氣"],
-    lambda s: one(pre_start_action(s)),"voice-precondition")
-actions += route_aliases(voice_id,["停止預冷","關冷氣"],
-    lambda s: one(pre_stop_action(s)),"voice-precondition-stop")
-actions += route_aliases(voice_id,["23度","23 度","二十三度"],
-    lambda s: one(temp_action(23,s)),"voice-temp23")
-actions += route_aliases(voice_id,["前車廂","前行李廂"],
-    lambda s: confirm_then("確定要開啟前行李廂？",frunk_action,s),"voice-frunk")
-actions += route_aliases(voice_id,["後車廂","後行李廂"],
-    lambda s: confirm_then("確定要操作後車廂？",rear_action,s),"voice-rear")
-actions += route_aliases(voice_id,["鎖車"],
-    lambda s: one(lock_action(s)),"voice-lock")
-actions += route_aliases(voice_id,["解鎖","開鎖"],
-    lambda s: confirm_then("確定要解鎖 Tesla？",unlock_action,s),"voice-unlock")
-actions += route_aliases(voice_id,["充到80","充到 80","充到80%","充到 80%"],
-    lambda s: one(charge_limit_action(80,s)),"voice-charge80")
-actions += route_aliases(voice_id,["充到90","充到 90","充到90%","充到 90%"],
-    lambda s: one(charge_limit_action(90,s)),"voice-charge90")
-actions += route_aliases(voice_id,["充電孔","開充電孔","開啟充電孔"],
-    lambda s: one(open_charge_port_action(s)),"voice-charge-port-open")
+# ---- Tesla voice aliases normalize to canonical commands ----
+actions += normalize_aliases(voice_id,["預冷","冷氣","開冷氣"],"PRE_START","voice-pre-start")
+actions += normalize_aliases(voice_id,["停止預冷","關冷氣"],"PRE_STOP","voice-pre-stop")
+actions += normalize_aliases(voice_id,["22度","22 度","二十二度"],"TEMP_22","voice-temp22")
+actions += normalize_aliases(voice_id,["23度","23 度","二十三度"],"TEMP_23","voice-temp23")
+actions += normalize_aliases(voice_id,["24度","24 度","二十四度"],"TEMP_24","voice-temp24")
+actions += normalize_aliases(voice_id,["前車廂","前行李廂"],"FRUNK","voice-frunk")
+actions += normalize_aliases(voice_id,["後車廂","後行李廂"],"REAR","voice-rear")
+actions += normalize_aliases(voice_id,["鎖車"],"LOCK","voice-lock")
+actions += normalize_aliases(voice_id,["解鎖","開鎖"],"UNLOCK","voice-unlock")
+actions += normalize_aliases(voice_id,["充到80","充到 80","充到80%","充到 80%"],"CHARGE_80","voice-charge80")
+actions += normalize_aliases(voice_id,["充到90","充到 90","充到90%","充到 90%"],"CHARGE_90","voice-charge90")
+actions += normalize_aliases(voice_id,["充電孔","開充電孔","開啟充電孔"],"CHARGE_PORT_OPEN","voice-charge-port")
+actions += normalize_aliases(voice_id,["閃燈","閃燈尋車"],"FLASH","voice-flash")
+actions += normalize_aliases(voice_id,["除霧","除霜"],"DEFROST_ON","voice-defrost-on")
+actions += normalize_aliases(voice_id,["停止除霜","關除霜"],"DEFROST_OFF","voice-defrost-off")
+actions += normalize_aliases(voice_id,["座椅加熱","駕駛座加熱","開座椅加熱"],"SEAT_HIGH","voice-seat-high")
+actions += normalize_aliases(voice_id,["關座椅加熱","關閉座椅加熱"],"SEAT_OFF","voice-seat-off")
+actions += normalize_aliases(voice_id,["準備出發","出發"],"PREPARE","voice-prepare")
+
+# Non-Tesla commands can execute directly and exit.
 actions += route_aliases(voice_id,["找車","找我的車","停車位置"],
-    find_parked_car,"voice-find-parked-car")
-actions += route_aliases(voice_id,["閃燈","閃燈尋車"],
-    lambda s: one(flash_action(s)),"voice-flash")
-actions += route_aliases(voice_id,["除霧","除霜"],
-    lambda s: one(defrost_action(s)),"voice-defrost")
-actions += route_aliases(voice_id,["停止除霜","關除霜"],
-    lambda s: one(defrost_stop_action(s)),"voice-defrost-stop")
-actions += route_aliases(voice_id,["座椅加熱","駕駛座加熱","開座椅加熱"],
-    lambda s: one(seat_heater_high_action(s)),"voice-seat-high")
-actions += route_aliases(voice_id,["關座椅加熱","關閉座椅加熱"],
-    lambda s: one(seat_heater_off_action(s)),"voice-seat-off")
+    lambda s:find_parked_car(s),"voice-find-car")
 actions += route_aliases(voice_id,["神盾"],
-    lambda s: [app("tw.com.ainvest.outpack",s)],"voice-shield")
+    lambda s:[app("tw.com.ainvest.outpack",s)],"voice-shield")
 actions += route_aliases(voice_id,["導航","Apple導航","蘋果導航"],
-    lambda s: [app("com.apple.Maps",s)],"voice-nav-apple")
+    lambda s:[app("com.apple.Maps",s)],"voice-nav-apple")
 actions += route_aliases(voice_id,["Google導航","Google Maps"],
-    lambda s: [app("com.google.Maps",s)],"voice-nav-google")
+    lambda s:[app("com.google.Maps",s)],"voice-nav-google")
 actions += route_aliases(voice_id,["Waze"],
-    lambda s: [app("com.waze.iphone",s)],"voice-nav-waze")
-actions += route_aliases(voice_id,["哨兵","哨兵模式"],
-    lambda s: one(sentry_action(s)),"voice-sentry")
-actions += route_aliases(voice_id,["準備出發","出發"],
-    lambda s: [pre_start_action(s+"-pre"),app("tw.com.ainvest.outpack",s+"-shield")],"voice-prepare")
-actions += route_aliases(voice_id,["選單"],
-    lambda s: manual_menu,"voice-menu")
+    lambda s:[app("com.waze.iphone",s)],"voice-nav-waze")
 
-# Ambiguous "充電" gets one short follow-up; exact answers only.
-def charging_followup(seed):
-    q,qid=ask_text("充到 80、90，還是開 Tesla？",seed+"-ask")
-    out=[q]
-    out += route_aliases(qid,["80","80%","八十"],
-        lambda s: one(charge_limit_action(80,s)),seed+"-80")
-    out += route_aliases(qid,["90","90%","九十"],
-        lambda s: one(charge_limit_action(90,s)),seed+"-90")
-    out += route_aliases(qid,["Tesla","開 Tesla","App"],
-        lambda s: [app(BUNDLE,s)],seed+"-app")
-    out += [show("未執行充電操作",seed+"-unknown"),exit_shortcut()]
-    return out
-
-actions += route_aliases(voice_id,["充電"],charging_followup,"voice-charging")
-
-# Unknown / negated phrases do nothing.
-actions += [
-    show("沒聽懂，未執行任何車控。","voice-unknown"),
-    exit_shortcut()
+# Ambiguous "充電" gets one short follow-up.
+charge_q,charge_qid=ask_text("充到 80、90，還是開 Tesla？","voice-charge-followup")
+charge_follow=[
+  charge_q,
+  *normalize_aliases(charge_qid,["80","80%","八十"],"CHARGE_80","voice-charge-followup-80"),
+  *normalize_aliases(charge_qid,["90","90%","九十"],"CHARGE_90","voice-charge-followup-90"),
+  *route_aliases(charge_qid,["Tesla","開 Tesla","App"],lambda s:[app(BUNDLE,s)],"voice-charge-followup-app")
 ]
+# If follow-up produced no command and did not open the app, cancel.
+charge_follow += if_exact(named_var("Command"),"CHARGE_80",[],"voice-charge-followup-has80")
+charge_follow += if_exact(named_var("Command"),"CHARGE_90",[],"voice-charge-followup-has90")
+actions += if_exact(cond_action_output(voice_id,"Provided Input"),"充電",charge_follow,"voice-charge-ambiguous")
+
+# Sentry is donor-backed but its fixed enum is not yet proven. Keep Tesla's own
+# Ask parameter instead of guessing on/off values.
+actions += normalize_aliases(voice_id,["哨兵","哨兵模式"],"SENTRY","voice-sentry")
+
+# Full touch menu is available by saying/selecting "選單".
+actions += if_exact(cond_action_output(voice_id,"Provided Input"),"選單",manual_menu,"voice-menu")
+
+# ---- one canonical Tesla AppIntent per actual function ----
+cmd=named_var("Command")
+actions += if_exact(cmd,"PRE_START",[pre_start_action("canonical-pre-start"),exit_shortcut()],"run-pre-start")
+actions += if_exact(cmd,"PRE_STOP",[pre_stop_action("canonical-pre-stop"),exit_shortcut()],"run-pre-stop")
+actions += if_exact(cmd,"TEMP_22",[temp_action(22,"canonical-temp22"),exit_shortcut()],"run-temp22")
+actions += if_exact(cmd,"TEMP_23",[temp_action(23,"canonical-temp23"),exit_shortcut()],"run-temp23")
+actions += if_exact(cmd,"TEMP_24",[temp_action(24,"canonical-temp24"),exit_shortcut()],"run-temp24")
+actions += if_exact(cmd,"LOCK",[lock_action("canonical-lock"),exit_shortcut()],"run-lock")
+actions += if_exact(cmd,"UNLOCK",confirm_then("確定要解鎖 Tesla？",unlock_action,"canonical-unlock"),"run-unlock")
+actions += if_exact(cmd,"FRUNK",confirm_then("確定要開啟前行李廂？",frunk_action,"canonical-frunk"),"run-frunk")
+actions += if_exact(cmd,"REAR",confirm_then("確定要操作後車廂？",rear_action,"canonical-rear"),"run-rear")
+actions += if_exact(cmd,"CHARGE_80",[charge_limit_action(80,"canonical-charge80"),exit_shortcut()],"run-charge80")
+actions += if_exact(cmd,"CHARGE_90",[charge_limit_action(90,"canonical-charge90"),exit_shortcut()],"run-charge90")
+actions += if_exact(cmd,"CHARGE_PORT_OPEN",[open_charge_port_action("canonical-charge-port"),exit_shortcut()],"run-charge-port")
+actions += if_exact(cmd,"FLASH",[flash_action("canonical-flash"),exit_shortcut()],"run-flash")
+actions += if_exact(cmd,"DEFROST_ON",[defrost_action("canonical-defrost-on"),exit_shortcut()],"run-defrost-on")
+actions += if_exact(cmd,"DEFROST_OFF",[defrost_stop_action("canonical-defrost-off"),exit_shortcut()],"run-defrost-off")
+actions += if_exact(cmd,"SEAT_HIGH",[seat_heater_high_action("canonical-seat-high"),exit_shortcut()],"run-seat-high")
+actions += if_exact(cmd,"SEAT_OFF",[seat_heater_off_action("canonical-seat-off"),exit_shortcut()],"run-seat-off")
+actions += if_exact(cmd,"VENT",[vent_action("canonical-vent"),exit_shortcut()],"run-vent")
+actions += if_exact(cmd,"WINDOW_CLOSE",[close_window_action("canonical-window-close"),exit_shortcut()],"run-window-close")
+actions += if_exact(cmd,"SENTRY",[sentry_action("canonical-sentry"),exit_shortcut()],"run-sentry")
+actions += if_exact(cmd,"PREPARE",[
+    pre_start_action("canonical-prepare-pre"),
+    app("tw.com.ainvest.outpack","canonical-prepare-shield"),
+    exit_shortcut()
+],"run-prepare")
+
+actions += [show("沒聽懂，未執行任何車控。","voice-unknown"),exit_shortcut()]
+
+# ---- native install-time vehicle binding ----
+# A public Tesla donor proves that WFWorkflowImportQuestions can target an
+# AppIntent vehicle parameter using Category=Parameter, ParameterKey=vehicle,
+# and ActionIndex. DefaultValue is deliberately omitted so no donor vehicle
+# entity can leak into the public file. The underlying action stays Ask Each
+# Time if the import question is skipped or unsupported.
+intent_labels={
+  "PreconditionIntent":"空調預先調節",
+  "HVACSetTempIntent":"車室溫度",
+  "LockUnlockIntent":"車門鎖",
+  "FrontTrunkIntent":"前行李廂",
+  "RearTrunkIntent":"後車廂",
+  "ChargePortIntent":"充電孔",
+  "DefrostIntent":"除霜",
+  "VentIntent":"車窗通風",
+  "CloseWindowIntent":"關閉車窗",
+  "SentryModeIntent":"哨兵模式",
+}
+vehicle_indexes=[]
+for i,a in enumerate(actions):
+    ident=a.get("WFWorkflowActionIdentifier","")
+    p=a.get("WFWorkflowActionParameters",{})
+    if ident.startswith(BUNDLE+".") and "vehicle" in p:
+        vehicle_indexes.append((i,ident.split(".")[-1]))
+
+import_questions=[]
+total=len(vehicle_indexes)
+for number,(index,intent) in enumerate(vehicle_indexes,1):
+    label=intent_labels.get(intent,intent)
+    import_questions.append({
+      "Category":"Parameter",
+      "ParameterKey":"vehicle",
+      "ActionIndex":index,
+      "Text":f"選擇同一台 Tesla（{number}/{total}）：{label}"
+    })
 
 wf={
  "WFWorkflowClientVersion":"3400.0",
@@ -427,10 +491,11 @@ wf={
  "WFWorkflowInputContentItemClasses":["WFStringContentItem"],
  "WFWorkflowOutputContentItemClasses":[],
  "WFWorkflowIcon":{"WFWorkflowIconGlyphNumber":59511,"WFWorkflowIconStartColor":4274264319},
- "WFWorkflowActions":actions
+ "WFWorkflowActions":actions,
+ "WFWorkflowImportQuestions":import_questions,
 }
 
 data=plistlib.dumps(wf,fmt=plistlib.FMT_XML,sort_keys=False)
 p=OUT/"特斯拉助手.shortcut.xml"
 p.write_bytes(data)
-print(p,len(actions),len(data))
+print(p,"actions",len(actions),"vehicle_import_questions",len(import_questions),"bytes",len(data))
