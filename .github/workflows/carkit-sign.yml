@@ -25,6 +25,15 @@ jobs:
           done
           ls -lh carkit-sign/generated
 
+      - name: Static semantic validation
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 https://github.com/viticci/shortcuts-playground-plugin.git /tmp/shortcuts-playground
+          VALIDATOR=/tmp/shortcuts-playground/codex/skills/shortcuts-playground/scripts/validate_shortcut.py
+          python3 "$VALIDATOR" --help
+          python3 "$VALIDATOR" carkit-sign/generated/Oil-Driver-v0.3.shortcut.xml --target-platform ios
+          python3 "$VALIDATOR" carkit-sign/generated/Tesla-Driver-v0.3.shortcut.xml --target-platform ios
+
       - name: Sign generated shortcuts
         run: |
           set -euxo pipefail
