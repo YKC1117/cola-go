@@ -120,6 +120,12 @@ jobs:
             await page.locator('[data-cctv-map]').click();
             if(!(await page.evaluate(()=>window.__opened.some(x=>x.includes('google.com/maps/search')))))throw new Error(label+' CCTV map open');
             await page.screenshot({path:out+'/cctv-'+label+'.png',fullPage:true});
+            await page.evaluate(()=>window.scrollTo(0,document.body.scrollHeight));
+            await page.waitForTimeout(80);
+            const navBox=await page.locator('.bottom-nav').boundingBox();
+            const safetyBox=await page.locator('[data-view="cctv"] .info-box').boundingBox();
+            if(!navBox||!safetyBox||(safetyBox.y+safetyBox.height)>navBox.y+2)throw new Error(label+' CCTV bottom content covered '+JSON.stringify({navBox,safetyBox}));
+            await page.evaluate(()=>window.scrollTo(0,0));
 
             await page.locator('.brand').click();
             await page.locator('[data-go="highway"]').first().click();
