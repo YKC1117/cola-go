@@ -32,7 +32,7 @@ jobs:
           VALIDATOR=/tmp/shortcuts-playground/codex/skills/shortcuts-playground/scripts/validate_shortcut.py
           python3 "$VALIDATOR" --help
           python3 "$VALIDATOR" carkit-sign/generated/Oil-Driver-v0.3.shortcut.xml --target-platform ios --target-macos 27
-          python3 "$VALIDATOR" carkit-sign/generated/Tesla-Driver-v0.3.shortcut.xml --target-platform ios
+          python3 "$VALIDATOR" carkit-sign/generated/Tesla-Driver-v0.3.shortcut.xml --target-platform ios --target-macos 27
 
       - name: Sign generated shortcuts
         run: |
