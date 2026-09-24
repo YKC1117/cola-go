@@ -14,3 +14,15 @@ export function classifySnapshot(row, now = Date.now()) {
 export function publicCacheSeconds(route) {
   return Math.max(5, Math.min(Number(route.ttl?.fresh || 30), 300));
 }
+
+export function snapshotEnvelope(row, stale = false) {
+  if (!row?.body) return null;
+  const body = JSON.parse(row.body);
+  if (!stale) return body;
+  return {
+    ...body,
+    status: "stale",
+    stale: true,
+    expiresAt: new Date(Number(row.expires_at)).toISOString()
+  };
+}
