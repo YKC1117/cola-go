@@ -147,8 +147,12 @@ def pre_stop_action(seed):
     return tesla("PreconditionIntent",seed,{"preconditionAction":"stop"},show_when_run=False)
 
 def defrost_action(seed):
-    # defrostAction fixed enum values are not guessed; donor uses Ask.
-    return tesla("DefrostIntent",seed,{"defrostAction":ask_token()})
+    # Public native donor fdc8... proves the fixed value "enable".
+    return tesla("DefrostIntent",seed,{"defrostAction":"enable"})
+
+def open_charge_port_action(seed):
+    # Public native donor fdc8... proves ChargePortIntent + chargePortAction "open".
+    return tesla("ChargePortIntent",seed,{"chargePortAction":"open"})
 
 def vent_action(seed):
     return tesla("VentIntent",seed)
@@ -239,7 +243,8 @@ trunk_menu=menu("行李廂",["前行李廂","後車廂"],{
     "後車廂":confirm_then("確定要操作後車廂？",rear_action,"menu-rear"),
 },"trunk-menu")
 
-charge_menu=menu("充電中心",["充電上限 80%","充電上限 90%","Tesla App 充電","找充電站"],{
+charge_menu=menu("充電中心",["開啟充電孔","充電上限 80%","充電上限 90%","Tesla App 充電","找充電站"],{
+    "開啟充電孔":[open_charge_port_action("menu-charge-port-open")],
     "充電上限 80%":[charge_limit_action(80,"menu-charge80")],
     "充電上限 90%":[charge_limit_action(90,"menu-charge90")],
     "Tesla App 充電":[app(BUNDLE,"menu-tesla-app-charge")],
@@ -305,7 +310,7 @@ auto_start=[
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v0.5｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- Siri：嘿 Siri，特斯拉助手 → 只問「要做什麼？」\n- 語音採精確比對，不用 contains，避免「不要解鎖」誤觸\n- 解鎖、前行李廂、後車廂需再次明確確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- Tesla 藍牙自動化只使用 Connect；iOS 27 無 Bluetooth Disconnect trigger\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
+    "WFCommentActionText":"Tesla Driver v0.5｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- Siri：嘿 Siri，特斯拉助手 → 只問「要做什麼？」\n- 語音採精確比對，不用 contains，避免「不要解鎖」誤觸\n- 解鎖、前行李廂、後車廂需再次明確確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- Tesla 藍牙自動化只使用 Connect；iOS 27 無 Bluetooth Disconnect trigger\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ChargePortIntent/open 與 DefrostIntent/enable 已由公開原生 donor 驗證\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
@@ -344,6 +349,8 @@ actions += route_aliases(voice_id,["充到80","充到 80","充到80%","充到 80
     lambda s: one(charge_limit_action(80,s)),"voice-charge80")
 actions += route_aliases(voice_id,["充到90","充到 90","充到90%","充到 90%"],
     lambda s: one(charge_limit_action(90,s)),"voice-charge90")
+actions += route_aliases(voice_id,["充電孔","開充電孔","開啟充電孔"],
+    lambda s: one(open_charge_port_action(s)),"voice-charge-port-open")
 actions += route_aliases(voice_id,["找車","找我的車","停車位置"],
     find_parked_car,"voice-find-parked-car")
 actions += route_aliases(voice_id,["閃燈","閃燈尋車"],
