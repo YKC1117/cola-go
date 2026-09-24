@@ -297,13 +297,13 @@ function renderParking(){
 
   if(live.status==="live"&&rows.length){
     liveRoot.innerHTML=rows.map(x=>{
-      const available=Number.isFinite(Number(x.car))?Number(x.car):null;
-      const total=Number.isFinite(Number(x.carTotal))?Number(x.carTotal):null;
+      const available=(x.car===null||x.car===undefined||x.car==="")?null:Number(x.car);
+      const total=(x.carTotal===null||x.carTotal===undefined||x.carTotal==="")?null:Number(x.carTotal);
       const cls=available==null?"":available>=20?"good":available>=5?"mid":"bad";
       const distance=parkingDistanceLabel(x._distance);
       const evLabel=state.parkingCity==="taoyuan"?"充電車位":"綠能剩餘";
       const evValue=state.parkingCity==="taoyuan"
-        ?(Number.isFinite(Number(x.evTotal))?money(Number(x.evTotal)):"—")
+        ?((x.evTotal===null||x.evTotal===undefined||x.evTotal==="")?"—":money(Number(x.evTotal)))
         :money(Number(x.green||0));
       return '<article class="parking-card">'+
         '<div class="parking-card-top"><div><h3>'+esc(x.name)+'</h3><span class="parking-zone">'+esc(x.zone||x.typeName||(state.parkingCity==="taoyuan"?"桃園":"臺南"))+(distance?' · 距離 '+esc(distance):'')+'</span></div><div class="parking-space"><b class="'+cls+'">'+(available==null?"—":available)+'</b><small>汽車剩餘</small></div></div>'+
