@@ -23,14 +23,15 @@ jobs:
       - uses: actions/checkout@v4
       - name: Fetch and normalize official freeway data
         run: python3 scripts/sync_traffic.py
-      - name: Commit refreshed cache
+      - name: Commit refreshed cache when available
         run: |
           git config user.name "COLA GO Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/traffic.json data/tunnel.json data/vd-live.json 2>/dev/null || true
+          git add data/traffic.json data/tunnel.json data/vd-live.json data/sections-cache.json 2>/dev/null || true
           if git diff --cached --quiet; then
-            echo "No data changes"
+            echo "Official source unavailable or no data changes; keep last known-good cache."
             exit 0
           fi
-          git commit -m "data: refresh live freeway cache"
+          git commit -m "data: refresh official freeway cache"
+          git pull --rebase origin main
           git push
