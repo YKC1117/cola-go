@@ -345,6 +345,8 @@ async function ensureCCTV(){
     const cached=JSON.parse(sessionStorage.getItem("cola-go-cctv-v1")||"null");
     if(cached&&Date.now()-cached.savedAt<6*60*60*1000&&Array.isArray(cached.items)&&cached.items.length){
       state.cctv={status:"ready",items:cached.items,source:cached.source||"官方快取",error:""};
+      state.cctvLoading=false;
+      renderCCTV();
       return;
     }
   }catch{}
@@ -356,6 +358,8 @@ async function ensureCCTV(){
     if(rows.length){
       state.cctv={status:"ready",items:rows,source:"TDX／交通部高速公路局",error:""};
       try{sessionStorage.setItem("cola-go-cctv-v1",JSON.stringify({savedAt:Date.now(),source:state.cctv.source,items:rows}));}catch{}
+      state.cctvLoading=false;
+      renderCCTV();
       return;
     }
     lastError="TDX 回傳沒有可用攝影機";
