@@ -53,6 +53,10 @@ struct TeslaMockShortcuts: AppShortcutsProvider {
 
 @main
 struct TeslaMockApp: App {
+    init() {
+        TeslaMockShortcuts.updateAppShortcutParameters()
+    }
+
     var body: some Scene {
         WindowGroup {
             Text("CarKit Tesla AppIntent test double")
