@@ -14,17 +14,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Fetch and decode public Tesla sample
-        run: |
-          set -euxo pipefail
-          python3 carkit-sign/fetch_tesla_sample.py
-
-      - name: Build Oil Driver
+      - name: Build shortcuts
         run: |
           set -euxo pipefail
           rm -rf carkit-sign/generated carkit-sign/out
           python3 carkit-sign/build_oil.py
-          plutil -lint carkit-sign/generated/Oil-Driver-v0.3.shortcut.xml
+          python3 carkit-sign/build_tesla.py
+          for f in carkit-sign/generated/*.shortcut.xml; do
+            plutil -lint "$f"
+          done
+          ls -lh carkit-sign/generated
 
       - name: Sign generated shortcuts
         run: |
@@ -49,7 +48,7 @@ jobs:
                   headers={"Content-Type":"application/json","User-Agent":"cherri/1.3.0"},
                   method="POST",
               )
-              with urlopen(req,timeout=45) as resp:
+              with urlopen(req,timeout=60) as resp:
                   signed=resp.read()
               if signed[:4] != b"AEA1":
                   raise SystemExit(f"{name}: invalid signed header {signed[:16]!r}")
@@ -59,21 +58,20 @@ jobs:
           PY
           for f in carkit-sign/out/*.shortcut; do
             test "$(xxd -p -l 4 "$f")" = "41454131"
+            shasum -a 256 "$f"
           done
           ls -lh carkit-sign/out
 
       - name: Upload signed shortcuts
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-signed-shortcuts
+          name: carkit-signed-shortcuts-v0.3
           path: carkit-sign/out/*.shortcut
           if-no-files-found: error
 
-      - name: Upload decoded Tesla sample
+      - name: Upload workflow sources
         uses: actions/upload-artifact@v4
         with:
-          name: tesla-public-sample-decoded
-          path: |
-            carkit-sign/tesla-sample-meta.json
-            carkit-sign/tesla-sample.plist.xml
+          name: carkit-shortcut-sources-v0.3
+          path: carkit-sign/generated/*.shortcut.xml
           if-no-files-found: error
