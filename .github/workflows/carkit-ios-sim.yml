@@ -1,0 +1,49 @@
+name: CarKit iOS Simulator Probe
+
+on:
+  push:
+    branches:
+      - temp/carkit-shortcut-sign
+    paths:
+      - ".github/workflows/carkit-ios-sim.yml"
+
+jobs:
+  probe:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect iOS simulator and Shortcuts availability
+        run: |
+          set -euxo pipefail
+          xcodebuild -version
+          xcrun simctl list runtimes
+          xcrun simctl list devices available
+
+          UDID="$(python3 - <<'PY'
+          import json, subprocess
+          data=json.loads(subprocess.check_output(["xcrun","simctl","list","devices","available","-j"]))
+          for runtime, devices in data["devices"].items():
+              if "iOS" not in runtime:
+                  continue
+              for d in devices:
+                  if d.get("isAvailable") and "iPhone" in d.get("name",""):
+                      print(d["udid"])
+                      raise SystemExit
+          raise SystemExit("No available iPhone simulator")
+          PY
+          )"
+          echo "Using simulator: $UDID"
+          xcrun simctl boot "$UDID" || true
+          open -a Simulator --args -CurrentDeviceUDID "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+
+          xcrun simctl listapps "$UDID" > /tmp/listapps.txt
+          grep -i -A8 -B3 "shortcut" /tmp/listapps.txt || true
+
+          if grep -q "com.apple.shortcuts" /tmp/listapps.txt; then
+            echo "SHORTCUTS_APP_PRESENT=1"
+            xcrun simctl launch "$UDID" com.apple.shortcuts || true
+            xcrun simctl openurl "$UDID" "shortcuts://" || true
+          else
+            echo "SHORTCUTS_APP_PRESENT=0"
+          fi
