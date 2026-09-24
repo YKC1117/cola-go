@@ -14,33 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Inspect Tesla charging donor
-        run: |
-          set -euxo pipefail
-          python3 - <<'PY'
-          import json, plistlib
-          from urllib.request import Request, urlopen
-
-          sid="56db63f833fb4201a83c648cfaf89b72"
-          api=f"https://www.icloud.com/shortcuts/api/records/{sid}"
-          with urlopen(Request(api,headers={"User-Agent":"Mozilla/5.0"}),timeout=30) as r:
-              meta=json.load(r)
-          rec=meta["records"][0] if isinstance(meta,dict) and "records" in meta else meta
-          fields=rec["fields"]
-          name=fields.get("name",{}).get("value",sid)
-          url=fields["shortcut"]["value"]["downloadURL"].replace("${f}","shortcut.plist")
-          with urlopen(Request(url,headers={"User-Agent":"Mozilla/5.0"}),timeout=30) as r:
-              raw=r.read()
-          wf=plistlib.loads(raw)
-          print("DONOR",sid,name,"actions",len(wf.get("WFWorkflowActions",[])))
-          for i,a in enumerate(wf.get("WFWorkflowActions",[])):
-              ident=a.get("WFWorkflowActionIdentifier","")
-              params=a.get("WFWorkflowActionParameters",{})
-              blob=json.dumps({"index":i,"identifier":ident,"params":params},ensure_ascii=False,default=str)
-              if "tesla" in blob.lower() or "appintent" in blob.lower():
-                  print("TESLA_ACTION",blob[:12000])
-          PY
-
       - name: Build shortcuts
         run: |
           set -euxo pipefail
@@ -57,9 +30,148 @@ jobs:
           set -euxo pipefail
           git clone --depth 1 https://github.com/viticci/shortcuts-playground-plugin.git /tmp/shortcuts-playground
           VALIDATOR=/tmp/shortcuts-playground/codex/skills/shortcuts-playground/scripts/validate_shortcut.py
-          python3 "$VALIDATOR" --help
-          python3 "$VALIDATOR" carkit-sign/generated/Oil-Driver-v0.4.shortcut.xml --target-platform ios --target-macos 27
-          python3 "$VALIDATOR" carkit-sign/generated/Tesla-Driver-v0.4.shortcut.xml --target-platform ios --target-macos 27
+          for f in carkit-sign/generated/*.shortcut.xml; do
+            python3 "$VALIDATOR" "$f" --target-platform ios --target-macos 27
+          done
+
+      - name: CarKit privacy and safety validation
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import plistlib, re
+          from pathlib import Path
+
+          g=Path("carkit-sign/generated")
+          expected={"特斯拉助手.shortcut.xml","油車助手.shortcut.xml"}
+          actual={p.name for p in g.glob("*.shortcut.xml")}
+          assert actual == expected, (actual, expected)
+
+          def load(name):
+              return plistlib.loads((g/name).read_bytes())
+
+          def assert_unique_uuids(wf,label):
+              vals=[]
+              for a in wf.get("WFWorkflowActions",[]):
+                  u=a.get("WFWorkflowActionParameters",{}).get("UUID")
+                  if u: vals.append(u)
+              dup={u for u in vals if vals.count(u)>1}
+              assert not dup, f"{label}: duplicate UUIDs: {sorted(dup)[:5]}"
+
+          tesla=load("特斯拉助手.shortcut.xml")
+          oil=load("油車助手.shortcut.xml")
+          assert_unique_uuids(tesla,"Tesla")
+          assert_unique_uuids(oil,"Oil")
+
+          tblob=(g/"特斯拉助手.shortcut.xml").read_text(encoding="utf-8")
+          for private in [
+              "5YJ3E1ET9SF029430","5YJ3E1EC3PF497483",
+              "SwordFish","TSLAMARS","intents-remote-image-proxy"
+          ]:
+              assert private not in tblob, f"private donor value leaked: {private}"
+          assert "WFWorkflowImportQuestions" not in tblob
+          assert "我的 Tesla" not in tblob
+
+          actions=tesla["WFWorkflowActions"]
+          bundle="com.teslamotors.TeslaApp"
+          evidenced={
+              "HVACSetTempIntent","ChargeLimitIntent","PreconditionIntent",
+              "LockUnlockIntent","RearTrunkIntent","FrontTrunkIntent",
+              "DefrostIntent","VentIntent","CloseWindowIntent",
+              "SentryModeIntent","FlashLightIntent"
+          }
+          ask={"Value":{"Type":"Ask"},"WFSerializationType":"WFTextTokenAttachment"}
+
+          for a in actions:
+              ident=a.get("WFWorkflowActionIdentifier","")
+              p=a.get("WFWorkflowActionParameters",{})
+              if ident.startswith(bundle+"."):
+                  intent=ident.split(".")[-1]
+                  assert intent in evidenced, f"unsupported/unproven Tesla intent: {intent}"
+                  if intent in {"ChargeLimitIntent","FlashLightIntent"}:
+                      assert "vehicle" not in p, f"{intent}: invented vehicle parameter"
+                  elif "vehicle" in p:
+                      assert p["vehicle"] == ask, f"{intent}: vehicle is not runtime Ask candidate"
+
+          # Bluetooth/automation routing is before the Siri question. No Tesla
+          # physical/control AppIntent may be reachable in that prefix.
+          voice_idx=next(
+              i for i,a in enumerate(actions)
+              if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.ask"
+              and a.get("WFWorkflowActionParameters",{}).get("WFAskActionPrompt")=="要做什麼？"
+          )
+          assert not any(
+              a.get("WFWorkflowActionIdentifier","").startswith(bundle+".")
+              for a in actions[:voice_idx]
+          ), "Tesla AppIntent found in AUTO_START/AUTO_END prefix"
+
+          # Voice conditions are equality-only. This prevents phrases such as
+          # '不要解鎖' from matching '解鎖'.
+          for a in actions:
+              if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.conditional":
+                  p=a.get("WFWorkflowActionParameters",{})
+                  if "WFConditionalActionString" in p:
+                      assert p.get("WFCondition")==4, f"non-exact text condition: {p}"
+
+          # Every sensitive physical action must have an explicit confirmation
+          # Ask action shortly before it in the same generated branch.
+          sensitive=[]
+          for i,a in enumerate(actions):
+              ident=a.get("WFWorkflowActionIdentifier","")
+              p=a.get("WFWorkflowActionParameters",{})
+              if ident.endswith(".FrontTrunkIntent") or ident.endswith(".RearTrunkIntent"):
+                  sensitive.append((i,ident))
+              elif ident.endswith(".LockUnlockIntent") and p.get("vehicleControlType")=="unlock":
+                  sensitive.append((i,ident))
+          assert sensitive, "no sensitive actions found"
+          for i,ident in sensitive:
+              recent=actions[max(0,i-16):i]
+              prompts=[
+                  x.get("WFWorkflowActionParameters",{}).get("WFAskActionPrompt","")
+                  for x in recent
+                  if x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.ask"
+              ]
+              assert any("確認" in p for p in prompts), f"{ident} at {i}: missing independent confirmation"
+
+          # Rear trunk, defrost and sentry enum values remain Ask; do not guess.
+          for a in actions:
+              ident=a.get("WFWorkflowActionIdentifier","")
+              p=a.get("WFWorkflowActionParameters",{})
+              if ident.endswith(".RearTrunkIntent"):
+                  assert p.get("rearTrunkAction")==ask
+              if ident.endswith(".DefrostIntent"):
+                  assert p.get("defrostAction")==ask
+              if ident.endswith(".SentryModeIntent"):
+                  assert p.get("vehicleModeAction")==ask
+
+          # Unsupported native actions remain absent until a donor is obtained.
+          for forbidden in [
+              "HornIntent","ChargePortIntent","StartChargingIntent","StopChargingIntent",
+              "SeatHeaterIntent","DogModeIntent","CampModeIntent","Bioweapon"
+          ]:
+              assert forbidden not in tblob, f"unproven intent leaked: {forbidden}"
+
+          # Oil shortcut stays oil-only.
+          oblob=(g/"油車助手.shortcut.xml").read_text(encoding="utf-8")
+          assert "com.teslamotors.TeslaApp" not in oblob
+          assert "充電上限" not in oblob
+          assert "HVACSetTempIntent" not in oblob
+
+          # Both shortcuts must have the simple Siri question and terminate
+          # unknown commands rather than falling into an action.
+          for name,wf in [("Tesla",tesla),("Oil",oil)]:
+              aa=wf["WFWorkflowActions"]
+              assert any(
+                  a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.ask"
+                  and a.get("WFWorkflowActionParameters",{}).get("WFAskActionPrompt")=="要做什麼？"
+                  for a in aa
+              ), f"{name}: missing Siri ask"
+              assert aa[-1].get("WFWorkflowActionIdentifier")=="is.workflow.actions.exit"
+
+          print("CarKit structural/privacy/safety checks: PASS")
+          print("Runtime vehicle entity selection: NOT RUN (requires iPhone + Tesla App)")
+          print("Siri execution: NOT RUN (requires iPhone/Siri)")
+          print("Tesla vehicle control: NOT RUN (requires Tesla account/vehicle)")
+          PY
 
       - name: Sign generated shortcuts
         run: |
@@ -101,13 +213,13 @@ jobs:
       - name: Upload signed shortcuts
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-signed-shortcuts-v0.4
+          name: carkit-signed-shortcuts-v0.5
           path: carkit-sign/out/*.shortcut
           if-no-files-found: error
 
       - name: Upload workflow sources
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-shortcut-sources-v0.4
+          name: carkit-shortcut-sources-v0.5
           path: carkit-sign/generated/*.shortcut.xml
           if-no-files-found: error
