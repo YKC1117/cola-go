@@ -77,7 +77,7 @@ jobs:
               "HVACSetTempIntent","ChargeLimitIntent","PreconditionIntent",
               "LockUnlockIntent","RearTrunkIntent","FrontTrunkIntent",
               "DefrostIntent","VentIntent","CloseWindowIntent",
-              "SentryModeIntent","FlashLightIntent"
+              "SentryModeIntent","FlashLightIntent","ChargePortIntent"
           }
           ask={"Value":{"Type":"Ask"},"WFSerializationType":"WFTextTokenAttachment"}
 
@@ -138,20 +138,24 @@ jobs:
               ]
               assert any("確認" in p for p in prompts), f"{ident} at {i}: missing independent confirmation"
 
-          # Rear trunk, defrost and sentry enum values remain Ask; do not guess.
+          # Donor-proven enum handling. Keep unresolved enums on Ask; only promote
+          # a fixed value when a public native donor proves it.
           for a in actions:
               ident=a.get("WFWorkflowActionIdentifier","")
               p=a.get("WFWorkflowActionParameters",{})
               if ident.endswith(".RearTrunkIntent"):
                   assert p.get("rearTrunkAction")==ask
               if ident.endswith(".DefrostIntent"):
-                  assert p.get("defrostAction")==ask
+                  assert p.get("defrostAction")=="enable"
               if ident.endswith(".SentryModeIntent"):
                   assert p.get("vehicleModeAction")==ask
+              if ident.endswith(".ChargePortIntent"):
+                  assert p.get("chargePortAction")=="open"
+                  assert p.get("vehicle")==ask
 
           # Unsupported native actions remain absent until a donor is obtained.
           for forbidden in [
-              "HornIntent","ChargePortIntent","StartChargingIntent","StopChargingIntent",
+              "HornIntent","StartChargingIntent","StopChargingIntent",
               "SeatHeaterIntent","DogModeIntent","CampModeIntent","Bioweapon"
           ]:
               assert forbidden not in tblob, f"unproven intent leaked: {forbidden}"
