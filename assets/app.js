@@ -434,8 +434,8 @@ function renderLocations(){
       '</div>'+
     '</article>'
   ).join("");
-  $("[data-location-map]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.locationMap,"_blank","noopener"));
-  $("[data-location-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?q="+b.dataset.locationApple,"_blank","noopener"));
+  $$("[data-location-map]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.locationMap,"_blank","noopener"));
+  $$("[data-location-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?q="+b.dataset.locationApple,"_blank","noopener"));
 }
 function renderCommunity(){
   const communities=state.community?.communities||[];
@@ -460,8 +460,8 @@ function renderCommunity(){
   bindExternal(document);
 }
 function bindCommunity(){
-  $("[data-community-filter]").forEach(b=>b.onclick=()=>{
-    $("[data-community-filter]").forEach(x=>x.classList.remove("active"));
+  $$("[data-community-filter]").forEach(b=>b.onclick=()=>{
+    $$("[data-community-filter]").forEach(x=>x.classList.remove("active"));
     b.classList.add("active");
     state.communityFilter=b.dataset.communityFilter;
     renderCommunity();
