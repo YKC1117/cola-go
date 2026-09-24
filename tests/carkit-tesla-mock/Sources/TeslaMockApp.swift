@@ -2,8 +2,8 @@ import SwiftUI
 import AppIntents
 
 struct VehicleEntity: AppEntity, Identifiable, Hashable {
-    static var typeDisplayRepresentation: TypeDisplayRepresentation = "Tesla Vehicle"
-    static var defaultQuery = VehicleQuery()
+    static let typeDisplayRepresentation: TypeDisplayRepresentation = "Tesla Vehicle"
+    static let defaultQuery = VehicleQuery()
 
     let id: String
     let name: String
@@ -29,8 +29,8 @@ struct VehicleQuery: EntityQuery {
 }
 
 struct FrontTrunkIntent: AppIntent {
-    static var title: LocalizedStringResource = "Open Front Trunk"
-    static var description = IntentDescription("CarKit test-only mock Tesla intent.")
+    static let title: LocalizedStringResource = "Open Front Trunk"
+    static let description = IntentDescription("CarKit test-only mock Tesla intent.")
 
     @Parameter(title: "Vehicle")
     var vehicle: VehicleEntity
