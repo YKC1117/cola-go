@@ -14,6 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Fetch and decode public Tesla sample
+        run: |
+          set -euxo pipefail
+          python3 carkit-sign/fetch_tesla_sample.py
+
       - name: Build Oil Driver
         run: |
           set -euxo pipefail
@@ -57,61 +62,18 @@ jobs:
           done
           ls -lh carkit-sign/out
 
-
-      - name: Inspect public Tesla native Shortcut donors
-        run: |
-          set -euxo pipefail
-          mkdir -p carkit-sign/inspect
-          python3 - <<'PY'
-          import json, plistlib
-          from pathlib import Path
-          from urllib.request import Request, urlopen
-
-          ids = [
-              "3c461b592b644b3cb158a9f98db225c9",
-              "439c956cb4df435ea26ffe6edda2ffa1",
-              "6f26ff6e435f42d4877affe3cb91ab85",
-              "0d17a1d0a40f450fb1fcbdba3d4644f5",
-          ]
-          all_out={}
-          for sid in ids:
-              api=f"https://www.icloud.com/shortcuts/api/records/{sid}"
-              with urlopen(Request(api,headers={"User-Agent":"Mozilla/5.0"}),timeout=30) as r:
-                  meta=json.load(r)
-              # Apple's endpoint has appeared both directly and under records[0].
-              rec = meta["records"][0] if isinstance(meta,dict) and "records" in meta else meta
-              fields=rec["fields"]
-              name=fields.get("name",{}).get("value",sid)
-              url=fields["shortcut"]["value"]["downloadURL"]
-              url=url.replace("${f}","shortcut.plist")
-              with urlopen(Request(url,headers={"User-Agent":"Mozilla/5.0"}),timeout=30) as r:
-                  raw=r.read()
-              wf=plistlib.loads(raw)
-              actions=[]
-              for i,a in enumerate(wf.get("WFWorkflowActions",[])):
-                  ident=a.get("WFWorkflowActionIdentifier")
-                  params=a.get("WFWorkflowActionParameters",{})
-                  actions.append({"index":i,"identifier":ident,"params":params})
-              all_out[sid]={"name":name,"action_count":len(actions),"actions":actions}
-              print("DONOR",sid,name,"actions",len(actions))
-              for a in actions:
-                  s=json.dumps(a,ensure_ascii=False,default=str)
-                  if "tesla" in s.lower() or "appintent" in s.lower():
-                      print("TESLA_ACTION",s[:5000])
-          Path("carkit-sign/inspect/tesla-donors.json").write_text(
-              json.dumps(all_out,ensure_ascii=False,indent=2,default=str),encoding="utf-8")
-          PY
-
-      - name: Upload Tesla donor inspection
-        uses: actions/upload-artifact@v4
-        with:
-          name: tesla-native-donor-inspection
-          path: carkit-sign/inspect/tesla-donors.json
-          if-no-files-found: error
-
       - name: Upload signed shortcuts
         uses: actions/upload-artifact@v4
         with:
           name: carkit-signed-shortcuts
           path: carkit-sign/out/*.shortcut
+          if-no-files-found: error
+
+      - name: Upload decoded Tesla sample
+        uses: actions/upload-artifact@v4
+        with:
+          name: tesla-public-sample-decoded
+          path: |
+            carkit-sign/tesla-sample-meta.json
+            carkit-sign/tesla-sample.plist.xml
           if-no-files-found: error
