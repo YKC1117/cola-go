@@ -37,12 +37,20 @@ jobs:
               try{
                 const r=await fetch(url,{headers:{Accept:'application/json'}});
                 const text=await r.text();
-                return {url,status:r.status,ok:r.ok,type:r.headers.get('content-type'),length:text.length,preview:text.slice(0,180)};
+                return {mode:'fetch',url,status:r.status,ok:r.ok,type:r.headers.get('content-type'),length:text.length,preview:text.slice(0,180)};
               }catch(e){
-                return {url,error:String(e)};
+                return {mode:'fetch',url,error:String(e)};
               }
             },url);
             console.log(JSON.stringify(result));
+            try{
+              const direct=await page.goto(url,{waitUntil:'domcontentloaded',timeout:15000});
+              const body=await page.locator('body').innerText().catch(()=> '');
+              console.log(JSON.stringify({mode:'navigate',url,status:direct?.status(),type:direct?.headers()['content-type'],length:body.length,preview:body.slice(0,180)}));
+            }catch(e){
+              console.log(JSON.stringify({mode:'navigate',url,error:String(e)}));
+            }
+            await page.goto('about:blank');
           }
           await browser.close();
           EOF
