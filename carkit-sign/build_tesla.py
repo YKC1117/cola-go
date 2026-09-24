@@ -182,7 +182,7 @@ main_branches={
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v0.3｜Tesla × Apple 智慧車用捷徑\n- 使用 Tesla App 原生 Shortcuts / AppIntent 車控\n- 解鎖與前行李廂等物理操作保留人工確認"
+    "WFCommentActionText":"Tesla Driver v0.3｜Tesla × Apple 智慧車用捷徑\n- 使用 Tesla App 原生 Shortcuts / AppIntent 車控\n- 解鎖與前行李廂等物理操作保留人工確認\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用 °C 溫度數值，這裡沒有進行單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
