@@ -47,3 +47,15 @@ export function normalizeXueshan(sectionItems, liveItems) {
     return { ...live, ...section, speedKph: live.speedKph, sourceUpdatedAt: live.sourceUpdatedAt };
   }).filter(Boolean);
 }
+
+export function projectXueshanFromNormalized(sections, live) {
+  const sectionMap = new Map((sections || []).map((x) => [x.id, x]));
+  return (live || []).map((row) => {
+    const section = sectionMap.get(row.id);
+    if (!section) return null;
+    const label = `${section.roadName || ""} ${section.name || ""}`;
+    if (!/(國道5|國5|Freeway 5|National Highway 5)/i.test(label)) return null;
+    if (!/(雪山|坪林|頭城|石碇)/.test(label)) return null;
+    return { ...section, ...row };
+  }).filter(Boolean);
+}
