@@ -124,6 +124,7 @@ Current donor-backed identifiers:
 - SentryModeIntent
 - FlashLightIntent
 - ChargePortIntent
+- HVACSeatHeaterIntent
 - FartIntent (not exposed in CarKit main UI)
 
 Known parameter evidence:
@@ -133,8 +134,9 @@ Known parameter evidence:
 - ChargeLimitIntent: `percent` is a numeric string
 - HVACSetTempIntent: `temperature` is a `WFQuantityFieldValue`
 - RearTrunkIntent: donor uses Ask for `rearTrunkAction`
-- DefrostIntent: public native donor proves `defrostAction = enable`
+- DefrostIntent: public native donors prove `defrostAction = enable | disable`
 - ChargePortIntent: public native donor proves `chargePortAction = open`
+- HVACSeatHeaterIntent: public native donors prove driver `seat = frontLeft`, `level = high | off`; donors omit `vehicle`
 - SentryModeIntent: donor uses Ask for `vehicleModeAction`
 
 Do not guess fixed enum values for donor-Ask fields.
@@ -143,7 +145,6 @@ Still missing native donor structures for:
 - Honk Horn
 - Close Charge Port
 - Start/Stop Charging
-- Seat Heater
 - Dog Mode
 - Camp Mode
 - Bioweapon Defense Mode
@@ -175,3 +176,18 @@ Must remain NOT RUN without real Apple/Tesla environment:
 - Tesla Bluetooth real vehicle automation
 
 Do not call the package a final public release while these release-critical items are NOT RUN.
+
+## Additional public Tesla donor findings
+
+- TFF weather/climate donor uses a real Tesla `vehicle` Import Question on a single action:
+  - `Category = Parameter`
+  - `ParameterKey = vehicle`
+  - `ActionIndex = 1`
+- The same shortcut contains other Tesla AppIntent actions that do not inherit that selected vehicle automatically.
+- This confirms import-time Tesla vehicle selection is structurally possible, but a single Import Question does not prove global vehicle propagation.
+- Tesla owner reports also describe multi-car setup as requiring repeated per-action vehicle choices when sharing complex shortcuts.
+
+Public-release consequence:
+- Do not claim one vehicle selection configures the whole Tesla shortcut.
+- Do not embed donor vehicle entities.
+- Multi-car vehicle consistency remains release-blocking until a safe, understandable install flow is proven or real-device tested.
