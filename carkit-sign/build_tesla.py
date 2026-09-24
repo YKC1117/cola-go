@@ -51,7 +51,7 @@ def if_exact(input_ref,value,yes_actions,seed):
     return [
       act("is.workflow.actions.comment",{
         "UUID":uid(seed+"-comment"),
-        "WFCommentActionText":f"精確比對「{value}」；符合才執行此分支，否則繼續。"
+        "WFCommentActionText":f"精確比對「{value}」\n- 輸入：上一個文字結果\n- 符合：執行此分支\n- 否則：繼續後續路由"
       }),
       act("is.workflow.actions.conditional",{
         "UUID":uid(seed+"-start"),
@@ -84,7 +84,7 @@ def menu(prompt,items,branches,seed):
     out=[
       act("is.workflow.actions.comment",{
         "UUID":uid(seed+"-comment"),
-        "WFCommentActionText":f"{prompt}：顯示功能選單，依使用者選擇執行對應動作。"
+        "WFCommentActionText":f"{prompt}\n- 顯示：此功能選單\n- 輸入：使用者選擇\n- 輸出：執行對應動作"
       }),
       act("is.workflow.actions.choosefrommenu",{
       "UUID":uid(seed+"-start"),"GroupingIdentifier":g,"WFControlFlowMode":0,
