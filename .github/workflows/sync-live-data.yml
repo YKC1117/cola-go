@@ -1,0 +1,36 @@
+name: Sync live freeway data
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/sync_traffic.py"
+      - ".github/workflows/sync-live-data.yml"
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cola-go-live-sync
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch and normalize official freeway data
+        run: python3 scripts/sync_traffic.py
+      - name: Commit refreshed cache
+        run: |
+          git config user.name "COLA GO Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/traffic.json data/tunnel.json data/vd-live.json 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No data changes"
+            exit 0
+          fi
+          git commit -m "data: refresh live freeway cache"
+          git push
