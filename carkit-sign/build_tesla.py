@@ -223,7 +223,7 @@ def route_aliases(input_uuid,aliases,action_factory,seed):
         )
     return out
 
-def set_command(value,seed):
+def set_variable(name,value,seed):
     text_uuid=uid(seed+"-text")
     return [
       act("is.workflow.actions.gettext",{
@@ -232,9 +232,18 @@ def set_command(value,seed):
       }),
       act("is.workflow.actions.setvariable",{
         "UUID":uid(seed+"-set"),
-        "WFVariableName":"Command",
+        "WFVariableName":name,
         "WFInput":ao(text_uuid,"Text")
       })
+    ]
+
+def set_command(value,seed):
+    return set_variable("Command",value,seed)
+
+def set_prepare(seed):
+    return [
+      *set_command("PRE_START",seed+"-command"),
+      *set_variable("PrepareMode","YES",seed+"-flag")
     ]
 
 def normalize_aliases(input_uuid,aliases,command,seed):
@@ -325,7 +334,7 @@ main_items=[
     "神盾","導航","找我的車","閃燈尋車","哨兵模式","更多"
 ]
 main_branches={
-    "準備出發":set_command("PREPARE","menu-prepare"),
+    "準備出發":set_prepare("menu-prepare"),
     "空調 / 車室":climate_menu,
     "行李廂":trunk_menu,
     "車門控制":door_menu,
@@ -365,6 +374,7 @@ actions += if_exact(cond_extension_input(),"AUTO_START",auto_start,"route-auto-s
 
 # Always initialize canonical command to empty text.
 actions += set_command("NONE","command-init")
+actions += set_variable("PrepareMode","NO","prepare-init")
 
 voice,voice_id=ask_text("要做什麼？","voice-command")
 actions.append(voice)
@@ -387,7 +397,13 @@ actions += normalize_aliases(voice_id,["除霧","除霜"],"DEFROST_ON","voice-de
 actions += normalize_aliases(voice_id,["停止除霜","關除霜"],"DEFROST_OFF","voice-defrost-off")
 actions += normalize_aliases(voice_id,["座椅加熱","駕駛座加熱","開座椅加熱"],"SEAT_HIGH","voice-seat-high")
 actions += normalize_aliases(voice_id,["關座椅加熱","關閉座椅加熱"],"SEAT_OFF","voice-seat-off")
-actions += normalize_aliases(voice_id,["準備出發","出發"],"PREPARE","voice-prepare")
+for i,word in enumerate(["準備出發","出發"]):
+    actions += if_exact(
+        cond_action_output(voice_id,"Provided Input"),
+        word,
+        set_prepare(f"voice-prepare-{i}"),
+        f"voice-prepare-alias-{i}"
+    )
 
 # Non-Tesla commands can execute directly and exit.
 actions += route_aliases(voice_id,["找車","找我的車","停車位置"],
@@ -420,7 +436,17 @@ actions += if_exact(cond_action_output(voice_id,"Provided Input"),"選單",manua
 
 # ---- one canonical Tesla AppIntent per actual function ----
 cmd=cond_named_var("Command")
-actions += if_exact(cmd,"PRE_START",[pre_start_action("canonical-pre-start"),exit_shortcut()],"run-pre-start")
+pre_start_flow=[
+    pre_start_action("canonical-pre-start"),
+    *if_exact(
+        cond_named_var("PrepareMode"),
+        "YES",
+        [app("tw.com.ainvest.outpack","canonical-pre-start-shield")],
+        "canonical-pre-start-prepare"
+    ),
+    exit_shortcut()
+]
+actions += if_exact(cmd,"PRE_START",pre_start_flow,"run-pre-start")
 actions += if_exact(cmd,"PRE_STOP",[pre_stop_action("canonical-pre-stop"),exit_shortcut()],"run-pre-stop")
 actions += if_exact(cmd,"TEMP_22",[temp_action(22,"canonical-temp22"),exit_shortcut()],"run-temp22")
 actions += if_exact(cmd,"TEMP_23",[temp_action(23,"canonical-temp23"),exit_shortcut()],"run-temp23")
@@ -440,11 +466,6 @@ actions += if_exact(cmd,"SEAT_OFF",[seat_heater_off_action("canonical-seat-off")
 actions += if_exact(cmd,"VENT",[vent_action("canonical-vent"),exit_shortcut()],"run-vent")
 actions += if_exact(cmd,"WINDOW_CLOSE",[close_window_action("canonical-window-close"),exit_shortcut()],"run-window-close")
 actions += if_exact(cmd,"SENTRY",[sentry_action("canonical-sentry"),exit_shortcut()],"run-sentry")
-actions += if_exact(cmd,"PREPARE",[
-    pre_start_action("canonical-prepare-pre"),
-    app("tw.com.ainvest.outpack","canonical-prepare-shield"),
-    exit_shortcut()
-],"run-prepare")
 
 actions += [show("沒聽懂，未執行任何車控。","voice-unknown"),exit_shortcut()]
 
