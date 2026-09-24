@@ -215,7 +215,7 @@ actions += route_aliases(voice_id,["音樂","Apple Music"],
     lambda s:[app("com.apple.Music",s)],"voice-music")
 actions += route_aliases(voice_id,["Spotify"],
     lambda s:[app("com.spotify.client",s)],"voice-spotify")
-actions += route_aliases(voice_id,["選單","功能"],
+actions += route_aliases(voice_id,["選單"],
     lambda s:manual_menu,"voice-menu")
 
 actions += [
