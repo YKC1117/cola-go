@@ -1,4 +1,4 @@
-const CACHE="cola-go-v0.6.0";
+const CACHE="cola-go-v0.7.0";
 const CORE=["./","./index.html","./manifest.webmanifest","./assets/logo.svg","./assets/styles.css","./assets/app.js","./data/charging.json","./data/traffic.json","./data/tunnel.json","./data/parking.json","./data/tesla-models.json","./data/marketplace.json"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
