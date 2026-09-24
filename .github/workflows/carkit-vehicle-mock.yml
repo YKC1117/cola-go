@@ -90,10 +90,9 @@ jobs:
           PY
 
       - name: Probe import-time Vehicle AppEntity picker
-        continue-on-error: true
         timeout-minutes: 6
         run: |
-          set -uxo pipefail
+          set -euxo pipefail
           UDID="${{ steps.sim.outputs.udid }}"
           EV=/tmp/carkit-vehicle-mock/evidence
           mkdir -p "$EV"
@@ -109,11 +108,11 @@ jobs:
           sleep 5
           idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > "$EV/before-add.json" || true
           xcrun simctl io "$UDID" screenshot "$EV/before-add.png"
-          idb ui tap "Add Shortcut" --udid "$UDID"
+          idb ui tap "Set Up Shortcut" --udid "$UDID"
           sleep 6
-          idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > "$EV/after-add.json" || true
-          xcrun simctl io "$UDID" screenshot "$EV/after-add.png"
-          cat "$EV/after-add.json" || true
+          idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > "$EV/after-setup.json" || true
+          xcrun simctl io "$UDID" screenshot "$EV/after-setup.png"
+          cat "$EV/after-setup.json" || true
 
       - name: Upload vehicle picker evidence
         if: always()
