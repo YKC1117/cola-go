@@ -5,6 +5,8 @@ const state={
   tunnel:null,
   parking:null,
   parkingLive:{status:"not-synced",items:[]},
+  parkingLiveTaoyuan:{status:"not-synced",items:[]},
+  parkingCity:"tainan",
   parkingSort:"availability",
   parkingHasSpaceOnly:false,
   parkingUserLocation:null,
@@ -105,6 +107,7 @@ async function load(){
     getJSON("./data/tunnel.json"),
     getJSON("./data/parking.json"),
     getJSON("./data/parking-live-tainan.json"),
+    getJSON("./data/parking-live-taoyuan.json"),
     getJSON("./data/tesla-models.json"),
     getJSON("./data/marketplace.json"),
     getJSON("./data/community.json"),
@@ -116,10 +119,11 @@ async function load(){
   if(results[2].status==="fulfilled")state.tunnel=results[2].value;
   if(results[3].status==="fulfilled")state.parking=results[3].value;
   if(results[4].status==="fulfilled")state.parkingLive=results[4].value;
-  if(results[5].status==="fulfilled")state.models=results[5].value.models||[];
-  if(results[6].status==="fulfilled")state.market=results[6].value;
-  if(results[7].status==="fulfilled")state.community=results[7].value;
-  if(results[8].status==="fulfilled")state.locations=results[8].value;
+  if(results[5].status==="fulfilled")state.parkingLiveTaoyuan=results[5].value;
+  if(results[6].status==="fulfilled")state.models=results[6].value.models||[];
+  if(results[7].status==="fulfilled")state.market=results[7].value;
+  if(results[8].status==="fulfilled")state.community=results[8].value;
+  if(results[9].status==="fulfilled")state.locations=results[9].value;
 
   renderAll();
 }
@@ -261,7 +265,12 @@ function renderParking(){
   const cityRoot=$("#parkingCities");
   if(!liveRoot||!cityRoot)return;
 
-  const live=state.parkingLive||{status:"not-synced",items:[]};
+  const live=(state.parkingCity==="taoyuan"?state.parkingLiveTaoyuan:state.parkingLive)||{status:"not-synced",items:[]};
+  const cityMeta=state.parkingCity==="taoyuan"
+    ?{label:"TAOYUAN LIVE",title:"桃園即時剩餘車位",empty:"桃園即時資料暫時無法取得"}
+    :{label:"TAINAN LIVE",title:"臺南即時剩餘車位",empty:"臺南即時資料暫時無法取得"};
+  if($("#parkingCityLabel"))$("#parkingCityLabel").textContent=cityMeta.label;
+  if($("#parkingCityTitle"))$("#parkingCityTitle").textContent=cityMeta.title;
   const query=($("#parkingSearch")?.value||"").trim().toLowerCase();
   let rows=(live.items||[])
     .filter(x=>!query||[x.name,x.zone,x.address,x.typeName].join(" ").toLowerCase().includes(query))
@@ -288,26 +297,30 @@ function renderParking(){
 
   if(live.status==="live"&&rows.length){
     liveRoot.innerHTML=rows.map(x=>{
-      const available=Number(x.car||0);
-      const total=Number(x.carTotal||0);
-      const cls=available>=20?"good":available>=5?"mid":"bad";
+      const available=Number.isFinite(Number(x.car))?Number(x.car):null;
+      const total=Number.isFinite(Number(x.carTotal))?Number(x.carTotal):null;
+      const cls=available==null?"":available>=20?"good":available>=5?"mid":"bad";
       const distance=parkingDistanceLabel(x._distance);
+      const evLabel=state.parkingCity==="taoyuan"?"充電車位":"綠能剩餘";
+      const evValue=state.parkingCity==="taoyuan"
+        ?(Number.isFinite(Number(x.evTotal))?money(Number(x.evTotal)):"—")
+        :money(Number(x.green||0));
       return '<article class="parking-card">'+
-        '<div class="parking-card-top"><div><h3>'+esc(x.name)+'</h3><span class="parking-zone">'+esc(x.zone||x.typeName||"臺南")+(distance?' · 距離 '+esc(distance):'')+'</span></div><div class="parking-space"><b class="'+cls+'">'+available+'</b><small>汽車剩餘</small></div></div>'+
+        '<div class="parking-card-top"><div><h3>'+esc(x.name)+'</h3><span class="parking-zone">'+esc(x.zone||x.typeName||(state.parkingCity==="taoyuan"?"桃園":"臺南"))+(distance?' · 距離 '+esc(distance):'')+'</span></div><div class="parking-space"><b class="'+cls+'">'+(available==null?"—":available)+'</b><small>汽車剩餘</small></div></div>'+
         '<div class="parking-specs">'+
-          '<div><small>總格數</small><b>'+money(total)+'</b></div>'+
-          '<div><small>綠能剩餘</small><b>'+money(Number(x.green||0))+'</b></div>'+
+          '<div><small>總格數</small><b>'+(total==null?"—":money(total))+'</b></div>'+
+          '<div><small>'+evLabel+'</small><b>'+evValue+'</b></div>'+
           '<div><small>營業／收費</small><b>'+esc(x.chargeTime||"依現場")+'</b></div>'+
         '</div>'+
         '<div class="parking-address">'+esc(x.address||"")+(x.chargeFee?' · '+esc(x.chargeFee):"")+'</div>'+
-        '<div class="parking-update">官方更新：'+esc(x.sourceUpdate||live.updatedAt||"—")+'</div>'+
+        '<div class="parking-update">資料時間：'+esc(x.sourceUpdate||live.updatedAt||"—")+'</div>'+
         '<div class="item-actions"><button class="go" data-parking-map="'+encodeURIComponent(x.address||x.name)+'">Google Maps</button><button data-parking-apple="'+encodeURIComponent(x.address||x.name)+'">Apple 地圖</button></div>'+
       '</article>';
     }).join("");
   }else if(live.status==="live"&&(query||state.parkingHasSpaceOnly)){
     liveRoot.innerHTML='<div class="empty"><b>沒有符合的臺南停車場</b><p>換個名稱、行政區，或關閉「只看有位」。</p></div>';
   }else{
-    liveRoot.innerHTML='<div class="market-empty"><b>臺南即時資料暫時無法取得</b><p>不顯示過期數字。你仍可直接用地圖找附近停車場。</p><div class="item-actions"><button class="go" data-nearby-parking="google">Google Maps</button><button data-nearby-parking="apple">Apple 地圖</button></div></div>';
+    liveRoot.innerHTML='<div class="market-empty"><b>'+cityMeta.empty+'</b><p>不顯示過期數字。你仍可直接用地圖找附近停車場。</p><div class="item-actions"><button class="go" data-nearby-parking="google">Google Maps</button><button data-nearby-parking="apple">Apple 地圖</button></div></div>';
   }
 
   $$("[data-parking-map]",liveRoot).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.parkingMap,"_blank","noopener"));
@@ -350,6 +363,12 @@ function requestParkingLocation(){
   );
 }
 function bindParkingTools(){
+  $("#parkingCityTabs [data-parking-city]").forEach(b=>b.addEventListener("click",()=>{
+    state.parkingCity=b.dataset.parkingCity;
+    $("#parkingCityTabs [data-parking-city]").forEach(x=>x.classList.toggle("active",x===b));
+    if($("#parkingSearch"))$("#parkingSearch").value="";
+    renderParking();
+  }));
   $("#parkingSortAvailability")?.addEventListener("click",()=>{
     state.parkingSort="availability";
     renderParking();
