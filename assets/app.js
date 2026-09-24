@@ -5,6 +5,10 @@ const state={
   tunnel:null,
   parking:null,
   parkingLive:{status:"not-synced",items:[]},
+  parkingCity:"all",
+  parkingRemote:{status:"idle",city:"",items:[],updatedAt:null,source:"",error:""},
+  parkingRemoteLoading:false,
+  parkingRemoteAttempts:{},
   models:[],
   market:{usedCars:[],accessories:[],services:[]},
   road:"all",
@@ -51,6 +55,7 @@ function show(view,push=true){
   window.scrollTo({top:0,behavior:"instant"});
   if(push)history.replaceState(null,"","#"+view);
   if(view==="cctv")ensureCCTV().catch(()=>{});
+  if(view==="parking"&&state.parkingCity!=="all"&&state.parkingCity!=="Tainan")ensureParkingCity(state.parkingCity).catch(()=>{});
   if((view==="highway"||view==="tunnel")&&state.traffic?.status!=="live")ensureClientTraffic().catch(()=>{});
 
 }
@@ -227,55 +232,258 @@ function renderCharging(){
   $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
 }
 
-function renderParking(){
-  const liveRoot=$("#liveParkingList");
-  const cityRoot=$("#parkingCities");
-  if(!liveRoot||!cityRoot)return;
 
-  const live=state.parkingLive||{status:"not-synced",items:[]};
-  const query=($("#parkingSearch")?.value||"").trim().toLowerCase();
-  const rows=(live.items||[])
-    .filter(x=>!query||[x.name,x.zone,x.address,x.typeName].join(" ").toLowerCase().includes(query))
-    .sort((a,b)=>Number(b.car||0)-Number(a.car||0));
+const TAIWAN_PARKING_CITIES=[{"code":"Taipei","name":"臺北市"},{"code":"NewTaipei","name":"新北市"},{"code":"Taoyuan","name":"桃園市"},{"code":"Taichung","name":"臺中市"},{"code":"Tainan","name":"臺南市"},{"code":"Kaohsiung","name":"高雄市"},{"code":"Keelung","name":"基隆市"},{"code":"Hsinchu","name":"新竹市"},{"code":"HsinchuCounty","name":"新竹縣"},{"code":"MiaoliCounty","name":"苗栗縣"},{"code":"ChanghuaCounty","name":"彰化縣"},{"code":"NantouCounty","name":"南投縣"},{"code":"YunlinCounty","name":"雲林縣"},{"code":"Chiayi","name":"嘉義市"},{"code":"ChiayiCounty","name":"嘉義縣"},{"code":"PingtungCounty","name":"屏東縣"},{"code":"YilanCounty","name":"宜蘭縣"},{"code":"HualienCounty","name":"花蓮縣"},{"code":"TaitungCounty","name":"臺東縣"},{"code":"PenghuCounty","name":"澎湖縣"},{"code":"KinmenCounty","name":"金門縣"},{"code":"LienchiangCounty","name":"連江縣"}];
+const TDX_PARKING_BASE="https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/CarPark";
 
-  $("#parkingLiveTime").textContent=live.status==="live"?(live.updatedAt||"官方即時"):"暫無即時資料";
+function parkingCityName(code){
+  return TAIWAN_PARKING_CITIES.find(x=>x.code===code)?.name||"全台灣";
+}
 
-  if(live.status==="live"&&rows.length){
-    liveRoot.innerHTML=rows.map(x=>{
-      const available=Number(x.car||0);
-      const total=Number(x.carTotal||0);
-      const cls=available>=20?"good":available>=5?"mid":"bad";
-      return '<article class="parking-card">'+
-        '<div class="parking-card-top"><div><h3>'+esc(x.name)+'</h3><span class="parking-zone">'+esc(x.zone||x.typeName||"臺南")+'</span></div><div class="parking-space"><b class="'+cls+'">'+available+'</b><small>汽車剩餘</small></div></div>'+
-        '<div class="parking-specs">'+
-          '<div><small>總格數</small><b>'+money(total)+'</b></div>'+
-          '<div><small>綠能剩餘</small><b>'+money(Number(x.green||0))+'</b></div>'+
-          '<div><small>營業／收費</small><b>'+esc(x.chargeTime||"依現場")+'</b></div>'+
-        '</div>'+
-        '<div class="parking-address">'+esc(x.address||"")+(x.chargeFee?' · '+esc(x.chargeFee):"")+'</div>'+
-        '<div class="parking-update">官方更新：'+esc(x.sourceUpdate||live.updatedAt||"—")+'</div>'+
-        '<div class="item-actions"><button class="go" data-parking-map="'+encodeURIComponent(x.address||x.name)+'">Google Maps</button><button data-parking-apple="'+encodeURIComponent(x.address||x.name)+'">Apple 地圖</button></div>'+
-      '</article>';
-    }).join("");
-  }else if(live.status==="live"&&query){
-    liveRoot.innerHTML='<div class="empty"><b>找不到符合的臺南停車場</b><p>換個停車場名稱、行政區或地址試試。</p></div>';
-  }else{
-    liveRoot.innerHTML='<div class="market-empty"><b>臺南即時資料暫時無法取得</b><p>不顯示過期數字。你仍可直接用地圖找附近停車場。</p><div class="item-actions"><button class="go" data-nearby-parking="google">Google Maps</button><button data-nearby-parking="apple">Apple 地圖</button></div></div>';
+function parkingName(value){
+  if(typeof value==="string")return value;
+  return value?.Zh_tw||value?.ZhTw||value?.zh_tw||value?.En||"";
+}
+
+function normalizeParkingBasic(data,city){
+  const rows=findObjects(data,x=>Boolean(x&&x.CarParkID&&x.CarParkName));
+  const seen=new Set();
+  return rows.map(x=>{
+    const id=String(x.CarParkID||"");
+    if(!id||seen.has(id))return null;
+    seen.add(id);
+    const position=x.CarParkPosition||x.Position||{};
+    const lat=Number(position.PositionLat??x.PositionLat??x.Latitude);
+    const lon=Number(position.PositionLon??x.PositionLon??x.Longitude);
+    return {
+      id,
+      city,
+      name:parkingName(x.CarParkName)||id,
+      town:String(x.TownName||x.District||""),
+      address:String(x.Address||x.CarParkAddress||""),
+      description:String(x.Description||""),
+      fare:String(x.FareDescription||x.FareDescriptionText||""),
+      liveCapable:Boolean(x.LiveOccupancyAvailable??x.LiveOccuppancyAvailable),
+      lat:Number.isFinite(lat)?lat:null,
+      lon:Number.isFinite(lon)?lon:null,
+      total:Number(x.TotalSpaces??x.NumberOfSpaces??0)||0,
+      available:null,
+      dataCollectTime:"",
+      sourceType:"basic"
+    };
+  }).filter(Boolean);
+}
+
+function availabilityCarSpaces(x){
+  let total=Number(x.TotalSpaces??0);
+  let available=x.AvailableSpaces==null?null:Number(x.AvailableSpaces);
+  const rows=Array.isArray(x.Availabilities)?x.Availabilities:[];
+  const car=rows.find(v=>Number(v.SpaceType)===1)||rows[0];
+  if(car){
+    if(!total)total=Number(car.NumberOfSpaces??car.NumberOfSpace??0)||0;
+    if(available==null||!Number.isFinite(available))available=Number(car.AvailableSpaces??car.AvailableSpace);
   }
+  return {
+    total:Number.isFinite(total)?total:0,
+    available:Number.isFinite(available)?available:null
+  };
+}
 
-  $$("[data-parking-map]",liveRoot).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.parkingMap,"_blank","noopener"));
-  $$("[data-parking-apple]",liveRoot).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?q="+b.dataset.parkingApple,"_blank","noopener"));
-  $$("[data-nearby-parking]",liveRoot).forEach(b=>b.onclick=()=>{
-    const url=b.dataset.nearbyParking==="apple"
-      ?"https://maps.apple.com/?q="+encodeURIComponent("停車場")
-      :"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("停車場");
-    window.open(url,"_blank","noopener");
+function normalizeParkingAvailability(data){
+  const rows=findObjects(data,x=>Boolean(x&&x.CarParkID&&(x.AvailableSpaces!==undefined||x.Availabilities||x.TotalSpaces!==undefined)));
+  const map=new Map();
+  rows.forEach(x=>{
+    const id=String(x.CarParkID||"");
+    if(!id)return;
+    const spaces=availabilityCarSpaces(x);
+    map.set(id,{
+      id,
+      name:parkingName(x.CarParkName),
+      total:spaces.total,
+      available:spaces.available,
+      serviceStatus:x.ServiceStatus,
+      fullStatus:x.FullStatus,
+      dataCollectTime:String(x.DataCollectTime||x.UpdateTime||"")
+    });
+  });
+  return map;
+}
+
+function mergeParkingRows(basic,availability){
+  return basic.map(x=>{
+    const live=availability.get(x.id);
+    return live?{...x,total:live.total||x.total,available:live.available,dataCollectTime:live.dataCollectTime,sourceType:"live"}:x;
+  });
+}
+
+async function fetchParkingEndpoint(path,timeout=7000){
+  const candidates=[
+    "https://tdx.transportdata.tw/api/basic/v1/"+path+"?%24format=JSON",
+    "https://tdx.transportdata.tw/api/basic/v2/"+path+"?%24format=JSON"
+  ];
+  let lastError=null;
+  for(const url of candidates){
+    try{
+      const response=await fetchWithTimeout(url,{headers:{Accept:"application/json"}},timeout);
+      return await response.json();
+    }catch(error){
+      lastError=error;
+    }
+  }
+  throw lastError||new Error("TDX parking unavailable");
+}
+
+async function ensureParkingCity(city){
+  if(!city||city==="all"||city==="Tainan")return;
+  if(state.parkingRemote.status==="ready"&&state.parkingRemote.city===city)return;
+  if(state.parkingRemoteLoading)return;
+
+  const last=Number(state.parkingRemoteAttempts[city]||0);
+  if(last&&Date.now()-last<60000&&state.parkingRemote.city===city&&state.parkingRemote.status==="unavailable")return;
+
+  state.parkingRemoteAttempts[city]=Date.now();
+  state.parkingRemoteLoading=true;
+  state.parkingRemote={status:"loading",city,items:[],updatedAt:null,source:"TDX",error:""};
+  renderParking();
+
+  try{
+    const cacheKey="cola-go-parking-"+city;
+    try{
+      const cached=JSON.parse(sessionStorage.getItem(cacheKey)||"null");
+      if(cached&&Date.now()-cached.savedAt<15*60*1000&&Array.isArray(cached.items)&&cached.items.length){
+        state.parkingRemote={status:"ready",city,items:cached.items,updatedAt:cached.updatedAt||null,source:"TDX 官方快取",error:""};
+        state.parkingRemoteLoading=false;
+        renderParking();
+        return;
+      }
+    }catch{}
+
+    const [basicResult,availabilityResult]=await Promise.allSettled([
+      fetchParkingEndpoint("Parking/OffStreet/CarPark/City/"+encodeURIComponent(city)),
+      fetchParkingEndpoint("Parking/OffStreet/CarPark/Availability/City/"+encodeURIComponent(city))
+    ]);
+
+    if(basicResult.status!=="fulfilled")throw basicResult.reason||new Error("TDX basic parking unavailable");
+    const basic=normalizeParkingBasic(basicResult.value,city);
+    if(!basic.length)throw new Error("TDX returned no parking lots");
+    const availability=availabilityResult.status==="fulfilled"?normalizeParkingAvailability(availabilityResult.value):new Map();
+    const items=mergeParkingRows(basic,availability);
+    const times=items.map(x=>x.dataCollectTime).filter(Boolean).sort();
+    const updatedAt=times.at(-1)||null;
+    state.parkingRemote={status:"ready",city,items,updatedAt,source:"TDX／交通部",error:""};
+    try{sessionStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),updatedAt,items}));}catch{}
+  }catch(error){
+    state.parkingRemote={status:"unavailable",city,items:[],updatedAt:null,source:"TDX／交通部",error:String(error?.message||error)};
+  }finally{
+    state.parkingRemoteLoading=false;
+    renderParking();
+  }
+}
+
+function parkingSelectedRows(){
+  if(state.parkingCity==="Tainan"&&state.parkingLive?.status==="live"){
+    return (state.parkingLive.items||[]).map(x=>({
+      id:String(x.id||x.code||x.name),
+      city:"Tainan",
+      name:x.name,
+      town:x.zone||"",
+      address:x.address||"",
+      fare:x.chargeFee||"",
+      total:Number(x.carTotal||0),
+      available:Number(x.car||0),
+      green:Number(x.green||0),
+      chargeTime:x.chargeTime||"",
+      dataCollectTime:x.sourceUpdate||state.parkingLive.updatedAt||"",
+      lat:Number.isFinite(Number(x.lat))?Number(x.lat):null,
+      lon:Number.isFinite(Number(x.lng))?Number(x.lng):null,
+      sourceType:"live"
+    }));
+  }
+  if(state.parkingRemote.status==="ready"&&state.parkingRemote.city===state.parkingCity)return state.parkingRemote.items||[];
+  return [];
+}
+
+function renderParkingCard(x){
+  const live=x.available!==null&&x.available!==undefined&&Number.isFinite(Number(x.available));
+  const available=live?Number(x.available):null;
+  const cls=!live?"":available>=20?"good":available>=5?"mid":"bad";
+  const query=encodeURIComponent(x.address||((x.name||"")+" "+parkingCityName(x.city)));
+  const meta=[parkingCityName(x.city),x.town].filter(Boolean).join(" · ");
+  return '<article class="parking-card">'+
+    '<div class="parking-card-top"><div><h3>'+esc(x.name||"停車場")+'</h3><span class="parking-zone">'+esc(meta)+'</span></div>'+
+    (live?'<div class="parking-space"><b class="'+cls+'">'+available+'</b><small>汽車剩餘</small></div>':'<span class="parking-static-chip">停車場資料</span>')+
+    '</div>'+
+    '<div class="parking-specs">'+
+      '<div><small>總格數</small><b>'+(x.total?money(Number(x.total)):"—")+'</b></div>'+
+      '<div><small>即時狀態</small><b>'+(live?"官方剩餘":"未提供")+'</b></div>'+
+      '<div><small>收費</small><b>'+esc(x.fare||x.chargeTime||"依現場")+'</b></div>'+
+    '</div>'+
+    '<div class="parking-address">'+esc(x.address||"地址由官方資料提供")+'</div>'+
+    (x.dataCollectTime?'<div class="parking-update">官方更新：'+esc(x.dataCollectTime)+'</div>':"")+
+    '<div class="item-actions"><button class="go" data-parking-map="'+query+'">Google Maps</button><button data-parking-apple="'+query+'">Apple 地圖</button></div>'+
+  '</article>';
+}
+
+function renderParking(){
+  const root=$("#liveParkingList");
+  const grid=$("#parkingCityGrid");
+  if(!root||!grid)return;
+
+  const city=state.parkingCity||"all";
+  const cityName=parkingCityName(city);
+  const query=($("#parkingSearch")?.value||"").trim().toLowerCase();
+
+  if($("#parkingCitySelect"))$("#parkingCitySelect").value=city;
+  if($("#parkingScopeTitle"))$("#parkingScopeTitle").textContent=city==="all"?"全台灣":cityName;
+  if($("#parkingResultTitle"))$("#parkingResultTitle").textContent=city==="all"?"全台停車":cityName+"停車";
+
+  grid.innerHTML=TAIWAN_PARKING_CITIES.map(x=>
+    '<button class="'+(city===x.code?"active":"")+'" data-parking-city="'+x.code+'">'+esc(x.name)+'</button>'
+  ).join("");
+
+  $$("[data-parking-city]",grid).forEach(b=>b.onclick=()=>{
+    state.parkingCity=b.dataset.parkingCity;
+    if($("#parkingSearch"))$("#parkingSearch").value="";
+    renderParking();
+    if(state.parkingCity!=="Tainan")ensureParkingCity(state.parkingCity).catch(()=>{});
   });
 
-  cityRoot.innerHTML=(state.parking?.cities||[]).map(x=>
-    '<article class="metric-row"><div><b>'+esc(x.name)+'</b><small>'+esc(x.note)+'</small></div><span class="route-tag">'+(x.status==="source-ready"?"來源已確認":"待整合")+'</span></article>'
-  ).join("")||'<div class="empty"><b>其他縣市資料尚未載入</b></div>';
+  if(city==="all"){
+    $("#parkingLiveTime").textContent="全台 22 縣市";
+    $("#parkingScopeStatus").textContent="22 縣市皆可搜尋與導航";
+    root.innerHTML='<div class="parking-national-intro"><b>選擇縣市查看官方停車資料</b><p>全台灣都是正式服務範圍。上方可直接找附近停車；選擇縣市後，COLA GO 會讀取該地官方停車場資料與可取得的即時剩餘車位。</p><div class="item-actions"><button class="go" data-national-map="google">Google Maps 找附近</button><button data-national-map="apple">Apple 地圖找附近</button></div></div>';
+  }else if(city==="Tainan"){
+    const rows=parkingSelectedRows().filter(x=>!query||[x.name,x.town,x.address].join(" ").toLowerCase().includes(query)).sort((a,b)=>(b.available??-1)-(a.available??-1));
+    $("#parkingLiveTime").textContent=state.parkingLive?.status==="live"?(state.parkingLive.updatedAt||"官方即時"):"官方即時暫不可用";
+    $("#parkingScopeStatus").textContent=state.parkingLive?.status==="live"?"已接臺南市官方即時剩餘車位":"仍可使用全台地圖搜尋";
+    root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>'+(query?"找不到符合的臺南停車場":"臺南官方即時資料暫時無法取得")+'</b><p>不顯示假空位；仍可使用 Google Maps 或 Apple 地圖找停車場。</p></div>';
+  }else if(state.parkingRemote.status==="loading"&&state.parkingRemote.city===city){
+    $("#parkingLiveTime").textContent="讀取官方資料中";
+    $("#parkingScopeStatus").textContent="正在讀取 "+cityName+" 官方停車資料";
+    root.innerHTML='<div class="empty"><b>正在讀取 '+esc(cityName)+' 停車資料</b><p>若 TDX 訪客服務暫時無法使用，會保留地圖搜尋，不會顯示假資料。</p></div>';
+  }else if(state.parkingRemote.status==="ready"&&state.parkingRemote.city===city){
+    const rows=parkingSelectedRows().filter(x=>!query||[x.name,x.town,x.address,x.fare].join(" ").toLowerCase().includes(query));
+    $("#parkingLiveTime").textContent=state.parkingRemote.updatedAt||"官方資料";
+    $("#parkingScopeStatus").textContent="TDX 官方停車場資料 · "+state.parkingRemote.items.length+" 筆";
+    root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>找不到符合的停車場</b><p>換個停車場名稱、行政區或地址試試。</p></div>';
+  }else{
+    $("#parkingLiveTime").textContent="官方資料暫不可用";
+    $("#parkingScopeStatus").textContent=cityName+" 仍可搜尋與導航";
+    root.innerHTML='<div class="market-empty"><b>'+esc(cityName)+' 官方資料目前無法讀取</b><p>COLA GO 不會因此把這個縣市變成不能用；可直接以地圖搜尋 '+esc(cityName)+' 停車場。</p><div class="item-actions"><button class="go" data-city-map="google">Google Maps</button><button data-city-map="apple">Apple 地圖</button></div></div>';
+  }
+
+  $$("[data-parking-map]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.parkingMap,"_blank","noopener"));
+  $$("[data-parking-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?q="+b.dataset.parkingApple,"_blank","noopener"));
+  $$("[data-national-map]",root).forEach(b=>b.onclick=()=>openParkingMap(b.dataset.nationalMap,"停車場"));
+  $$("[data-city-map]",root).forEach(b=>b.onclick=()=>openParkingMap(b.dataset.cityMap,cityName+" 停車場"));
 }
+
+function openParkingMap(provider,query){
+  const q=encodeURIComponent(query||"停車場");
+  const url=provider==="apple"?"https://maps.apple.com/?q="+q:"https://www.google.com/maps/search/?api=1&query="+q;
+  window.open(url,"_blank","noopener");
+}
+
 
 
 const TDX_BASE="https://tdx.transportdata.tw/api/basic/v2/Road/Traffic";
@@ -935,6 +1143,14 @@ function bindFilters(){
 
   if($("#chargingSearch"))$("#chargingSearch").oninput=renderCharging;
   if($("#parkingSearch"))$("#parkingSearch").oninput=renderParking;
+  $("#parkingCitySelect")?.addEventListener("change",e=>{
+    state.parkingCity=e.target.value;
+    if($("#parkingSearch"))$("#parkingSearch").value="";
+    renderParking();
+    if(state.parkingCity!=="all"&&state.parkingCity!=="Tainan")ensureParkingCity(state.parkingCity).catch(()=>{});
+  });
+  $("#parkingNearbyGoogle")?.addEventListener("click",()=>openParkingMap("google","停車場"));
+  $("#parkingNearbyApple")?.addEventListener("click",()=>openParkingMap("apple","停車場"));
   if($("#cctvSearch"))$("#cctvSearch").oninput=renderCCTV;
   $$("#cctvRoadFilter button").forEach(b=>b.onclick=()=>{
     $$("#cctvRoadFilter button").forEach(x=>x.classList.remove("active"));
