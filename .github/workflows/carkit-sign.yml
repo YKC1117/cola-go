@@ -1,0 +1,34 @@
+name: CarKit Shortcut Sign Test
+
+on:
+  push:
+    branches:
+      - temp/carkit-shortcut-sign
+    paths:
+      - "carkit-sign/**"
+      - ".github/workflows/carkit-sign.yml"
+
+jobs:
+  sign:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Shortcuts CLI
+        run: |
+          sw_vers
+          /usr/bin/shortcuts help || true
+      - name: Convert and sign
+        run: |
+          set -euxo pipefail
+          mkdir -p carkit-sign/out
+          cp carkit-sign/Test.shortcut.xml carkit-sign/out/Test.unsigned.shortcut
+          plutil -convert binary1 carkit-sign/out/Test.unsigned.shortcut
+          /usr/bin/shortcuts sign --mode anyone --input carkit-sign/out/Test.unsigned.shortcut --output carkit-sign/out/CarKit-Sign-Test.shortcut
+          test "$(xxd -p -l 4 carkit-sign/out/CarKit-Sign-Test.shortcut)" = "41454131"
+          ls -lh carkit-sign/out
+      - name: Upload signed shortcut
+        uses: actions/upload-artifact@v4
+        with:
+          name: carkit-sign-test
+          path: carkit-sign/out/CarKit-Sign-Test.shortcut
+          if-no-files-found: error
