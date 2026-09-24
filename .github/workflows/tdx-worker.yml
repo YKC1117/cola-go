@@ -27,6 +27,12 @@ jobs:
         run: npm install --global npm@11
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Upload generated lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: tdx-worker-package-lock
+          path: infra/tdx-worker/package-lock.json
+          retention-days: 1
       - name: Syntax check
         run: |
           find src test -name '*.js' -print0 | xargs -0 -n1 node --check
