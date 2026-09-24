@@ -43,7 +43,15 @@ function renderCharging(){
 }
 function renderParking(){
   const root=$("#parkingCities");if(!root)return;
-  root.innerHTML=(state.parking?.cities||[]).map(x=>'<article class="metric-row"><div><b>'+esc(x.name)+'</b><small>'+esc(x.note)+'</small></div><span class="route-tag">'+(x.status==="source-ready"?"來源已確認":"待整合")+'</span></article>').join("")||'<div class="empty"><b>停車資料尚未載入</b></div>';
+  const nearby='<article class="list-item"><div class="list-head"><div><h3>找附近停車場</h3><div class="meta">沒有即時來源的地區，直接交給地圖搜尋。</div></div></div><div class="item-actions"><button class="go" data-nearby-parking="google">Google Maps</button><button data-nearby-parking="apple">Apple 地圖</button></div></article>';
+  const cities=(state.parking?.cities||[]).map(x=>'<article class="metric-row"><div><b>'+esc(x.name)+'</b><small>'+esc(x.note)+'</small></div><span class="route-tag">'+(x.status==="source-ready"?"來源已確認":"待整合")+'</span></article>').join("");
+  root.innerHTML=nearby+(cities||'<div class="empty"><b>停車資料尚未載入</b></div>');
+  $("[data-nearby-parking]",root).forEach(b=>b.onclick=()=>{
+    const url=b.dataset.nearbyParking==="apple"
+      ?"https://maps.apple.com/?q="+encodeURIComponent("停車場")
+      :"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("停車場");
+    open(url,"_blank","noopener");
+  });
 }
 function renderTraffic(){
   const root=$("#highwayList");if(!root)return;const rows=state.traffic?.highways?.[state.highway]||[];
@@ -63,7 +71,23 @@ function fillRoute(from,to){$("#tripFrom").value=from;$("#tripTo").value=to;show
 function bindTrip(){
   $$("[data-route]").forEach(b=>b.onclick=()=>{const [f,t]=b.dataset.route.split("|");$("#tripFrom").value=f;$("#tripTo").value=t});
   $$("[data-fill-route]").forEach(b=>b.onclick=()=>{const [f,t]=b.dataset.fillRoute.split("|");fillRoute(f,t)});
-  $("#planTripBtn").onclick=()=>{const from=$("#tripFrom").value.trim()||"目前位置",to=$("#tripTo").value.trim();if(!to)return toast("請先輸入目的地");$("#tripResult").innerHTML='<div class="list-item"><h3>'+esc(from)+' → '+esc(to)+'</h3><div class="meta">先快速查看這趟路會用到的資訊。</div><div class="item-actions"><button class="go" data-next="highway">國道路況</button><button data-next="charging">沿途充電</button><button data-next="parking">停車</button></div></div>';$$("[data-next]",$("#tripResult")).forEach(b=>b.onclick=()=>show(b.dataset.next))};
+  $("#planTripBtn").onclick=()=>{
+    const from=$("#tripFrom").value.trim()||"目前位置",to=$("#tripTo").value.trim();
+    if(!to)return toast("請先輸入目的地");
+    $("#tripResult").innerHTML='<div class="list-item"><h3>'+esc(from)+' → '+esc(to)+'</h3><div class="meta">先看路況與充電，再直接交給你慣用的地圖導航。</div><div class="item-actions"><button class="go" data-map="google">Google Maps</button><button data-map="apple">Apple 地圖</button></div><div class="item-actions"><button data-next="highway">國道路況</button><button data-next="charging">沿途充電</button><button data-next="parking">停車</button></div></div>';
+    $("[data-next]",$("#tripResult")).forEach(b=>b.onclick=()=>show(b.dataset.next));
+    $("[data-map]",$("#tripResult")).forEach(b=>b.onclick=()=>{
+      let url;
+      if(b.dataset.map==="apple"){
+        const s=from==="目前位置"?"":("&saddr="+encodeURIComponent(from));
+        url="https://maps.apple.com/?daddr="+encodeURIComponent(to)+"&dirflg=d"+s;
+      }else{
+        const o=from==="目前位置"?"":("&origin="+encodeURIComponent(from));
+        url="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(to)+"&travelmode=driving"+o;
+      }
+      open(url,"_blank","noopener");
+    });
+  };
 }
 function bindInstall(){
   addEventListener("beforeinstallprompt",e=>{e.preventDefault();state.installPrompt=e});
