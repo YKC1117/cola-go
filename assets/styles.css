@@ -309,3 +309,9 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .compact-empty{padding:20px 16px}
 .route-form select{width:100%;min-height:44px;border:0;background:transparent;padding:8px 0;font-weight:500}
 @media(max-width:380px){.trip-metrics{grid-template-columns:1fr}.trip-metrics div{border-right:0;border-bottom:1px solid #daddd2;padding:10px 14px}.trip-metrics div:last-child{border-bottom:0}}
+
+.parking-controls{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 6px}
+.parking-controls button{min-height:44px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font-size:12px;font-weight:600}
+.parking-controls button[aria-pressed="true"]{color:var(--coral);border-color:#ebd8ce;background:var(--coral-soft)}
+.parking-controls button:disabled{opacity:.5}
+.parking-location-note{font-size:11px;line-height:1.55;color:var(--muted);margin:7px 0 2px}
