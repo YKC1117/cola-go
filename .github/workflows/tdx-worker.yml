@@ -27,12 +27,6 @@ jobs:
         run: npm install --global npm@11
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Upload generated lockfile
-        uses: actions/upload-artifact@v4
-        with:
-          name: tdx-worker-package-lock
-          path: infra/tdx-worker/package-lock.json
-          retention-days: 1
       - name: Syntax check
         run: |
           find src test -name '*.js' -print0 | xargs -0 -n1 node --check
@@ -40,6 +34,53 @@ jobs:
         run: npm test
       - name: Cloudflare dry run
         run: npx wrangler deploy --dry-run --outdir .wrangler-dry-run
+      - name: Worker runtime smoke
+        run: |
+          npx wrangler dev --port 8787 --ip 127.0.0.1 --config wrangler.toml >/tmp/tdx-worker.log 2>&1 &
+          echo $! >/tmp/tdx-worker.pid
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:8787/api/v1/health >/tmp/health.json && break
+            sleep 1
+          done
+          python3 - <<'PY'
+          import json
+          health=json.load(open("/tmp/health.json"))
+          assert health["ok"] is True
+          assert health["tdxEnabled"] is False
+          PY
+
+          curl -fsS -D /tmp/cors.headers -H 'Origin: https://ykc1117.github.io'             http://127.0.0.1:8787/api/v1/capabilities >/tmp/capabilities.json
+          grep -qi '^access-control-allow-origin: https://ykc1117.github.io' /tmp/cors.headers
+          python3 - <<'PY'
+          import json
+          data=json.load(open("/tmp/capabilities.json"))
+          assert len(data["coverage"]["parking"]["allCities"]) == 22
+          PY
+
+          test "$(curl -sS -o /tmp/options.out -w '%{http_code}' -X OPTIONS             -H 'Origin: https://ykc1117.github.io' http://127.0.0.1:8787/api/v1/parking/Taipei)" = "204"
+
+          test "$(curl -sS -o /tmp/bad-origin.json -w '%{http_code}'             -H 'Origin: https://evil.example' http://127.0.0.1:8787/api/v1/health)" = "403"
+
+          test "$(curl -sS -o /tmp/disabled.json -w '%{http_code}'             -H 'Origin: https://ykc1117.github.io' http://127.0.0.1:8787/api/v1/parking/Taipei)" = "503"
+          python3 - <<'PY'
+          import json
+          data=json.load(open("/tmp/disabled.json"))
+          assert data["status"] == "unavailable"
+          assert data["error"]["code"] == "UPSTREAM_UNAVAILABLE"
+          PY
+
+          test "$(curl -sS -o /tmp/unsupported.json -w '%{http_code}'             http://127.0.0.1:8787/api/v1/parking/NewTaipei)" = "422"
+          python3 - <<'PY'
+          import json
+          data=json.load(open("/tmp/unsupported.json"))
+          assert data["error"]["code"] == "UNSUPPORTED_SCOPE"
+          PY
+
+          test "$(curl -sS -o /tmp/query.json -w '%{http_code}'             'http://127.0.0.1:8787/api/v1/freeway/live?%24filter=x')" = "400"
+
+          test "$(curl -sS -o /tmp/post.json -w '%{http_code}' -X POST             http://127.0.0.1:8787/api/v1/health)" = "405"
+
+          kill "$(cat /tmp/tdx-worker.pid)" || true
       - name: Secret leak guard
         run: |
           ! grep -R --line-number --exclude='.dev.vars.example' --exclude='*.test.js' 'TDX_CLIENT_SECRET=.*[^=[:space:]]' .
