@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Boot stable iPhone simulator
+      - name: Boot newest iPhone simulator
         id: sim
         run: |
           set -euxo pipefail
@@ -27,8 +27,6 @@ jobs:
               m=re.search(r"iOS-(\d+)-(\d+)",runtime)
               if not m: continue
               version=(int(m.group(1)),int(m.group(2)))
-              if version > (18,6):
-                  continue
               for d in devices:
                   if d.get("isAvailable") and "iPhone" in d.get("name",""):
                       rank=1 if "Pro" in d["name"] else 0
