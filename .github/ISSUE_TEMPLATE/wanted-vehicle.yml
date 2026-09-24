@@ -1,0 +1,20 @@
+name: 二手電車求購
+description: 公開徵求想買的電動車
+title: "[徵車] "
+body:
+  - type: input
+    id: model
+    attributes: {label: 想找的車款, placeholder: "例如 Model Y Long Range"}
+    validations: {required: true}
+  - type: input
+    id: budget
+    attributes: {label: 預算, placeholder: "例如 150 萬內"}
+    validations: {required: true}
+  - type: textarea
+    id: requirements
+    attributes: {label: 條件, placeholder: "年份、里程、顏色、EAP、充電埠、地區等"}
+    validations: {required: true}
+  - type: input
+    id: contact
+    attributes: {label: 公開聯絡方式}
+    validations: {required: true}
