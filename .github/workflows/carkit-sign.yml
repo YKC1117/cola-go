@@ -92,6 +92,12 @@ jobs:
                   elif "vehicle" in p:
                       assert p["vehicle"] == ask, f"{intent}: vehicle is not runtime Ask candidate"
 
+          # Tesla iOS automation must not pretend Bluetooth Disconnect exists.
+          # iOS 27 exposes Bluetooth connect only; parked-car location is supplied
+          # by Apple Maps after vehicle Bluetooth disconnect.
+          assert "AUTO_END" not in tblob, "Tesla must not expose nonexistent Bluetooth AUTO_END"
+          assert "is.workflow.actions.getparkedcarlocation" in tblob, "Tesla parked-car navigation missing"
+
           # Bluetooth/automation routing is before the Siri question. No Tesla
           # physical/control AppIntent may be reachable in that prefix.
           voice_idx=next(
@@ -213,13 +219,13 @@ jobs:
       - name: Upload signed shortcuts
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-signed-shortcuts-v0.5
+          name: carkit-signed-shortcuts-v0.6
           path: carkit-sign/out/*.shortcut
           if-no-files-found: error
 
       - name: Upload workflow sources
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-shortcut-sources-v0.5
+          name: carkit-shortcut-sources-v0.6
           path: carkit-sign/generated/*.shortcut.xml
           if-no-files-found: error
