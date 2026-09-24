@@ -147,8 +147,26 @@ def pre_stop_action(seed):
     return tesla("PreconditionIntent",seed,{"preconditionAction":"stop"},show_when_run=False)
 
 def defrost_action(seed):
-    # Public native donor fdc8... proves the fixed value "enable".
+    # Public native donors prove "enable".
     return tesla("DefrostIntent",seed,{"defrostAction":"enable"})
+
+def defrost_stop_action(seed):
+    # Public native donor 21f9... proves "disable".
+    return tesla("DefrostIntent",seed,{"defrostAction":"disable"})
+
+def seat_heater_high_action(seed):
+    # Public native donors prove frontLeft + high and omit vehicle.
+    return tesla("HVACSeatHeaterIntent",seed,{
+      "seat":"frontLeft",
+      "level":"high"
+    },vehicle_mode=False,show_when_run=False)
+
+def seat_heater_off_action(seed):
+    # Public native donor 21f9... proves frontLeft + off and omits vehicle.
+    return tesla("HVACSeatHeaterIntent",seed,{
+      "seat":"frontLeft",
+      "level":"off"
+    },vehicle_mode=False,show_when_run=False)
 
 def open_charge_port_action(seed):
     # Public native donor fdc8... proves ChargePortIntent + chargePortAction "open".
@@ -226,11 +244,14 @@ temp_menu=menu("車室溫度",["22°C","23°C","24°C"],{
     "24°C":[temp_action(24,"menu-temp24")],
 },"temp-menu")
 
-climate_menu=menu("空調 / 車室",["開始預冷 / 預熱","停止預冷 / 預熱","設定溫度","除霜"],{
+climate_menu=menu("空調 / 車室",["開始預冷 / 預熱","停止預冷 / 預熱","設定溫度","除霜","停止除霜","駕駛座加熱","關閉座椅加熱"],{
     "開始預冷 / 預熱":[pre_start_action("menu-pre-start")],
     "停止預冷 / 預熱":[pre_stop_action("menu-pre-stop")],
     "設定溫度":temp_menu,
     "除霜":[defrost_action("menu-defrost")],
+    "停止除霜":[defrost_stop_action("menu-defrost-stop")],
+    "駕駛座加熱":[seat_heater_high_action("menu-seat-high")],
+    "關閉座椅加熱":[seat_heater_off_action("menu-seat-off")],
 },"climate-menu")
 
 door_menu=menu("車門控制",["鎖車","解鎖"],{
@@ -266,10 +287,9 @@ nav_menu=menu("導航",["Apple 地圖","Google Maps","Waze"],{
     "Waze":[app("com.waze.iphone","menu-nav-waze")],
 },"nav-menu")
 
-more_menu=menu("更多功能",["Tesla App","車窗","除霜","高速公路1968"],{
+more_menu=menu("更多功能",["Tesla App","車窗","高速公路1968"],{
     "Tesla App":[app(BUNDLE,"menu-tesla-app")],
     "車窗":window_menu,
-    "除霜":[defrost_action("menu-more-defrost")],
     "高速公路1968":[app("tw.gov.freeway1968Ver2.Freeway1968HD","menu-1968")],
 },"more-menu")
 
@@ -310,7 +330,7 @@ auto_start=[
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v0.5｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- Siri：嘿 Siri，特斯拉助手 → 只問「要做什麼？」\n- 語音採精確比對，不用 contains，避免「不要解鎖」誤觸\n- 解鎖、前行李廂、後車廂需再次明確確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- Tesla 藍牙自動化只使用 Connect；iOS 27 無 Bluetooth Disconnect trigger\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ChargePortIntent/open 與 DefrostIntent/enable 已由公開原生 donor 驗證\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
+    "WFCommentActionText":"Tesla Driver v0.6｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- Siri：嘿 Siri，特斯拉助手 → 只問「要做什麼？」\n- 語音採精確比對，不用 contains，避免「不要解鎖」誤觸\n- 解鎖、前行李廂、後車廂需再次明確確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- Tesla 藍牙自動化只使用 Connect；iOS 27 無 Bluetooth Disconnect trigger\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ChargePortIntent/open、DefrostIntent enable/disable、駕駛座加熱 high/off 已由公開原生 donor 驗證\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
@@ -357,6 +377,12 @@ actions += route_aliases(voice_id,["閃燈","閃燈尋車"],
     lambda s: one(flash_action(s)),"voice-flash")
 actions += route_aliases(voice_id,["除霧","除霜"],
     lambda s: one(defrost_action(s)),"voice-defrost")
+actions += route_aliases(voice_id,["停止除霜","關除霜"],
+    lambda s: one(defrost_stop_action(s)),"voice-defrost-stop")
+actions += route_aliases(voice_id,["座椅加熱","駕駛座加熱","開座椅加熱"],
+    lambda s: one(seat_heater_high_action(s)),"voice-seat-high")
+actions += route_aliases(voice_id,["關座椅加熱","關閉座椅加熱"],
+    lambda s: one(seat_heater_off_action(s)),"voice-seat-off")
 actions += route_aliases(voice_id,["神盾"],
     lambda s: [app("tw.com.ainvest.outpack",s)],"voice-shield")
 actions += route_aliases(voice_id,["導航","Apple導航","蘋果導航"],
