@@ -1,0 +1,159 @@
+name: Three City Parking QA
+
+on:
+  push:
+    branches: ["feature/parking-taichung-live"]
+    paths:
+      - "index.html"
+      - "assets/app.js"
+      - "assets/styles.css"
+      - "sw.js"
+      - "scripts/sync_taichung_parking.py"
+      - "data/parking-live-taichung.json"
+      - ".github/workflows/three-city-parking-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Syntax and real Taichung source
+        run: |
+          node --check assets/app.js
+          node --check sw.js
+          python3 -m py_compile scripts/sync_taichung_parking.py
+          python3 scripts/sync_taichung_parking.py | tee /tmp/taichung.log
+          grep -q "TAICHUNG_PARKING_SYNC_OK" /tmp/taichung.log
+          python3 - <<'PY'
+          import json
+          d=json.load(open("data/parking-live-taichung.json",encoding="utf-8"))
+          assert d["status"]=="live"
+          assert d["availabilityMode"]=="signal"
+          assert len(d["items"])>1000
+          assert sum(1 for x in d["items"] if x["lat"] is not None and x["lng"] is not None)>1000
+          assert sum(1 for x in d["items"] if x["carSignal"] in {"G","Y","R","B"})>1000
+          print("TAICHUNG_REAL_ROWS",len(d["items"]))
+          PY
+
+      - name: Install browsers
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium webkit
+
+      - name: Start app
+        run: |
+          python3 -m http.server 4173 >/tmp/server.log 2>&1 &
+          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/server.log
+          exit 1
+
+      - name: Three-city interactions
+        run: |
+          cat > three-city-qa.mjs <<'EOF'
+          import { chromium, webkit } from 'playwright';
+          import fs from 'node:fs';
+
+          const base='http://127.0.0.1:4173/';
+          const out='three-city-parking-artifacts';
+          fs.mkdirSync(out,{recursive:true});
+
+          const tainan={status:'live',updatedAt:'2026-09-25T00:40:00+08:00',items:[
+            {id:'tn1',name:'台南站',zone:'永康區',address:'台南市永康區中華路1號',car:8,carTotal:60,green:2,chargeTime:'24H',chargeFee:'每小時30元',sourceUpdate:'2026-09-25 00:40:00',lat:23.001,lng:120.221}
+          ]};
+          const taoyuan={status:'live',updatedAt:'2026-09-25T00:41:00+08:00',items:[
+            {id:'ty1',name:'桃園站',zone:'桃園區',address:'桃園市桃園區中正路1號',car:16,carTotal:100,evTotal:5,chargeTime:'依現場',chargeFee:'每小時30元',sourceUpdate:'2026-09-25T00:41:00+08:00',lat:24.993,lng:121.301}
+          ]};
+          const taichung={status:'live',availabilityMode:'signal',updatedAt:'2026-09-25T00:42:00+08:00',items:[
+            {id:'tc1',name:'西屯區-近站',zone:'西屯區',keyword:'市政路',mapQuery:'臺中市 西屯區-近站',car:null,carSignal:'G',carTotal:50,evTotal:4,evSignal:'Y',sourceUpdate:'2026-09-25T00:42:00+08:00',lat:24.181,lng:120.646},
+            {id:'tc2',name:'南屯區-大站',zone:'南屯區',keyword:'文心路',mapQuery:'臺中市 南屯區-大站',car:null,carSignal:'R',carTotal:200,evTotal:10,evSignal:'G',sourceUpdate:'2026-09-25T00:42:00+08:00',lat:24.135,lng:120.648},
+            {id:'tc3',name:'北屯區-藍站',zone:'北屯區',keyword:'崇德路',mapQuery:'臺中市 北屯區-藍站',car:null,carSignal:'B',carTotal:80,evTotal:2,evSignal:'B',sourceUpdate:'2026-09-25T00:42:00+08:00',lat:24.182,lng:120.686}
+          ]};
+
+          async function run(browserType,label){
+            const browser=await browserType.launch({headless:true});
+            const context=await browser.newContext({
+              viewport:{width:430,height:932},isMobile:true,hasTouch:true,serviceWorkers:'block',
+              geolocation:{latitude:24.1808,longitude:120.6462},permissions:['geolocation']
+            });
+            await context.addInitScript(()=>{
+              window.__opened=[];
+              window.open=(url)=>{window.__opened.push(String(url));return null;};
+            });
+            await context.route('**/data/parking-live-tainan.json',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(tainan)}));
+            await context.route('**/data/parking-live-taoyuan.json',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(taoyuan)}));
+            await context.route('**/data/parking-live-taichung.json',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(taichung)}));
+
+            const page=await context.newPage();
+            const errors=[];
+            page.on('pageerror',e=>errors.push(String(e)));
+            await page.goto(base,{waitUntil:'networkidle'});
+            await page.locator('[data-go="parking"]').first().click();
+
+            if(!(await page.locator('#parkingCityTitle').textContent()).includes('臺南'))throw new Error(label+' Tainan default');
+            if(await page.locator('#parkingHasSpaceOnly').isDisabled())throw new Error(label+' Tainan has-space enabled');
+
+            await page.locator('[data-parking-city="taoyuan"]').click();
+            if(!(await page.locator('#parkingCityTitle').textContent()).includes('桃園'))throw new Error(label+' Taoyuan switch');
+            if(!(await page.locator('.parking-card').first().textContent()).includes('16'))throw new Error(label+' Taoyuan count');
+
+            await page.locator('[data-parking-city="taichung"]').click();
+            if(!(await page.locator('#parkingCityTitle').textContent()).includes('臺中官方停車燈號'))throw new Error(label+' Taichung title');
+            if((await page.locator('#parkingSortAvailability').textContent()).trim()!=='總車格多')throw new Error(label+' Taichung sort label');
+            if(!(await page.locator('#parkingHasSpaceOnly').isDisabled()))throw new Error(label+' Taichung has-space disabled');
+            if(!(await page.locator('#parkingDataNotice').textContent()).includes('不提供精確剩餘格數'))throw new Error(label+' Taichung honest note');
+
+            const first=page.locator('.parking-card').first();
+            const firstText=await first.textContent();
+            if(!firstText.includes('南屯區-大站'))throw new Error(label+' Taichung total sort');
+            if(!firstText.includes('紅燈')||!firstText.includes('官方滿車率燈號'))throw new Error(label+' Taichung signal');
+            if(firstText.includes('汽車剩餘'))throw new Error(label+' Taichung must not claim numeric remaining');
+            if(!firstText.includes('總格數')||!firstText.includes('200'))throw new Error(label+' Taichung total spaces');
+            if(!firstText.includes('充電車位')||!firstText.includes('10'))throw new Error(label+' Taichung EV total');
+
+            await page.locator('#parkingSearch').fill('崇德');
+            if(await page.locator('.parking-card').count()!==1)throw new Error(label+' Taichung keyword search');
+            if(!(await page.locator('.parking-card').first().textContent()).includes('藍燈'))throw new Error(label+' Taichung B signal');
+
+            await page.locator('#parkingSearch').fill('');
+            await page.locator('#parkingSortNearest').click();
+            await page.waitForFunction(()=>document.querySelector('.parking-card .parking-zone')?.textContent.includes('距離'));
+            if(!(await page.locator('.parking-card').first().textContent()).includes('西屯區-近站'))throw new Error(label+' Taichung nearest');
+
+            const near=page.locator('.parking-card').first();
+            await near.locator('[data-parking-map]').click();
+            await near.locator('[data-parking-apple]').click();
+            const opened=await page.evaluate(()=>window.__opened);
+            if(!opened.some(x=>x.includes('google.com/maps/search')))throw new Error(label+' Taichung Google');
+            if(!opened.some(x=>x.includes('maps.apple.com')))throw new Error(label+' Taichung Apple');
+
+            await page.locator('[data-parking-city="tainan"]').click();
+            if(await page.locator('#parkingHasSpaceOnly').isDisabled())throw new Error(label+' has-space re-enabled outside Taichung');
+            if((await page.locator('#parkingSortAvailability').textContent()).trim()!=='剩餘最多')throw new Error(label+' count sort label restored');
+
+            await page.screenshot({path:out+'/parking-three-city-'+label+'.png',fullPage:true});
+            if(errors.length)throw new Error(label+' page errors '+errors.join(' | '));
+            await browser.close();
+          }
+
+          await run(chromium,'chromium');
+          await run(webkit,'webkit');
+          console.log('THREE_CITY_PARKING_QA_SUCCESS');
+          EOF
+          node three-city-qa.mjs
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: three-city-parking-qa
+          path: three-city-parking-artifacts
+          retention-days: 2
