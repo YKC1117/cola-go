@@ -151,8 +151,9 @@ function renderAll(){
   renderCCTV();
 
   const live=state.traffic?.status==="live";
+  const trafficStale=state.traffic?.status==="stale";
   $("#syncState").classList.toggle("ready",live);
-  $("#syncText").textContent=live?"即時":"同步中";
+  $("#syncText").textContent=live?"即時":trafficStale?"快取":"同步中";
   $("#lastUpdate").textContent=formatTime(state.traffic?.updatedAt);
 
   $("#chargeQuick").textContent=state.charging.length?state.charging.length+" 處":"服務區";
@@ -161,7 +162,7 @@ function renderAll(){
   const h1=avg(state.traffic?.highways?.["1"]||[]);
   $("#trafficValue").textContent=h1?h1+" km/h":"—";
   $("#trafficDot").className=live?"dot ready":"dot pending";
-  $("#trafficCaption").textContent=live&&h1?"國 1 平均":"可開 1968 即時查看";
+  $("#trafficCaption").textContent=trafficStale&&h1?"官方快取／請確認":live&&h1?"國 1 平均":"可開 1968 即時查看";
 
   const snow=avg([...(state.tunnel?.south||[]),...(state.tunnel?.north||[])]);
   $("#tunnelValue").textContent=snow?snow+" km/h":"—";
@@ -417,6 +418,7 @@ async function fetchParkingViaProxy(city){
 }
 
 async function ensureParkingCity(city){
+  await initPublicApi();
   if(!city||city==="all"||city==="Tainan")return;
   if(state.parkingRemote.status==="ready"&&state.parkingRemote.city===city)return;
   if(state.parkingRemoteLoading)return;
@@ -716,6 +718,7 @@ function proxyCCTVRows(envelope){
 }
 
 async function ensureCCTV(){
+  await initPublicApi();
   if(state.cctv.status==="ready"||state.cctvLoading)return;
   if(state.cctv.status==="unavailable"&&Date.now()-state.cctvLastAttempt<60000)return;
   state.cctvLastAttempt=Date.now();
@@ -962,6 +965,7 @@ function proxyTrafficState(sectionEnvelope,liveEnvelope){
 }
 
 async function ensureClientTraffic(){
+  await initPublicApi();
   if(state.traffic?.status==="live"||state.trafficFallbackStatus==="loading")return;
   if(state.trafficFallbackStatus==="failed"&&Date.now()-state.trafficFallbackAt<60000)return;
   state.trafficFallbackStatus="loading";
