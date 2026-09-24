@@ -100,8 +100,9 @@ jobs:
             }));
 
             if(mode==='success'){
-              await context.route(API+'/api/v1/parking/Taipei*',r=>{
+              await context.route(API+'/api/v1/parking/**',r=>{
                 const u=new URL(r.request().url());
+                if(!u.pathname.includes('/Taipei'))return r.fallback();
                 const isLive=u.pathname.endsWith('/availability');
                 return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(isLive?parkingLive:parkingBasic)});
               });
