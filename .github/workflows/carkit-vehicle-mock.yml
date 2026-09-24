@@ -114,23 +114,30 @@ jobs:
           xcrun simctl io "$UDID" screenshot "$EV/after-setup.png"
           cat "$EV/after-setup.json" || true
 
-          idb ui tap 344 264 --udid "$UDID"
-          sleep 4
-          idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > "$EV/vehicle-picker.json" || true
-          xcrun simctl io "$UDID" screenshot "$EV/vehicle-picker.png"
-          cat "$EV/vehicle-picker.json" || true
+          idb ui describe-all --json --nested --udid "$UDID" > "$EV/after-setup-full.json" || true
 
-          idb ui tap "測試車 A" --udid "$UDID"
-          sleep 3
-          idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > "$EV/after-vehicle-a.json" || true
-          xcrun simctl io "$UDID" screenshot "$EV/after-vehicle-a.png"
-          cat "$EV/after-vehicle-a.json" || true
+          set +e
+          (
+            cd tests/carkit-tesla-mock
+            xcodegen generate
+            rm -rf "$EV/VehiclePicker.xcresult"
+            xcodebuild test \
+              -project TeslaMock.xcodeproj \
+              -scheme TeslaMock \
+              -configuration Debug \
+              -sdk iphonesimulator \
+              -destination "platform=iOS Simulator,id=$UDID" \
+              -derivedDataPath /tmp/TeslaMockUITestDerived \
+              -resultBundlePath "$EV/VehiclePicker.xcresult" \
+              -only-testing:TeslaMockUITests/VehiclePickerUITests/testSelectVehicleA
+          )
+          TEST_RC=$?
+          set -e
 
-          idb ui tap "Add Shortcut" --udid "$UDID"
-          sleep 6
-          idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > "$EV/after-import.json" || true
-          xcrun simctl io "$UDID" screenshot "$EV/after-import.png"
-          cat "$EV/after-import.json" || true
+          xcrun simctl io "$UDID" screenshot "$EV/xcuitest-final.png" || true
+          idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > "$EV/xcuitest-final.json" || true
+          cat "$EV/xcuitest-final.json" || true
+          test "$TEST_RC" -eq 0
 
       - name: Upload vehicle picker evidence
         if: always()

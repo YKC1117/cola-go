@@ -21,8 +21,23 @@ targets:
         PRODUCT_NAME: Tesla
         INFOPLIST_KEY_CFBundleDisplayName: Tesla
         TARGETED_DEVICE_FAMILY: "1,2"
+  TeslaMockUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - UITests
+    dependencies:
+      - target: TeslaMock
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.carkit.TeslaMockUITests
+        TEST_TARGET_NAME: TeslaMock
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   TeslaMock:
     build:
       targets:
         TeslaMock: all
+    test:
+      targets:
+        - TeslaMockUITests
