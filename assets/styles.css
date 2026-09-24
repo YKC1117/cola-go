@@ -315,3 +315,5 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .parking-controls button[aria-pressed="true"]{color:var(--coral);border-color:#ebd8ce;background:var(--coral-soft)}
 .parking-controls button:disabled{opacity:.5}
 .parking-location-note{font-size:11px;line-height:1.55;color:var(--muted);margin:7px 0 2px}
+
+.parking-city-tabs{margin-top:-4px;margin-bottom:18px}
