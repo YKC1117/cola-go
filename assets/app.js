@@ -6,7 +6,7 @@ const state={
   parking:null,
   parkingLive:{status:"not-synced",items:[]},
   parkingCity:"all",
-  parkingRemote:{status:"idle",city:"",items:[],updatedAt:null,source:"",error:""},
+  parkingRemote:{status:"idle",city:"",items:[],updatedAt:null,source:"",error:"",stale:false},
   parkingRemoteLoading:false,
   parkingRemoteAttempts:{},
   models:[],
@@ -32,6 +32,7 @@ const state={
   cctvLastAttempt:0,
   trafficFallbackStatus:"idle",
   trafficFallbackAt:0,
+  api:{ready:false,enabled:false,baseUrl:""},
   installPrompt:null
 };
 
@@ -82,6 +83,19 @@ async function getJSON(url){
   return response.json();
 }
 
+async function initPublicApi(){
+  if(!window.COLAGO_API)return;
+  try{
+    const info=await window.COLAGO_API.init();
+    state.api={ready:true,enabled:Boolean(info.enabled),baseUrl:info.baseUrl||""};
+  }catch{
+    state.api={ready:true,enabled:false,baseUrl:""};
+  }
+}
+function proxyEnabled(){
+  return Boolean(state.api?.enabled&&window.COLAGO_API?.enabled?.());
+}
+
 function formatTime(value){
   if(!value)return "等待資料";
   const date=new Date(value);
@@ -99,6 +113,7 @@ function metricClass(v){
 }
 
 async function load(){
+  await initPublicApi();
   const results=await Promise.allSettled([
     getJSON("./data/charging.json"),
     getJSON("./data/traffic.json"),
@@ -333,6 +348,74 @@ async function fetchParkingEndpoint(path,timeout=7000){
   throw lastError||new Error("TDX parking unavailable");
 }
 
+
+function proxyParkingBasicRows(envelope,city){
+  return (envelope?.items||[]).map(x=>({
+    id:String(x.id||x.sourceId||""),
+    sourceId:x.sourceId||null,
+    city,
+    name:x.name||x.sourceId||"停車場",
+    town:"",
+    address:x.address||"",
+    description:"",
+    fare:x.feeText||"",
+    liveCapable:Boolean(x.hasLiveAvailability),
+    lat:Number.isFinite(Number(x.lat))?Number(x.lat):null,
+    lon:Number.isFinite(Number(x.lon))?Number(x.lon):null,
+    total:Number.isFinite(Number(x.totalSpaces))?Number(x.totalSpaces):0,
+    available:null,
+    dataCollectTime:"",
+    sourceType:"basic",
+    stale:Boolean(envelope?.stale)
+  })).filter(x=>x.id);
+}
+
+function proxyParkingAvailabilityMap(envelope){
+  const map=new Map();
+  (envelope?.items||[]).forEach(x=>{
+    const id=String(x.id||x.sourceId||"");
+    if(!id)return;
+    map.set(id,{
+      id,
+      total:Number.isFinite(Number(x.totalSpaces))?Number(x.totalSpaces):0,
+      available:x.availableSpaces==null?null:Number(x.availableSpaces),
+      dataCollectTime:String(x.sourceUpdatedAt||envelope?.updatedAt||""),
+      stale:Boolean(envelope?.stale)
+    });
+  });
+  return map;
+}
+
+async function fetchParkingViaProxy(city){
+  const basic=await window.COLAGO_API.fetchAll("/api/v1/parking/"+encodeURIComponent(city),{limit:1000,maxPages:20});
+  const baseRows=proxyParkingBasicRows(basic,city);
+  if(!baseRows.length)throw new Error("Proxy returned no parking lots");
+
+  let live=null;
+  try{
+    live=await window.COLAGO_API.fetchAll("/api/v1/parking/"+encodeURIComponent(city)+"/availability",{limit:1000,maxPages:20});
+  }catch{}
+
+  const availability=live?proxyParkingAvailabilityMap(live):new Map();
+  const items=baseRows.map(x=>{
+    const l=availability.get(x.id);
+    return l?{
+      ...x,
+      total:l.total||x.total,
+      available:Number.isFinite(l.available)?l.available:null,
+      dataCollectTime:l.dataCollectTime,
+      sourceType:"live",
+      stale:Boolean(x.stale||l.stale)
+    }:x;
+  });
+  return {
+    items,
+    updatedAt:live?.updatedAt||basic.updatedAt||basic.fetchedAt||null,
+    stale:Boolean(basic.stale||live?.stale),
+    source:"COLA GO API／TDX"
+  };
+}
+
 async function ensureParkingCity(city){
   if(!city||city==="all"||city==="Tainan")return;
   if(state.parkingRemote.status==="ready"&&state.parkingRemote.city===city)return;
@@ -343,37 +426,52 @@ async function ensureParkingCity(city){
 
   state.parkingRemoteAttempts[city]=Date.now();
   state.parkingRemoteLoading=true;
-  state.parkingRemote={status:"loading",city,items:[],updatedAt:null,source:"TDX",error:""};
+  state.parkingRemote={status:"loading",city,items:[],updatedAt:null,source:proxyEnabled()?"COLA GO API":"TDX",error:"",stale:false};
   renderParking();
 
+  const mode=proxyEnabled()?"proxy":"visitor";
+  const cacheKey="cola-go-parking-"+mode+"-"+city;
   try{
-    const cacheKey="cola-go-parking-"+city;
     try{
       const cached=JSON.parse(sessionStorage.getItem(cacheKey)||"null");
-      if(cached&&Date.now()-cached.savedAt<15*60*1000&&Array.isArray(cached.items)&&cached.items.length){
-        state.parkingRemote={status:"ready",city,items:cached.items,updatedAt:cached.updatedAt||null,source:"TDX 官方快取",error:""};
+      if(cached&&Date.now()-cached.savedAt<15*60*1000&&Array.isArray(cached.items)&&cached.items.length&&!cached.stale){
+        state.parkingRemote={status:"ready",city,items:cached.items,updatedAt:cached.updatedAt||null,source:cached.source||"官方快取",error:"",stale:false};
         state.parkingRemoteLoading=false;
         renderParking();
         return;
       }
     }catch{}
 
-    const [basicResult,availabilityResult]=await Promise.allSettled([
-      fetchParkingEndpoint("Parking/OffStreet/CarPark/City/"+encodeURIComponent(city)),
-      fetchParkingEndpoint("Parking/OffStreet/CarPark/Availability/City/"+encodeURIComponent(city))
-    ]);
-
-    if(basicResult.status!=="fulfilled")throw basicResult.reason||new Error("TDX basic parking unavailable");
-    const basic=normalizeParkingBasic(basicResult.value,city);
-    if(!basic.length)throw new Error("TDX returned no parking lots");
-    const availability=availabilityResult.status==="fulfilled"?normalizeParkingAvailability(availabilityResult.value):new Map();
-    const items=mergeParkingRows(basic,availability);
-    const times=items.map(x=>x.dataCollectTime).filter(Boolean).sort();
-    const updatedAt=times.at(-1)||null;
-    state.parkingRemote={status:"ready",city,items,updatedAt,source:"TDX／交通部",error:""};
-    try{sessionStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),updatedAt,items}));}catch{}
+    if(proxyEnabled()){
+      const result=await fetchParkingViaProxy(city);
+      state.parkingRemote={
+        status:"ready",city,items:result.items,updatedAt:result.updatedAt,
+        source:result.source,error:"",stale:result.stale
+      };
+      if(!result.stale){
+        try{sessionStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),updatedAt:result.updatedAt,source:result.source,stale:false,items:result.items}));}catch{}
+      }
+    }else{
+      const [basicResult,availabilityResult]=await Promise.allSettled([
+        fetchParkingEndpoint("Parking/OffStreet/CarPark/City/"+encodeURIComponent(city)),
+        fetchParkingEndpoint("Parking/OffStreet/CarPark/Availability/City/"+encodeURIComponent(city))
+      ]);
+      if(basicResult.status!=="fulfilled")throw basicResult.reason||new Error("TDX basic parking unavailable");
+      const basic=normalizeParkingBasic(basicResult.value,city);
+      if(!basic.length)throw new Error("TDX returned no parking lots");
+      const availability=availabilityResult.status==="fulfilled"?normalizeParkingAvailability(availabilityResult.value):new Map();
+      const items=mergeParkingRows(basic,availability);
+      const times=items.map(x=>x.dataCollectTime).filter(Boolean).sort();
+      const updatedAt=times.at(-1)||null;
+      state.parkingRemote={status:"ready",city,items,updatedAt,source:"TDX／交通部",error:"",stale:false};
+      try{sessionStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),updatedAt,source:"TDX／交通部",stale:false,items}));}catch{}
+    }
   }catch(error){
-    state.parkingRemote={status:"unavailable",city,items:[],updatedAt:null,source:"TDX／交通部",error:String(error?.message||error)};
+    state.parkingRemote={
+      status:"unavailable",city,items:[],updatedAt:null,
+      source:proxyEnabled()?"COLA GO API／TDX":"TDX／交通部",
+      error:String(error?.code||error?.message||error),stale:false
+    };
   }finally{
     state.parkingRemoteLoading=false;
     renderParking();
@@ -405,6 +503,7 @@ function parkingSelectedRows(){
 
 function renderParkingCard(x){
   const live=x.available!==null&&x.available!==undefined&&Number.isFinite(Number(x.available));
+  const stale=Boolean(x.stale);
   const available=live?Number(x.available):null;
   const cls=!live?"":available>=20?"good":available>=5?"mid":"bad";
   const query=encodeURIComponent(x.address||((x.name||"")+" "+parkingCityName(x.city)));
@@ -415,7 +514,7 @@ function renderParkingCard(x){
     '</div>'+
     '<div class="parking-specs">'+
       '<div><small>總格數</small><b>'+(x.total?money(Number(x.total)):"—")+'</b></div>'+
-      '<div><small>即時狀態</small><b>'+(live?"官方剩餘":"未提供")+'</b></div>'+
+      '<div><small>即時狀態</small><b>'+(live?(stale?"快取剩餘":"官方剩餘"):"未提供")+'</b></div>'+
       '<div><small>收費</small><b>'+esc(x.fare||x.chargeTime||"依現場")+'</b></div>'+
     '</div>'+
     '<div class="parking-address">'+esc(x.address||"地址由官方資料提供")+'</div>'+
@@ -464,7 +563,7 @@ function renderParking(){
   }else if(state.parkingRemote.status==="ready"&&state.parkingRemote.city===city){
     const rows=parkingSelectedRows().filter(x=>!query||[x.name,x.town,x.address,x.fare].join(" ").toLowerCase().includes(query));
     $("#parkingLiveTime").textContent=state.parkingRemote.updatedAt||"官方資料";
-    $("#parkingScopeStatus").textContent="TDX 官方停車場資料 · "+state.parkingRemote.items.length+" 筆";
+    $("#parkingScopeStatus").textContent=(state.parkingRemote.stale?"官方快取／可能較舊":"官方停車場資料")+" · "+state.parkingRemote.items.length+" 筆";
     root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>找不到符合的停車場</b><p>換個停車場名稱、行政區或地址試試。</p></div>';
   }else{
     $("#parkingLiveTime").textContent="官方資料暫不可用";
@@ -595,6 +694,27 @@ function parseCCTVXml(text){
   });
 }
 
+
+function proxyCCTVRows(envelope){
+  return (envelope?.items||[]).map(x=>{
+    const stream=safeHttpUrl(x.streamUrl||x.imageUrl||"");
+    if(!x?.id||!stream)return null;
+    const road=String(x.roadName||"");
+    return {
+      id:String(x.id),
+      stream,
+      road,
+      roadNo:roadNo(road+" "+String(x.name||"")),
+      direction:String(x.direction||""),
+      mile:String(x.name||""),
+      start:"",
+      end:"",
+      lat:Number(x.lat),
+      lon:Number(x.lon)
+    };
+  }).filter(Boolean);
+}
+
 async function ensureCCTV(){
   if(state.cctv.status==="ready"||state.cctvLoading)return;
   if(state.cctv.status==="unavailable"&&Date.now()-state.cctvLastAttempt<60000)return;
@@ -602,6 +722,25 @@ async function ensureCCTV(){
   state.cctvLoading=true;
   state.cctv={...state.cctv,status:"loading",error:""};
   renderCCTV();
+
+  if(proxyEnabled()){
+    try{
+      const envelope=await window.COLAGO_API.fetchAll("/api/v1/freeway/cctv",{limit:1000,maxPages:20});
+      const rows=proxyCCTVRows(envelope);
+      if(!rows.length)throw new Error("Proxy returned no displayable CCTV");
+      state.cctv={
+        status:"ready",items:rows,
+        source:envelope.stale?"TDX 官方快取／可能較舊":"COLA GO API／TDX",
+        error:""
+      };
+    }catch(error){
+      state.cctv={status:"unavailable",items:[],source:"",error:String(error?.code||error?.message||error)};
+    }finally{
+      state.cctvLoading=false;
+      renderCCTV();
+    }
+    return;
+  }
 
   try{
     const cached=JSON.parse(sessionStorage.getItem("cola-go-cctv-v1")||"null");
@@ -779,7 +918,7 @@ function parseLiveXml(text,sections){
 }
 
 function buildTunnelFromTraffic(traffic){
-  const tunnel={status:"live",updatedAt:traffic.updatedAt,source:traffic.source,south:[],north:[]};
+  const tunnel={status:traffic?.status==="stale"?"stale":"live",updatedAt:traffic.updatedAt,source:traffic.source,stale:Boolean(traffic?.stale),south:[],north:[]};
   (traffic.highways?.["5"]||traffic.highways?.[5]||[]).forEach(row=>{
     const text=String(row.name||"");
     if(!["坪林","頭城","雪山","石碇"].some(k=>text.includes(k)))return;
@@ -791,11 +930,60 @@ function buildTunnelFromTraffic(traffic){
   return tunnel;
 }
 
+
+function proxyTrafficState(sectionEnvelope,liveEnvelope){
+  const sections=new Map((sectionEnvelope?.items||[]).map(x=>[String(x.id),x]));
+  const highways={1:[],2:[],3:[],4:[],5:[],6:[]};
+  (liveEnvelope?.items||[]).forEach(x=>{
+    const id=String(x.id||"");
+    const sec=sections.get(id)||{};
+    const rn=String(roadNo(String(sec.roadName||x.roadName||"")+" "+String(sec.name||""))||"");
+    if(!highways[rn])return;
+    const speed=x.speedKph==null?-1:Number(x.speedKph);
+    highways[rn].push({
+      id,
+      name:sec.name||id,
+      direction:sec.direction||x.direction||"",
+      speed:Number.isFinite(speed)?speed:-1,
+      level:x.closed?"封閉":x.congestionCode!=null?congestionLabel(Number(x.congestionCode)):speedLevel(speed),
+      dataCollectTime:x.sourceUpdatedAt||liveEnvelope.updatedAt||""
+    });
+  });
+  const total=Object.values(highways).reduce((sum,rows)=>sum+rows.length,0);
+  if(!total)throw new Error("Proxy returned no freeway live rows");
+  const stale=Boolean(sectionEnvelope?.stale||liveEnvelope?.stale);
+  return {
+    status:stale?"stale":"live",
+    updatedAt:liveEnvelope.updatedAt||liveEnvelope.fetchedAt||null,
+    source:stale?"TDX 官方快取／可能較舊":"COLA GO API／TDX",
+    stale,
+    highways
+  };
+}
+
 async function ensureClientTraffic(){
   if(state.traffic?.status==="live"||state.trafficFallbackStatus==="loading")return;
   if(state.trafficFallbackStatus==="failed"&&Date.now()-state.trafficFallbackAt<60000)return;
   state.trafficFallbackStatus="loading";
   state.trafficFallbackAt=Date.now();
+
+  if(proxyEnabled()){
+    try{
+      const [sections,live]=await Promise.all([
+        window.COLAGO_API.fetchAll("/api/v1/freeway/sections",{limit:1000,maxPages:20}),
+        window.COLAGO_API.fetchAll("/api/v1/freeway/live",{limit:1000,maxPages:20})
+      ]);
+      state.traffic=proxyTrafficState(sections,live);
+      state.tunnel=buildTunnelFromTraffic(state.traffic);
+      state.trafficFallbackStatus="done";
+      renderAll();
+    }catch{
+      state.trafficFallbackStatus="failed";
+      renderTraffic();
+      renderTunnel();
+    }
+    return;
+  }
 
   try{
     const cached=JSON.parse(sessionStorage.getItem("cola-go-traffic-client-v1")||"null");
@@ -869,7 +1057,8 @@ function renderTraffic(){
     '</article>'
   ).join(""):'<div class="empty"><b>國 '+state.highway+' 自動同步目前沒有資料</b><p>不顯示假數字；可直接開高公局 1968 查看官方即時路況。</p></div>';
 
-  root.innerHTML=list+official;
+  const sourceNote=state.traffic?.status==="stale"?'<p class="notice">目前顯示官方快取資料，可能較舊；可開 1968 交叉確認。</p>':"";
+  root.innerHTML=sourceNote+list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
   $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(state.highway));
 }
@@ -892,9 +1081,10 @@ function renderTunnel(){
     '</article>'
   ).join(""):'<div class="empty"><b>雪隧自動同步目前沒有資料</b><p>直接開 1968 可查看國 5 即時影像與路況。</p></div>';
 
-  root.innerHTML=list+official;
-  $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
-  $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad("5"));
+  const sourceNote=state.tunnel?.status==="stale"?'<p class="notice">目前顯示官方快取資料，可能較舊；可開 1968 交叉確認。</p>':"";
+  root.innerHTML=sourceNote+list+official;
+  $("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
+  $("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad("5"));
 }
 
 function renderMarket(){
