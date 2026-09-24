@@ -1,0 +1,26 @@
+name: CarKit Tesla Donor Inspect
+
+on:
+  push:
+    branches:
+      - temp/carkit-shortcut-sign
+    paths:
+      - "carkit-sign/inspect_public_tesla.py"
+      - ".github/workflows/carkit-donor-inspect.yml"
+
+jobs:
+  inspect:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect public Tesla Shortcut donors
+        run: |
+          set -euxo pipefail
+          rm -rf carkit-sign/inspect
+          python3 carkit-sign/inspect_public_tesla.py
+      - name: Upload redacted inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: carkit-public-tesla-donor-inspection
+          path: carkit-sign/inspect/public-tesla-donors-redacted.json
+          if-no-files-found: error
