@@ -84,7 +84,7 @@ jobs:
           UDID="${{ steps.sim.outputs.udid }}"
           mkdir -p /tmp/carkit-runtime/evidence
           run_idb() {
-            python3 -c 'import subprocess,sys; cmd=sys.argv[1:]; print("RUN "+repr(cmd),file=sys.stderr); try:\n p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=30); sys.stdout.write(p.stdout or ""); raise SystemExit(p.returncode)\nexcept subprocess.TimeoutExpired:\n print("TIMEOUT "+repr(cmd),file=sys.stderr); raise SystemExit(124)' "$@"
+            python3 -c 'import subprocess,sys; cmd=sys.argv[1:]; print("RUN_IDB "+repr(cmd),file=sys.stderr,flush=True); p=subprocess.run(cmd,timeout=35); raise SystemExit(p.returncode)' "$@"
           }
 
           DATA="$(xcrun simctl get_app_container "$UDID" com.apple.shortcuts data)"
