@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f7f6f2">
+  <meta name="theme-color" content="#faf9f6">
   <meta name="description" content="COLA GO｜台灣電動車出行工具。充電、停車、國道路況、雪隧與沿途資訊。">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -47,7 +47,6 @@
         <span>COLA <b>GO</b></span>
       </button>
       <div class="top-actions">
-        <span class="sync-state" id="syncState"><i></i><span id="syncText">更新中</span></span>
         <button class="icon-btn" id="refreshBtn" aria-label="重新整理"><svg><use href="#i-refresh"/></svg></button>
         <button class="icon-btn" id="installBtn" aria-label="加入主畫面"><svg><use href="#i-install"/></svg></button>
       </div>
@@ -57,7 +56,6 @@
       <section class="view active" data-view="home">
         <div class="home-top">
           <div class="home-greeting">
-            <span class="mini-label">COLA GO</span>
             <h1>今天要去哪？</h1>
           </div>
 
@@ -90,7 +88,7 @@
         <section class="road-now">
           <div class="section-head clean-head">
             <div><h2>現在路上</h2></div>
-            <span class="updated" id="lastUpdate">等待資料</span>
+            <div class="source-status"><span class="sync-state" id="syncState"><i></i><span id="syncText">更新中</span></span><span class="updated" id="lastUpdate">等待資料</span></div>
           </div>
           <div class="road-now-grid">
             <button data-go="highway">
@@ -111,6 +109,10 @@
           </div>
         </section>
 
+        <div class="home-more home-camera" aria-label="路況影像">
+            <button data-go="cctv"><span><svg><use href="#i-camera"/></svg></span><b>即時影像</b><svg class="arrow"><use href="#i-arrow"/></svg></button>
+        </div>
+
         <section class="section compact-section">
           <div class="section-head clean-head"><div><h2>快速出發</h2></div><button class="text-link" data-go="trip">更多</button></div>
           <div class="quick-trips">
@@ -123,7 +125,6 @@
         <section class="section compact-section">
           <div class="section-head clean-head"><div><h2>更多工具</h2></div></div>
           <div class="home-more">
-            <button data-go="cctv"><span><svg><use href="#i-camera"/></svg></span><b>即時影像</b><svg class="arrow"><use href="#i-arrow"/></svg></button>
             <button data-go="tools"><span><svg><use href="#i-tools"/></svg></span><b>車主工具</b><svg class="arrow"><use href="#i-arrow"/></svg></button>
             <button data-go="market"><span><svg><use href="#i-car"/></svg></span><b>買車・賣車</b><svg class="arrow"><use href="#i-arrow"/></svg></button>
             <button data-go="tesla-db"><span><svg><use href="#i-calc"/></svg></span><b>Tesla 比較</b><svg class="arrow"><use href="#i-arrow"/></svg></button>
@@ -458,7 +459,7 @@
       </section>
     </main>
 
-    <nav class="bottom-nav">
+    <nav class="bottom-nav" aria-label="主要導覽">
       <button class="active" data-go="home"><svg><use href="#i-home"/></svg><span>首頁</span></button>
       <button data-go="charging"><svg><use href="#i-bolt"/></svg><span>充電</span></button>
       <button data-go="parking"><svg><use href="#i-park"/></svg><span>停車</span></button>
@@ -468,7 +469,7 @@
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="./assets/app.js" defer></script>
 </body>
 </html>
