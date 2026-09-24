@@ -363,9 +363,9 @@ function requestParkingLocation(){
   );
 }
 function bindParkingTools(){
-  $("#parkingCityTabs [data-parking-city]").forEach(b=>b.addEventListener("click",()=>{
+  $$("#parkingCityTabs [data-parking-city]").forEach(b=>b.addEventListener("click",()=>{
     state.parkingCity=b.dataset.parkingCity;
-    $("#parkingCityTabs [data-parking-city]").forEach(x=>x.classList.toggle("active",x===b));
+    $$("#parkingCityTabs [data-parking-city]").forEach(x=>x.classList.toggle("active",x===b));
     if($("#parkingSearch"))$("#parkingSearch").value="";
     renderParking();
   }));
