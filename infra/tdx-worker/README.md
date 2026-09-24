@@ -126,3 +126,43 @@ CORS 不是認證；真正保護 TDX 的是 Durable Object 的共用 cache、bud
 - CCTV 實際展示條件：NOT RUN
 
 因此 Worker 預設保持 `TDX_ENABLED=false`，不能把 mock / parser 測試當成正式 TDX PASS。
+
+
+## GitHub Pages 前端切換
+
+前端已預留：
+
+- `assets/runtime-config.js`
+- `assets/tdx-proxy.js`
+
+預設：
+
+```js
+window.COLA_GO_CONFIG=Object.freeze({
+  apiBaseUrl:""
+});
+```
+
+空字串代表 proxy 未啟用，既有合法 fallback 照常運作。
+
+Staging Worker 完成真實 TDX smoke test 後，將公開 Worker origin 寫入：
+
+```js
+window.COLA_GO_CONFIG=Object.freeze({
+  apiBaseUrl:"https://<staging-worker>.workers.dev"
+});
+```
+
+Production 驗收後再換成 production Worker origin。這個 URL 是公開 API base，不是 Secret。
+
+目前前端 adapter 已可優先使用 proxy 的：
+
+- 全台停車基本資料／剩餘車位
+- 國道路段／即時路況
+- 國道 CCTV metadata／官方影像 URL
+
+Worker 回 `stale: true` 時，前端必須明確顯示「快取資料／可能延遲」。
+
+充電 API adapter 方法已預留，但**尚未切換現有充電 UI**。必須先用正式 TDX 授權樣本確認 Station / ChargingPoint / Connector / ConnectorLiveStatus 的 ID 關聯；不可靠資料不得強行 join。
+
+Service Worker 僅快取同源靜態 adapter/config 檔，不會 cache 跨網域 Worker 的 live API response。
