@@ -7,6 +7,11 @@ DONORS={
     "a857a015118742b3ad7fafa48afd42ce":"reddit-tesla-mega-menu",
     "fdc8e8e4e97f4a3689378d4793522c53":"reddit-action-button-menu",
     "042c5a17a2834196a0d8864663279e96":"reddit-2024-tesla-quick-actions",
+    "262ad3e46e2b4ff6867b3a09a57f6b39":"tff-weather-climate",
+    "3854ed648735426c8f4e8a5792d4f88a":"tff-winter-mode-start",
+    "21f9b131bb4646bfbdad345895738062":"tff-winter-mode-stop",
+    "0d55771306e748c683687fc9024a5d9a":"tff-stop-charge-open-frunk",
+    "c6c3662778294cb6a5a948114faca6df":"tff-charge-port-open-unlock",
 }
 OUT=Path("carkit-sign/inspect")
 OUT.mkdir(parents=True,exist_ok=True)
