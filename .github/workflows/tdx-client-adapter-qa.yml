@@ -150,13 +150,21 @@ jobs:
             if(!highwayText.includes('88'))throw new Error(label+' freeway proxy data');
 
             await page.locator('[data-view="highway"] .back').click();
-            await page.locator('[data-go="tunnel"]').first().click();
-            await page.waitForFunction(()=>document.querySelector('#tunnelList')?.textContent.includes('石碇 → 坪林'));
+            await page.locator('[data-go="tunnel"]:visible').first().click();
+            try{
+              await page.waitForFunction(()=>document.querySelector('#tunnelList')?.textContent.includes('石碇 → 坪林'),null,{timeout:5000});
+            }catch{
+              throw new Error(label+' tunnel DOM: '+((await page.locator('#tunnelList').textContent())||''));
+            }
             if(!((await page.locator('#tunnelList').textContent())||'').includes('65'))throw new Error(label+' tunnel projection');
 
             await page.locator('.brand').click();
-            await page.locator('[data-go="cctv"]').first().click();
-            await page.waitForFunction(()=>document.querySelector('#cctvSourceState')?.textContent.includes('1 支'));
+            await page.locator('[data-go="cctv"]:visible').first().click();
+            try{
+              await page.waitForFunction(()=>document.querySelector('#cctvSourceState')?.textContent.includes('1 支'),null,{timeout:5000});
+            }catch{
+              throw new Error(label+' CCTV state: '+((await page.locator('#cctvSourceState').textContent())||'')+' list: '+((await page.locator('#cctvList').textContent())||''));
+            }
             if(await page.locator('.cctv-card').count()!==1)throw new Error(label+' CCTV proxy data');
             await page.locator('[data-cctv-stream]').click();
             if(!await page.evaluate(()=>window.__opened.some(x=>x.includes('example.test/live.m3u8'))))throw new Error(label+' CCTV stream action');
