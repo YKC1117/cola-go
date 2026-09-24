@@ -1,7 +1,7 @@
 name: Validate COLA GO V3
 on:
   push:
-    branches: ["main", "design/v3-product-ui", "feature/full-toolbox", "feature/market-db", "feature/owner-plus", "feature/community-locations"]
+    branches: ["main", "design/v3-product-ui", "feature/full-toolbox", "feature/market-db", "feature/owner-plus", "feature/community-locations", "feature/tainan-live-parking"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,6 +21,7 @@ jobs:
           python3 -m json.tool data/traffic.json >/dev/null
           python3 -m json.tool data/tunnel.json >/dev/null
           python3 -m json.tool data/parking.json >/dev/null
+          python3 -m json.tool data/parking-live-tainan.json >/dev/null
           python3 -m json.tool data/tesla-models.json >/dev/null
           python3 -m json.tool data/marketplace.json >/dev/null
           python3 -m json.tool data/community.json >/dev/null
@@ -39,3 +40,5 @@ jobs:
           grep -q "data-view=\"connector\"" index.html
           grep -q "data-view=\"community\"" index.html
           grep -q "data-view=\"locations\"" index.html
+          grep -q "parkingLiveTime" index.html
+          python3 -m py_compile scripts/sync_tainan_parking.py
