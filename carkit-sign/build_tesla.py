@@ -4,7 +4,7 @@ from pathlib import Path
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
 
-VERSION="0.5"
+VERSION="0.6"
 TEAM="PS9EBAM2PU"
 BUNDLE="com.teslamotors.TeslaApp"
 
@@ -206,6 +206,15 @@ def route_aliases(input_uuid,aliases,action_factory,seed):
 def one(action):
     return [action]
 
+def find_parked_car(seed):
+    parked=uid(seed+"-parked")
+    maps=uid(seed+"-maps")
+    return [
+      act("is.workflow.actions.getparkedcarlocation",{"UUID":parked}),
+      act("is.workflow.actions.getmapslink",{"UUID":maps,"WFInput":ao(parked,"Parked Car Location")}),
+      act("is.workflow.actions.openurl",{"UUID":uid(seed+"-open"),"WFInput":ao(maps,"Maps URL")})
+    ]
+
 # ----- Touch menu -----
 temp_menu=menu("車室溫度",["22°C","23°C","24°C"],{
     "22°C":[temp_action(22,"menu-temp22")],
@@ -266,7 +275,7 @@ prepare_menu_actions=[
 
 main_items=[
     "準備出發","空調 / 車室","行李廂","車門控制","充電",
-    "神盾","導航","閃燈尋車","哨兵模式","更多"
+    "神盾","導航","找我的車","閃燈尋車","哨兵模式","更多"
 ]
 main_branches={
     "準備出發":prepare_menu_actions,
@@ -276,32 +285,27 @@ main_branches={
     "充電":charge_menu,
     "神盾":[app("tw.com.ainvest.outpack","menu-shield")],
     "導航":nav_menu,
+    "找我的車":find_parked_car("menu-find-parked-car"),
     "閃燈尋車":[flash_action("menu-flash-find")],
     "哨兵模式":[sentry_action("menu-sentry")],
     "更多":more_menu,
 }
 manual_menu=menu("Tesla Driver｜要做什麼？",main_items,main_branches,"main-menu")
 
-# ----- Safe automation routes -----
+# ----- Safe automation route -----
+# iOS 27 exposes Bluetooth CONNECT as a Shortcuts trigger, but not a Bluetooth
+# disconnect trigger. Tesla AUTO_END is therefore intentionally not generated.
+# Apple Maps can create the Parked Car marker when the vehicle Bluetooth link
+# disconnects, so "找我的車" reads that system marker instead.
 auto_start=[
     app("tw.com.ainvest.outpack","auto-start-shield"),
-    exit_shortcut()
-]
-auto_cur=uid("auto-end-current-location")
-auto_end=[
-    act("is.workflow.actions.getcurrentlocation",{"UUID":auto_cur}),
-    act("is.workflow.actions.setparkedcar",{
-        "UUID":uid("auto-end-set-parked-car"),
-        "WFLocation":ao(auto_cur,"Current Location"),
-        "WFSetParkedCarNotes":"Tesla Driver 自動記錄"
-    }),
     exit_shortcut()
 ]
 
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v0.5｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- Siri：嘿 Siri，特斯拉助手 → 只問「要做什麼？」\n- 語音採精確比對，不用 contains，避免「不要解鎖」誤觸\n- 解鎖、前行李廂、後車廂需再次明確確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
+    "WFCommentActionText":"Tesla Driver v0.5｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- Siri：嘿 Siri，特斯拉助手 → 只問「要做什麼？」\n- 語音採精確比對，不用 contains，避免「不要解鎖」誤觸\n- 解鎖、前行李廂、後車廂需再次明確確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- Tesla 藍牙自動化只使用 Connect；iOS 27 無 Bluetooth Disconnect trigger\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
@@ -313,9 +317,9 @@ actions=[
   })
 ]
 
-# AUTO_START / AUTO_END exact routing. Sensitive Tesla actions are not reachable here.
+# AUTO_START only. Sensitive Tesla actions are not reachable here.
+# No Tesla AUTO_END is generated because iOS has no Bluetooth-disconnect trigger.
 actions += if_exact(cond_extension_input(),"AUTO_START",auto_start,"route-auto-start")
-actions += if_exact(cond_extension_input(),"AUTO_END",auto_end,"route-auto-end")
 
 # ----- Siri / text command entry -----
 voice,voice_id=ask_text("要做什麼？","voice-command")
@@ -340,7 +344,9 @@ actions += route_aliases(voice_id,["充到80","充到 80","充到80%","充到 80
     lambda s: one(charge_limit_action(80,s)),"voice-charge80")
 actions += route_aliases(voice_id,["充到90","充到 90","充到90%","充到 90%"],
     lambda s: one(charge_limit_action(90,s)),"voice-charge90")
-actions += route_aliases(voice_id,["閃燈","找車","閃燈尋車"],
+actions += route_aliases(voice_id,["找車","找我的車","停車位置"],
+    find_parked_car,"voice-find-parked-car")
+actions += route_aliases(voice_id,["閃燈","閃燈尋車"],
     lambda s: one(flash_action(s)),"voice-flash")
 actions += route_aliases(voice_id,["除霧","除霜"],
     lambda s: one(defrost_action(s)),"voice-defrost")
