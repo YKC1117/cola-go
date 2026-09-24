@@ -1,0 +1,125 @@
+name: CarKit Runtime Safety Probe
+
+on:
+  push:
+    branches:
+      - temp/carkit-shortcut-sign
+    paths:
+      - ".github/workflows/carkit-runtime-sim.yml"
+
+jobs:
+  runtime:
+    runs-on: macos-15
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and sign Tesla shortcut
+        run: |
+          set -euxo pipefail
+          rm -rf carkit-sign/generated /tmp/carkit-runtime
+          mkdir -p /tmp/carkit-runtime
+          python3 carkit-sign/build_tesla.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          p=Path("carkit-sign/generated/特斯拉助手.shortcut.xml")
+          payload=json.dumps({
+              "shortcutName":"特斯拉助手",
+              "shortcut":p.read_text(encoding="utf-8")
+          }).encode()
+          req=Request(
+              "https://hubsign.routinehub.services/sign",
+              data=payload,
+              headers={"Content-Type":"application/json","User-Agent":"cherri/1.3.0"},
+              method="POST",
+          )
+          with urlopen(req,timeout=60) as resp:
+              signed=resp.read()
+          assert signed[:4] == b"AEA1"
+          Path("/tmp/carkit-runtime/特斯拉助手.shortcut").write_bytes(signed)
+          print("signed",len(signed))
+          PY
+
+      - name: Boot iPhone simulator
+        id: sim
+        run: |
+          set -euxo pipefail
+          UDID="$(python3 - <<'PY'
+          import json,re,subprocess
+          data=json.loads(subprocess.check_output(["xcrun","simctl","list","devices","available","-j"]))
+          candidates=[]
+          for runtime,devices in data["devices"].items():
+              m=re.search(r"iOS-(\d+)-(\d+)",runtime)
+              if not m: continue
+              version=(int(m.group(1)),int(m.group(2)))
+              for d in devices:
+                  if d.get("isAvailable") and "iPhone" in d.get("name",""):
+                      rank=1 if "Pro Max" in d["name"] else 0
+                      candidates.append((version,rank,d["name"],d["udid"]))
+          candidates.sort(reverse=True)
+          if not candidates: raise SystemExit("No iPhone simulator")
+          print(candidates[0][3])
+          PY
+          )"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$UDID" || true
+          open -a Simulator --args -CurrentDeviceUDID "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl listapps "$UDID" | grep -q com.apple.shortcuts
+
+      - name: Install idb
+        run: |
+          set -euxo pipefail
+          brew tap facebook/fb
+          brew trust facebook/fb
+          brew install facebook/fb/idb
+
+      - name: Import Tesla and capture runtime Ask
+        continue-on-error: true
+        timeout-minutes: 7
+        run: |
+          set -uxo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          mkdir -p /tmp/carkit-runtime/evidence
+          run_idb() {
+            python3 -c 'import subprocess,sys; cmd=sys.argv[1:]; print("RUN "+repr(cmd),file=sys.stderr); try:\n p=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=30); sys.stdout.write(p.stdout or ""); raise SystemExit(p.returncode)\nexcept subprocess.TimeoutExpired:\n print("TIMEOUT "+repr(cmd),file=sys.stderr); raise SystemExit(124)' "$@"
+          }
+
+          DATA="$(xcrun simctl get_app_container "$UDID" com.apple.shortcuts data)"
+          mkdir -p "$DATA/Documents/CarKitTW"
+          cp /tmp/carkit-runtime/特斯拉助手.shortcut "$DATA/Documents/CarKitTW/"
+          P="$DATA/Documents/CarKitTW/特斯拉助手.shortcut"
+
+          xcrun simctl launch "$UDID" com.apple.shortcuts || true
+          sleep 2
+          xcrun simctl openurl "$UDID" "file://$P"
+          sleep 4
+          run_idb idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key frame --udid "$UDID" > /tmp/carkit-runtime/evidence/before-add.json || true
+          xcrun simctl io "$UDID" screenshot /tmp/carkit-runtime/evidence/before-add.png
+          run_idb idb ui tap "Add Shortcut" --udid "$UDID"
+          sleep 5
+
+          xcrun simctl openurl "$UDID" "shortcuts://run-shortcut?name=%E7%89%B9%E6%96%AF%E6%8B%89%E5%8A%A9%E6%89%8B" || true
+          sleep 5
+          run_idb idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > /tmp/carkit-runtime/evidence/runtime-ask.json || true
+          xcrun simctl io "$UDID" screenshot /tmp/carkit-runtime/evidence/runtime-ask.png
+          cat /tmp/carkit-runtime/evidence/runtime-ask.json || true
+
+      - name: Validate runtime prompt
+        run: |
+          set -euxo pipefail
+          test -s /tmp/carkit-runtime/evidence/before-add.json
+          grep -q 'Add Shortcut' /tmp/carkit-runtime/evidence/before-add.json
+          test -s /tmp/carkit-runtime/evidence/runtime-ask.json
+          grep -q '要做什麼' /tmp/carkit-runtime/evidence/runtime-ask.json
+          echo "TESLA_RUNTIME_ASK=PASS"
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: carkit-tesla-runtime-ask-v0.7
+          path: /tmp/carkit-runtime/evidence/
+          if-no-files-found: error
