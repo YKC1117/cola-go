@@ -1,0 +1,176 @@
+name: TDX Proxy Adapter QA
+
+on:
+  push:
+    branches: ["feature/tdx-proxy-adapter"]
+    paths:
+      - "index.html"
+      - "assets/runtime-config.js"
+      - "assets/tdx-proxy.js"
+      - "assets/app.js"
+      - "sw.js"
+      - ".github/workflows/tdx-proxy-adapter-qa.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Syntax checks
+        run: |
+          node --check assets/runtime-config.js
+          node --check assets/tdx-proxy.js
+          node --check assets/app.js
+          node --check sw.js
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium webkit
+      - name: Start app
+        run: |
+          python3 -m http.server 4173 >/tmp/server.log 2>&1 &
+          for i in {1..20}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && exit 0; sleep 1; done
+          cat /tmp/server.log
+          exit 1
+      - name: Adapter browser regression
+        run: |
+          cat > adapter-qa.mjs <<'EOF'
+          import { chromium, webkit } from 'playwright';
+
+          const base='http://127.0.0.1:4173/';
+          const proxy='https://proxy.test';
+
+          function env(status,items,extra={}){
+            return {
+              schemaVersion:1,status,source:'TDX via COLA GO',scope:null,
+              updatedAt:'2026-09-25T05:00:00+08:00',
+              fetchedAt:'2026-09-25T05:00:10+08:00',
+              expiresAt:'2026-09-25T05:01:10+08:00',
+              stale:status==='stale',partial:false,snapshotId:'qa',items,
+              coverage:{supported:true,returned:items.length,total:items.length},
+              pagination:{nextCursor:null},error:null,...extra
+            };
+          }
+
+          const parkingBasic=[
+            {id:'Taipei:P1',sourceId:'P1',city:'Taipei',name:'台北測試停車場',address:'臺北市中正區測試路1號',lat:25.04,lon:121.52,totalSpaces:100,feeText:'每小時 30 元',hasLiveAvailability:true}
+          ];
+          const parkingLive=[
+            {id:'Taipei:P1',sourceId:'P1',city:'Taipei',availableSpaces:26,totalSpaces:100,serviceStatus:1,fullStatus:0,sourceUpdatedAt:'2026-09-25T05:00:00+08:00'}
+          ];
+          const sections=[
+            {id:'S1',roadId:'000010',roadName:'國道1號',direction:'S',name:'永康 → 台南',startMile:319,endMile:327,lengthKm:8},
+            {id:'S5',roadId:'000050',roadName:'國道5號',direction:'S',name:'石碇 → 坪林 雪山',startMile:15,endMile:30,lengthKm:15}
+          ];
+          const live=[
+            {id:'S1',roadName:'國道1號',direction:'S',speedKph:88,travelTimeSeconds:330,congestionCode:0,closed:false,sourceUpdatedAt:'2026-09-25T05:00:00+08:00'},
+            {id:'S5',roadName:'國道5號',direction:'S',speedKph:64,travelTimeSeconds:900,congestionCode:1,closed:false,sourceUpdatedAt:'2026-09-25T05:00:00+08:00'}
+          ];
+          const cctv=[
+            {id:'C5',roadName:'國道5號',direction:'S',name:'28K',lat:24.91,lon:121.71,imageUrl:null,streamUrl:'https://camera.test/live.mjpg',imageRefreshSeconds:null,displayPolicy:'metadata-link'}
+          ];
+
+          async function make(browserType,{stale=false,configured=true}={}){
+            const browser=await browserType.launch({headless:true});
+            const context=await browser.newContext({viewport:{width:430,height:932},isMobile:true,hasTouch:true,serviceWorkers:'block'});
+            const direct=[];
+            await context.route('**/assets/runtime-config.js',r=>r.fulfill({
+              status:200,contentType:'application/javascript',
+              body:'window.COLA_GO_CONFIG=Object.freeze({apiBaseUrl:"'+(configured?proxy:'')+'"});'
+            }));
+            await context.route('https://tdx.transportdata.tw/**',r=>{direct.push(r.request().url());r.abort();});
+            await context.route('https://tisvcloud.freeway.gov.tw/**',r=>{direct.push(r.request().url());r.abort();});
+            if(configured){
+              const status=stale?'stale':'static';
+              const liveStatus=stale?'stale':'live';
+              await context.route(proxy+'/api/v1/parking/Taipei',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(env(status,parkingBasic,{scope:'city:Taipei'}))}));
+              await context.route(proxy+'/api/v1/parking/Taipei/availability',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(env(liveStatus,parkingLive,{scope:'city:Taipei'}))}));
+              await context.route(proxy+'/api/v1/freeway/sections',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(env(status,sections))}));
+              await context.route(proxy+'/api/v1/freeway/live',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(env(liveStatus,live))}));
+              await context.route(proxy+'/api/v1/freeway/cctv',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(env(status,cctv))}));
+            }
+            await context.addInitScript(()=>{
+              window.__opened=[];
+              const original=window.open;
+              window.open=(url)=>{window.__opened.push(String(url));return null;};
+              sessionStorage.clear();
+            });
+            return {browser,context,page:await context.newPage(),direct};
+          }
+
+          async function fresh(browserType,label){
+            const {browser,page,direct}=await make(browserType,{stale:false,configured:true});
+            const errors=[]; page.on('pageerror',e=>errors.push(String(e)));
+            await page.goto(base,{waitUntil:'networkidle'});
+
+            await page.locator('[data-go="parking"]').first().click();
+            await page.locator('#parkingCitySelect').selectOption('Taipei');
+            await page.waitForFunction(()=>document.querySelector('#parkingScopeStatus')?.textContent.includes('1 筆'));
+            const park=await page.locator('#liveParkingList').textContent();
+            if(!park.includes('台北測試停車場')||!park.includes('26'))throw new Error(label+' proxy parking');
+
+            await page.locator('.brand').click();
+            await page.locator('[data-go="highway"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#highwayList')?.textContent.includes('永康 → 台南'));
+            const h=await page.locator('#highwayList').textContent();
+            if(!h.includes('88'))throw new Error(label+' proxy freeway');
+
+            await page.locator('[data-view="highway"] .back').click();
+            await page.locator('[data-go="tunnel"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#tunnelList')?.textContent.includes('石碇 → 坪林 雪山'));
+            if(!(await page.locator('#tunnelList').textContent()).includes('64'))throw new Error(label+' proxy tunnel');
+
+            await page.locator('.brand').click();
+            await page.locator('[data-go="cctv"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#cctvSourceState')?.textContent.includes('1 支'));
+            if(!(await page.locator('#cctvList').textContent()).includes('28K'))throw new Error(label+' proxy CCTV');
+
+            if(direct.length)throw new Error(label+' direct TDX/TISV calls while proxy configured: '+direct.join(','));
+            if(errors.length)throw new Error(label+' page errors '+errors.join(' | '));
+            await browser.close();
+          }
+
+          async function stale(){
+            const {browser,page,direct}=await make(chromium,{stale:true,configured:true});
+            await page.goto(base,{waitUntil:'networkidle'});
+            await page.locator('[data-go="parking"]').first().click();
+            await page.locator('#parkingCitySelect').selectOption('Taipei');
+            await page.waitForFunction(()=>document.querySelector('#parkingScopeStatus')?.textContent.includes('快取資料'));
+
+            await page.locator('.brand').click();
+            await page.locator('[data-go="highway"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#highwayList')?.textContent.includes('快取'));
+
+            await page.locator('.brand').click();
+            await page.locator('[data-go="cctv"]').first().click();
+            await page.waitForFunction(()=>document.querySelector('#cctvSourceState')?.textContent.includes('快取資料'));
+
+            if(direct.length)throw new Error('stale path made direct upstream calls');
+            await browser.close();
+          }
+
+          async function disabled(){
+            const {browser,page}=await make(chromium,{configured:false});
+            const errors=[]; page.on('pageerror',e=>errors.push(String(e)));
+            await page.goto(base,{waitUntil:'networkidle'});
+            const enabled=await page.evaluate(()=>window.COLA_GO_PROXY.enabled());
+            if(enabled)throw new Error('proxy must be disabled with empty API base');
+            if(errors.length)throw new Error('disabled page errors '+errors.join(' | '));
+            await browser.close();
+          }
+
+          await fresh(chromium,'chromium');
+          await fresh(webkit,'webkit');
+          await stale();
+          await disabled();
+          console.log('TDX_PROXY_ADAPTER_QA_SUCCESS');
+          EOF
+          node adapter-qa.mjs
