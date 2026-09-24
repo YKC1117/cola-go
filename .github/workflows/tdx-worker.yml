@@ -1,0 +1,40 @@
+name: Validate TDX Worker
+
+on:
+  push:
+    branches: ["infra/tdx-proxy"]
+    paths:
+      - "infra/tdx-worker/**"
+      - ".github/workflows/tdx-worker.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: infra/tdx-worker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: infra/tdx-worker/package-lock.json
+      - name: Install dependencies
+        run: npm install
+      - name: Syntax check
+        run: |
+          find src test -name '*.js' -print0 | xargs -0 -n1 node --check
+      - name: Unit tests
+        run: npm test
+      - name: Cloudflare dry run
+        run: npx wrangler deploy --dry-run --outdir .wrangler-dry-run
+      - name: Secret leak guard
+        run: |
+          ! grep -R --line-number --exclude='.dev.vars.example' --exclude='*.test.js' 'TDX_CLIENT_SECRET=.*[^=[:space:]]' .
+          ! grep -R --line-number 'Authorization: Bearer [A-Za-z0-9_-]' src test
