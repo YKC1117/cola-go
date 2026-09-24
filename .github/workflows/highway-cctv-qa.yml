@@ -70,17 +70,18 @@ jobs:
 
           async function setup(browserType,mode){
             const browser=await browserType.launch({headless:true});
-            const context=await browser.newContext({viewport:{width:430,height:932},isMobile:true,hasTouch:true});
+            const context=await browser.newContext({viewport:{width:430,height:932},isMobile:true,hasTouch:true,serviceWorkers:'block'});
             await context.addInitScript(()=>{
               window.__opened=[];
               window.open=(url)=>{window.__opened.push(String(url));return null;};
               sessionStorage.clear();
             });
 
+            const hits={cctv:0,section:0,live:0,tisv:0};
             if(mode==='tdx-success'){
-              await context.route('**/api/basic/v2/Road/Traffic/CCTV/Freeway*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cctvJson)}));
-              await context.route('**/api/basic/v2/Road/Traffic/Section/Freeway*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(sectionJson)}));
-              await context.route('**/api/basic/v2/Road/Traffic/Live/Freeway*',r=>r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(liveJson)}));
+              await context.route('**/api/basic/v2/Road/Traffic/CCTV/Freeway*',r=>{hits.cctv++;return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(cctvJson)});});
+              await context.route('**/api/basic/v2/Road/Traffic/Section/Freeway*',r=>{hits.section++;return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(sectionJson)});});
+              await context.route('**/api/basic/v2/Road/Traffic/Live/Freeway*',r=>{hits.live++;return r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(liveJson)});});
             }else if(mode==='xml-cctv'){
               await context.route('**/api/basic/v2/Road/Traffic/CCTV/Freeway*',r=>r.abort());
               await context.route('**/history/motc20/CCTV.xml',r=>r.fulfill({status:200,contentType:'application/xml',body:cctvXml}));
@@ -88,17 +89,28 @@ jobs:
               await context.route('**/api/basic/v2/Road/Traffic/**',r=>r.abort());
               await context.route('**/history/motc20/**',r=>r.abort());
             }
-            return {browser,context,page:await context.newPage()};
+            return {browser,context,page:await context.newPage(),hits};
           }
 
           async function successScenario(browserType,label){
-            const {browser,page}=await setup(browserType,'tdx-success');
+            const {browser,page,hits}=await setup(browserType,'tdx-success');
             const errors=[];
             page.on('pageerror',e=>errors.push(String(e)));
             await page.goto(base,{waitUntil:'networkidle'});
+            const probe=await page.evaluate(async()=>{
+              const r=await fetch('https://tdx.transportdata.tw/api/basic/v2/Road/Traffic/CCTV/Freeway?%24format=JSON');
+              const j=await r.json();
+              return Array.isArray(j.CCTVs)?j.CCTVs.length:-1;
+            });
+            if(probe!==2)throw new Error(label+' TDX route probe '+probe);
 
             await page.locator('[data-go="cctv"]').first().click();
-            await page.waitForFunction(()=>document.querySelector('#cctvSourceState')?.textContent.includes('2 支'));
+            try{
+              await page.waitForFunction(()=>document.querySelector('#cctvSourceState')?.textContent.includes('2 支'),null,{timeout:5000});
+            }catch(error){
+              const status=await page.locator('#cctvSourceState').textContent().catch(()=> '');
+              throw new Error(label+' CCTV load timeout; status='+status+' hits='+JSON.stringify(hits)+' pageErrors='+errors.join(' | '));
+            }
             if(await page.locator('.cctv-card').count()!==2)throw new Error(label+' CCTV count');
             await page.locator('#cctvRoadFilter [data-cctv-road="5"]').click();
             if(await page.locator('.cctv-card').count()!==1)throw new Error(label+' CCTV road filter');
