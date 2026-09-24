@@ -86,10 +86,33 @@ jobs:
           idb list-targets
 
       - name: Probe direct signed shortcut install flow
+        continue-on-error: true
+        timeout-minutes: 8
         run: |
-          set -euxo pipefail
+          set -uxo pipefail
           UDID="${{ steps.sim.outputs.udid }}"
+          run_idb() {
+            python3 - "$@" <<'PY'
+import subprocess, sys
+cmd=sys.argv[1:]
+print("RUN_IDB",cmd,flush=True)
+try:
+    cp=subprocess.run(cmd,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,timeout=35)
+    print(cp.stdout)
+    print("RETURN",cp.returncode)
+    raise SystemExit(cp.returncode)
+except subprocess.TimeoutExpired as e:
+    print("IDB_TIMEOUT",cmd)
+    if e.stdout:
+        print(e.stdout)
+    raise SystemExit(124)
+PY
+          }
+
           mkdir -p /tmp/carkit-probe
+          echo "TARGET_UDID=$UDID" | tee /tmp/carkit-probe/target.txt
+          idb list-targets | tee /tmp/carkit-probe/idb-targets.txt || true
+          command -v idb_companion | tee /tmp/carkit-probe/idb-companion-path.txt || true
 
           SHORTCUTS_DATA="$(xcrun simctl get_app_container "$UDID" com.apple.shortcuts data)"
           echo "SHORTCUTS_DATA=$SHORTCUTS_DATA" | tee /tmp/carkit-probe/paths.txt
@@ -104,17 +127,17 @@ jobs:
           sleep 2
           xcrun simctl openurl "$UDID" "file://$OIL_PATH"
           sleep 4
-          idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/oil-before.json || true
+          run_idb idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/oil-before.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-before.png
-          idb ui tap "Add Shortcut" --udid "$UDID"
+          run_idb idb ui tap "Add Shortcut" --udid "$UDID"
           sleep 6
-          idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/oil-after-add.json || true
+          run_idb idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/oil-after-add.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-after-add.png
 
           # Confirm Oil exists in the library/editor by asking Shortcuts to open it.
           xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B" || true
           sleep 5
-          idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/oil-opened.json || true
+          run_idb idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/oil-opened.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-opened.png
 
           # Tesla: direct file, tap Add Shortcut, then inspect setup/import questions.
@@ -123,11 +146,11 @@ jobs:
           sleep 2
           xcrun simctl openurl "$UDID" "file://$TESLA_PATH"
           sleep 4
-          idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/tesla-before.json || true
+          run_idb idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/tesla-before.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-before.png
-          idb ui tap "Add Shortcut" --udid "$UDID"
+          run_idb idb ui tap "Add Shortcut" --udid "$UDID"
           sleep 6
-          idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/tesla-after-add.json || true
+          run_idb idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/tesla-after-add.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-after-add.png
 
           # The Tesla app is not available in the stock Simulator. Capture logs
@@ -144,6 +167,7 @@ jobs:
           ls -lh /tmp/carkit-probe
 
       - name: Upload simulator evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: carkit-ios-simulator-install-flow-v0.7
