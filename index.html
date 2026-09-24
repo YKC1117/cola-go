@@ -141,7 +141,14 @@
 
       <section class="view" data-view="parking">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">PARKING</span><h1>停車</h1></div></div>
-        <p class="notice">逐步整合各縣市免費即時剩餘車位；沒有資料就不顯示假空位。</p>
+        <div class="live-source-head">
+          <div><span class="mini-label">TAINAN LIVE</span><h2>臺南即時剩餘車位</h2></div>
+          <span class="updated" id="parkingLiveTime">等待同步</span>
+        </div>
+        <label class="inline-search parking-search"><svg><use href="#i-search"/></svg><input id="parkingSearch" type="search" placeholder="搜尋停車場、行政區、地址"></label>
+        <p class="notice">臺南市政府交通局公開資料會直接顯示官方剩餘格位；沒有取得即時資料時不顯示假空位。</p>
+        <div id="liveParkingList" class="parking-live-list"></div>
+        <div class="section-head parking-other-head"><div><span class="mini-label">OTHER SOURCES</span><h2>其他縣市</h2></div></div>
         <div class="list" id="parkingCities"></div>
       </section>
 

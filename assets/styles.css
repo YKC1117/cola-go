@@ -62,3 +62,25 @@ main{padding-bottom:calc(var(--nav) + env(safe-area-inset-bottom) + 24px)}.view{
 .community-card .badges span{font-size:7px;border-radius:99px;background:#f0eee9;padding:4px 6px;color:var(--muted)}
 .community-card p{font-size:8.5px;line-height:1.55;color:var(--muted);margin:8px 0 0}
 .community-card .external-btn{margin-top:10px}
+
+.live-source-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px}
+.live-source-head h2,.parking-other-head h2{font-size:18px;letter-spacing:-.03em;margin:3px 0 0}
+.parking-search{margin-top:0}
+.parking-live-list{display:grid;gap:8px;margin-top:10px}
+.parking-card{border:1px solid var(--line);background:var(--card);border-radius:16px;padding:13px}
+.parking-card-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.parking-card h3{font-size:12px;margin:0}
+.parking-card .parking-zone{display:block;font-size:8px;color:var(--muted);margin-top:3px}
+.parking-space{text-align:right;flex:none}
+.parking-space b{display:block;font-size:24px;line-height:1;letter-spacing:-.05em}
+.parking-space b.good{color:var(--good)}
+.parking-space b.mid{color:var(--warn)}
+.parking-space b.bad{color:var(--bad)}
+.parking-space small{display:block;font-size:7px;color:var(--muted);margin-top:3px}
+.parking-specs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:11px}
+.parking-specs div{background:#f0eee9;border-radius:9px;padding:8px}
+.parking-specs small{display:block;font-size:7px;color:var(--muted)}
+.parking-specs b{display:block;font-size:9px;margin-top:3px}
+.parking-address{font-size:8.5px;color:var(--muted);line-height:1.45;margin-top:9px}
+.parking-update{font-size:7px;color:#a19e97;margin-top:6px}
+.parking-other-head{margin-top:24px}

@@ -4,6 +4,7 @@ const state={
   traffic:null,
   tunnel:null,
   parking:null,
+  parkingLive:{status:"not-synced",items:[]},
   models:[],
   market:{usedCars:[],accessories:[],services:[]},
   road:"all",
@@ -83,6 +84,7 @@ async function load(){
     getJSON("./data/traffic.json"),
     getJSON("./data/tunnel.json"),
     getJSON("./data/parking.json"),
+    getJSON("./data/parking-live-tainan.json"),
     getJSON("./data/tesla-models.json"),
     getJSON("./data/marketplace.json"),
     getJSON("./data/community.json"),
@@ -93,10 +95,11 @@ async function load(){
   if(results[1].status==="fulfilled")state.traffic=results[1].value;
   if(results[2].status==="fulfilled")state.tunnel=results[2].value;
   if(results[3].status==="fulfilled")state.parking=results[3].value;
-  if(results[4].status==="fulfilled")state.models=results[4].value.models||[];
-  if(results[5].status==="fulfilled")state.market=results[5].value;
-  if(results[6].status==="fulfilled")state.community=results[6].value;
-  if(results[7].status==="fulfilled")state.locations=results[7].value;
+  if(results[4].status==="fulfilled")state.parkingLive=results[4].value;
+  if(results[5].status==="fulfilled")state.models=results[5].value.models||[];
+  if(results[6].status==="fulfilled")state.market=results[6].value;
+  if(results[7].status==="fulfilled")state.community=results[7].value;
+  if(results[8].status==="fulfilled")state.locations=results[8].value;
 
   renderAll();
 }
@@ -172,30 +175,53 @@ function renderCharging(){
 }
 
 function renderParking(){
-  const root=$("#parkingCities");
-  if(!root)return;
+  const liveRoot=$("#liveParkingList");
+  const cityRoot=$("#parkingCities");
+  if(!liveRoot||!cityRoot)return;
 
-  const nearby=
-    '<article class="list-item">'+
-      '<div class="list-head"><div><h3>找附近停車場</h3><div class="meta">沒有即時來源的地區，直接交給地圖搜尋。</div></div></div>'+
-      '<div class="item-actions"><button class="go" data-nearby-parking="google">Google Maps</button><button data-nearby-parking="apple">Apple 地圖</button></div>'+
-    '</article>';
+  const live=state.parkingLive||{status:"not-synced",items:[]};
+  const query=($("#parkingSearch")?.value||"").trim().toLowerCase();
+  const rows=(live.items||[])
+    .filter(x=>!query||[x.name,x.zone,x.address,x.typeName].join(" ").toLowerCase().includes(query))
+    .sort((a,b)=>Number(b.car||0)-Number(a.car||0));
 
-  const cities=(state.parking?.cities||[]).map(x=>
-    '<article class="metric-row">'+
-      '<div><b>'+esc(x.name)+'</b><small>'+esc(x.note)+'</small></div>'+
-      '<span class="route-tag">'+(x.status==="source-ready"?"來源已確認":"待整合")+'</span>'+
-    '</article>'
-  ).join("");
+  $("#parkingLiveTime").textContent=live.status==="live"?(live.updatedAt||"官方即時"):"暫無即時資料";
 
-  root.innerHTML=nearby+(cities||'<div class="empty"><b>停車資料尚未載入</b></div>');
+  if(live.status==="live"&&rows.length){
+    liveRoot.innerHTML=rows.map(x=>{
+      const available=Number(x.car||0);
+      const total=Number(x.carTotal||0);
+      const cls=available>=20?"good":available>=5?"mid":"bad";
+      return '<article class="parking-card">'+
+        '<div class="parking-card-top"><div><h3>'+esc(x.name)+'</h3><span class="parking-zone">'+esc(x.zone||x.typeName||"臺南")+'</span></div><div class="parking-space"><b class="'+cls+'">'+available+'</b><small>汽車剩餘</small></div></div>'+
+        '<div class="parking-specs">'+
+          '<div><small>總格數</small><b>'+money(total)+'</b></div>'+
+          '<div><small>綠能剩餘</small><b>'+money(Number(x.green||0))+'</b></div>'+
+          '<div><small>營業／收費</small><b>'+esc(x.chargeTime||"依現場")+'</b></div>'+
+        '</div>'+
+        '<div class="parking-address">'+esc(x.address||"")+(x.chargeFee?' · '+esc(x.chargeFee):"")+'</div>'+
+        '<div class="parking-update">官方更新：'+esc(x.sourceUpdate||live.updatedAt||"—")+'</div>'+
+        '<div class="item-actions"><button class="go" data-parking-map="'+encodeURIComponent(x.address||x.name)+'">Google Maps</button><button data-parking-apple="'+encodeURIComponent(x.address||x.name)+'">Apple 地圖</button></div>'+
+      '</article>';
+    }).join("");
+  }else if(live.status==="live"&&query){
+    liveRoot.innerHTML='<div class="empty"><b>找不到符合的臺南停車場</b><p>換個停車場名稱、行政區或地址試試。</p></div>';
+  }else{
+    liveRoot.innerHTML='<div class="market-empty"><b>臺南即時資料暫時無法取得</b><p>不顯示過期數字。你仍可直接用地圖找附近停車場。</p><div class="item-actions"><button class="go" data-nearby-parking="google">Google Maps</button><button data-nearby-parking="apple">Apple 地圖</button></div></div>';
+  }
 
-  $$("[data-nearby-parking]",root).forEach(b=>b.onclick=()=>{
+  $$("[data-parking-map]",liveRoot).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.parkingMap,"_blank","noopener"));
+  $$("[data-parking-apple]",liveRoot).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?q="+b.dataset.parkingApple,"_blank","noopener"));
+  $$("[data-nearby-parking]",liveRoot).forEach(b=>b.onclick=()=>{
     const url=b.dataset.nearbyParking==="apple"
       ?"https://maps.apple.com/?q="+encodeURIComponent("停車場")
       :"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent("停車場");
     window.open(url,"_blank","noopener");
   });
+
+  cityRoot.innerHTML=(state.parking?.cities||[]).map(x=>
+    '<article class="metric-row"><div><b>'+esc(x.name)+'</b><small>'+esc(x.note)+'</small></div><span class="route-tag">'+(x.status==="source-ready"?"來源已確認":"待整合")+'</span></article>'
+  ).join("")||'<div class="empty"><b>其他縣市資料尚未載入</b></div>';
 }
 
 function renderTraffic(){
@@ -451,6 +477,7 @@ function bindFilters(){
   });
 
   if($("#chargingSearch"))$("#chargingSearch").oninput=renderCharging;
+  if($("#parkingSearch"))$("#parkingSearch").oninput=renderParking;
 
   $$("#highwayTabs button").forEach(b=>b.onclick=()=>{
     $$("#highwayTabs button").forEach(x=>x.classList.remove("active"));
