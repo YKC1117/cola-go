@@ -1,0 +1,126 @@
+name: CarKit Vehicle Import Mock
+
+on:
+  push:
+    branches:
+      - temp/carkit-shortcut-sign
+    paths:
+      - "tests/carkit-tesla-mock/**"
+      - ".github/workflows/carkit-vehicle-mock.yml"
+
+jobs:
+  vehicle-import:
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Boot stable iPhone simulator
+        id: sim
+        run: |
+          set -euxo pipefail
+          UDID="$(python3 - <<'PY'
+          import json,re,subprocess
+          data=json.loads(subprocess.check_output(["xcrun","simctl","list","devices","available","-j"]))
+          choices=[]
+          for runtime,devices in data["devices"].items():
+              m=re.search(r"iOS-(\d+)-(\d+)",runtime)
+              if not m: continue
+              version=(int(m.group(1)),int(m.group(2)))
+              if version > (18,6):
+                  continue
+              for d in devices:
+                  if d.get("isAvailable") and "iPhone" in d.get("name",""):
+                      rank=1 if "Pro" in d["name"] else 0
+                      choices.append((version,rank,d["udid"]))
+          if not choices: raise SystemExit("No suitable iPhone simulator")
+          choices.sort(reverse=True)
+          print(choices[0][2])
+          PY
+          )"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$UDID" || true
+          open -a Simulator --args -CurrentDeviceUDID "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl listapps "$UDID" | grep -q com.apple.shortcuts
+
+      - name: Install test tooling
+        run: |
+          set -euxo pipefail
+          brew install xcodegen
+          brew tap facebook/fb
+          brew trust facebook/fb
+          brew install facebook/fb/idb
+
+      - name: Build and install Tesla AppIntent test double
+        run: |
+          set -euxo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          cd tests/carkit-tesla-mock
+          xcodegen generate
+          xcodebuild             -project TeslaMock.xcodeproj             -scheme TeslaMock             -configuration Debug             -sdk iphonesimulator             -destination "platform=iOS Simulator,id=$UDID"             -derivedDataPath /tmp/TeslaMockDerived             CODE_SIGNING_ALLOWED=NO             CODE_SIGNING_REQUIRED=NO             build
+          APP="$(find /tmp/TeslaMockDerived/Build/Products -type d -name 'Tesla.app' | head -1)"
+          test -d "$APP"
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" com.teslamotors.TeslaApp
+          sleep 5
+          xcrun simctl listapps "$UDID" | grep -A8 -B2 com.teslamotors.TeslaApp
+
+      - name: Build and sign vehicle import test shortcut
+        run: |
+          set -euxo pipefail
+          rm -rf /tmp/carkit-vehicle-mock
+          python3 tests/carkit-tesla-mock/build_mock_shortcut.py
+          plutil -lint /tmp/carkit-vehicle-mock/Tesla-Vehicle-Import-Test.shortcut.xml
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from urllib.request import Request,urlopen
+          p=Path("/tmp/carkit-vehicle-mock/Tesla-Vehicle-Import-Test.shortcut.xml")
+          payload=json.dumps({"shortcutName":"Tesla Vehicle Import Test","shortcut":p.read_text()}).encode()
+          req=Request(
+              "https://hubsign.routinehub.services/sign",
+              data=payload,
+              headers={"Content-Type":"application/json","User-Agent":"cherri/1.3.0"},
+              method="POST",
+          )
+          with urlopen(req,timeout=60) as resp:
+              data=resp.read()
+          assert data[:4] == b"AEA1"
+          Path("/tmp/carkit-vehicle-mock/Tesla-Vehicle-Import-Test.shortcut").write_bytes(data)
+          print("signed",len(data))
+          PY
+
+      - name: Probe import-time Vehicle AppEntity picker
+        continue-on-error: true
+        timeout-minutes: 6
+        run: |
+          set -uxo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          EV=/tmp/carkit-vehicle-mock/evidence
+          mkdir -p "$EV"
+          DATA="$(xcrun simctl get_app_container "$UDID" com.apple.shortcuts data)"
+          mkdir -p "$DATA/Documents/CarKitTW"
+          cp /tmp/carkit-vehicle-mock/Tesla-Vehicle-Import-Test.shortcut "$DATA/Documents/CarKitTW/"
+          P="$DATA/Documents/CarKitTW/Tesla-Vehicle-Import-Test.shortcut"
+
+          xcrun simctl terminate "$UDID" com.apple.shortcuts || true
+          xcrun simctl launch "$UDID" com.apple.shortcuts || true
+          sleep 2
+          xcrun simctl openurl "$UDID" "file://$P"
+          sleep 5
+          idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > "$EV/before-add.json" || true
+          xcrun simctl io "$UDID" screenshot "$EV/before-add.png"
+          idb ui tap "Add Shortcut" --udid "$UDID"
+          sleep 6
+          idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key placeholder --key frame --udid "$UDID" > "$EV/after-add.json" || true
+          xcrun simctl io "$UDID" screenshot "$EV/after-add.png"
+          cat "$EV/after-add.json" || true
+
+      - name: Upload vehicle picker evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: carkit-vehicle-import-mock-evidence
+          path: /tmp/carkit-vehicle-mock/evidence/
+          if-no-files-found: error
