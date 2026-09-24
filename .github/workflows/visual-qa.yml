@@ -80,7 +80,7 @@ jobs:
 
           await page.locator('#installBtn').click();
           await page.waitForTimeout(100);
-          expect(await page.locator('#toast').classList().then(c=>c.includes('show')),'iPhone install uses non-blocking toast');
+          expect(await page.locator('#toast').getAttribute('class').then(c=>(c||'').includes('show')),'iPhone install uses non-blocking toast');
           expect(await page.locator('.sheet').count()===0,'no blocking sheet after install click');
 
           const coreViews=['charging','parking','highway','tunnel'];
