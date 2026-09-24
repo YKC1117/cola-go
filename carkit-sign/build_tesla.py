@@ -343,7 +343,7 @@ actions += route_aliases(voice_id,["哨兵","哨兵模式"],
     lambda s: one(sentry_action(s)),"voice-sentry")
 actions += route_aliases(voice_id,["準備出發","出發"],
     lambda s: [pre_start_action(s+"-pre"),app("tw.com.ainvest.outpack",s+"-shield")],"voice-prepare")
-actions += route_aliases(voice_id,["選單","功能"],
+actions += route_aliases(voice_id,["選單"],
     lambda s: manual_menu,"voice-menu")
 
 # Ambiguous "充電" gets one short follow-up; exact answers only.
