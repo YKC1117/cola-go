@@ -1,0 +1,28 @@
+name: 免費刊登二手配件
+description: 刊登 Tesla／電動車二手配件
+title: "[配件] "
+body:
+  - type: input
+    id: item
+    attributes: {label: 配件名稱, placeholder: "例如 Model Y 原廠 19 吋輪圈"}
+    validations: {required: true}
+  - type: input
+    id: fit
+    attributes: {label: 適用車型／年份}
+    validations: {required: true}
+  - type: input
+    id: price
+    attributes: {label: 售價}
+    validations: {required: true}
+  - type: textarea
+    id: condition
+    attributes: {label: 品況與缺件}
+    validations: {required: true}
+  - type: input
+    id: area
+    attributes: {label: 交易地區／寄送方式}
+    validations: {required: true}
+  - type: input
+    id: contact
+    attributes: {label: 公開聯絡方式}
+    validations: {required: true}

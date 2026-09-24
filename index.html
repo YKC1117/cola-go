@@ -111,6 +111,8 @@
           <div class="tool-shortcuts">
             <button data-go="cctv"><span class="shortcut-icon"><svg><use href="#i-camera"/></svg></span><span><b>即時影像</b><small>1968／公路局 CCTV</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
             <button data-go="tools"><span class="shortcut-icon"><svg><use href="#i-tools"/></svg></span><span><b>車主工具</b><small>VIN、電費、驗車、保養、零件</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
+            <button data-go="market"><span class="shortcut-icon"><svg><use href="#i-car"/></svg></span><span><b>買車・賣車・配件</b><small>免費刊登、求購、原廠認證</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
+            <button data-go="tesla-db"><span class="shortcut-icon"><svg><use href="#i-calc"/></svg></span><span><b>Tesla 車系比較</b><small>價格、續航、加速、驅動直接比</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
             <button data-go="partners"><span class="shortcut-icon"><svg><use href="#i-handshake"/></svg></span><span><b>合作專區</b><small>合作招募中・歡迎洽談</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
           </div>
         </section>
@@ -242,6 +244,74 @@
         <div class="tool-form"><label><small>輸入車牌或數字</small><input id="luckyInput" placeholder="例如 EBP-5555"></label><button class="primary" id="luckyBtn">計算數字總和</button></div>
         <div id="luckyResult"></div>
         <p class="notice">這是民俗娛樂參考，不影響車輛安全、價值或實際運勢。</p>
+      </section>
+
+
+      <section class="view" data-view="market">
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">MARKET</span><h1>買車・賣車・配件</h1></div></div>
+        <div class="market-summary">
+          <button data-go="used-cars"><span><b id="usedCount">0</b><small>二手電車</small></span><svg><use href="#i-arrow"/></svg></button>
+          <button data-go="accessories"><span><b id="accessoryCount">0</b><small>二手配件</small></span><svg><use href="#i-arrow"/></svg></button>
+          <button data-go="services"><span><b id="serviceCount">0</b><small>合作服務</small></span><svg><use href="#i-arrow"/></svg></button>
+        </div>
+        <div class="link-cards market-links">
+          <button data-go="used-cars"><span class="shortcut-icon q1"><svg><use href="#i-car"/></svg></span><span><b>二手電車</b><small>車主自售、車商刊登、買家求購</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
+          <button data-go="certified"><span class="shortcut-icon q3"><svg><use href="#i-clipboard"/></svg></span><span><b>Tesla 原廠認證中古車</b><small>直接看 Tesla 官方現貨與保固</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
+          <button data-go="accessories"><span class="shortcut-icon q2"><svg><use href="#i-tools"/></svg></span><span><b>二手配件</b><small>免費刊登，不收成交佣金</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
+          <button data-go="services"><span class="shortcut-icon q4"><svg><use href="#i-handshake"/></svg></span><span><b>優質服務</b><small>店家招募中，合作關係清楚標示</small></span><svg class="shortcut-arrow"><use href="#i-arrow"/></svg></button>
+        </div>
+      </section>
+
+      <section class="view" data-view="used-cars">
+        <div class="page-head"><button class="back" data-go="market"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">USED EV</span><h1>二手電車</h1></div></div>
+        <div class="action-duo">
+          <button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=sell-vehicle.yml">免費刊登車輛</button>
+          <button class="external-btn secondary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=wanted-vehicle.yml">我要徵車<svg><use href="#i-arrow"/></svg></button>
+        </div>
+        <p class="notice strong">目前公開刊登以 GitHub 表單收件。上架前會要求車況、里程、年份與重大事故聲明，避免只有一張照片和一句「自售」。</p>
+        <div class="market-filter">
+          <button class="active" data-used-filter="all">全部</button><button data-used-filter="Model 3">Model 3</button><button data-used-filter="Model Y">Model Y</button><button data-used-filter="other">其他電車</button>
+        </div>
+        <div id="usedCarsList" class="market-list"></div>
+      </section>
+
+      <section class="view" data-view="accessories">
+        <div class="page-head"><button class="back" data-go="market"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">ACCESSORIES</span><h1>二手配件</h1></div></div>
+        <button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=accessory.yml">免費刊登配件</button>
+        <p class="notice">賣家自行交易；COLA GO 不代收款、不抽佣，未來若導入付款會另行清楚說明。</p>
+        <div id="accessoryList" class="market-list"></div>
+      </section>
+
+      <section class="view" data-view="certified">
+        <div class="page-head"><button class="back" data-go="market"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">TESLA CPO</span><h1>原廠認證中古車</h1></div></div>
+        <div class="certified-hero">
+          <span>TESLA 官方</span>
+          <h2>不轉貼過期庫存，直接看原廠現貨。</h2>
+          <p>Tesla 台灣認證中古車經 102 點檢測，原新車保固剩餘範圍仍適用，並另有 1 年或 20,000 公里中古車有限保固，以先到者為準。</p>
+        </div>
+        <button class="external-btn" data-url="https://www.tesla.com/zh_TW/inventory/used/m3">查看 Tesla 認證中古現貨<svg><use href="#i-external"/></svg></button>
+        <button class="external-btn secondary" data-url="https://www.tesla.com/zh_tw/support/certified-pre-owned">認證中古車官方說明<svg><use href="#i-external"/></svg></button>
+        <button class="external-btn secondary" data-url="https://www.tesla.com/zh_tw/support/trade-ins">Tesla 換購／舊車估價<svg><use href="#i-external"/></svg></button>
+      </section>
+
+      <section class="view" data-view="services">
+        <div class="page-head"><button class="back" data-go="market"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">SERVICES</span><h1>優質服務</h1></div></div>
+        <div class="partner-hero"><span>店家招募中</span><h2>先求實用，再談曝光。</h2><p>輪胎、維修、包膜、隔熱紙、保險、貸款、道路救援等都可申請；合作或贊助會清楚標示。</p></div>
+        <button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=service.yml">申請成為合作服務</button>
+        <div id="serviceList" class="market-list"></div>
+      </section>
+
+      <section class="view" data-view="tesla-db">
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">TESLA DATABASE</span><h1>Tesla 車系比較</h1></div></div>
+        <p class="notice strong">現行台灣車款以 Tesla 台灣官網可確認資料為主；沒有確認到的欄位不硬填。</p>
+        <div class="filter-row" id="modelFilter"><button class="active" data-model-filter="all">全部</button><button data-model-filter="Model 3">Model 3</button><button data-model-filter="Model Y">Model Y</button></div>
+        <div id="modelList" class="model-list"></div>
+        <div id="compareTray" class="compare-tray" hidden>
+          <div><span>比較</span><b id="compareCount">0 / 3</b></div>
+          <button id="clearCompare">清除</button>
+          <button class="go" id="openCompare">開始比較</button>
+        </div>
+        <div id="compareResult"></div>
       </section>
 
       <section class="view" data-view="partners">
