@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { requestToken, fetchTdxPages, withOneAuthRefresh } from "../src/tdx.js";
+import { AppError } from "../src/errors.js";
 
 const env={
   TDX_CLIENT_ID:"client",
@@ -102,6 +103,27 @@ describe("TDX data client", () => {
       env,token:"t",path:"/v2/Road/Traffic/Live/Freeway",
       fetchImpl:async()=>new Response("<html>",{status:200})
     })).rejects.toMatchObject({code:"UPSTREAM_SCHEMA_INVALID"});
+  });
+});
+
+describe("resumable pagination", () => {
+  it("returns saved progress instead of discarding completed pages when the rolling budget pauses collection", async () => {
+    let reservations=0;
+    const pages=[];
+    const result=await fetchTdxPages({
+      env,token:"t",path:"/v1/Parking/OffStreet/CarPark/City/Tainan",
+      yieldOnBudget:true,
+      beforeRequest:()=>{
+        reservations++;
+        if(reservations>1) throw new AppError(503,"BUDGET_EXHAUSTED","pause",{retryAfterSeconds:60});
+      },
+      onPage:(page)=>pages.push(page),
+      fetchImpl:async()=>Response.json(Array.from({length:1000},(_,i)=>({CarParkID:String(i)})))
+    });
+    expect(result).toMatchObject({complete:false,nextPage:1,retryAfterSeconds:60});
+    expect(pages).toHaveLength(1);
+    expect(pages[0].page).toBe(0);
+    expect(pages[0].items).toHaveLength(1000);
   });
 });
 
