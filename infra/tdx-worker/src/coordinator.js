@@ -261,6 +261,19 @@ export class TdxCoordinator extends DurableObject {
     }
   }
 
+  async refreshOnce(kind, scope, upstream, ttl) {
+    const key = upstream.key;
+    const existing = this.inflight.get(key);
+    if (existing) return existing;
+
+    const task = this.refresh(kind, scope, upstream, ttl)
+      .finally(() => {
+        if (this.inflight.get(key) === task) this.inflight.delete(key);
+      });
+    this.inflight.set(key, task);
+    return task;
+  }
+
   async getResource({ kind, scope, upstream, ttl }) {
     const row = this.loadSnapshot(upstream.key);
     const state = classifySnapshot(row);
