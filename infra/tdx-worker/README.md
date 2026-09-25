@@ -19,6 +19,10 @@ Cache API 只作區域性 edge cache，不當全域一致性資料庫。
 
 同一資料 key 在快取剛過期時會合併併發 refresh，避免多個使用者同時觸發重複 TDX 回源。 靜態資料會沿用完整 fresh TTL，減少不必要的 Durable Object 請求；動態資料則以 5 分鐘為主，優先保護 TDX 免費額度。
 
+## 前端接入
+
+正式切換條件、狀態降級與 HTTP 錯誤契約請見 `FRONTEND_INTEGRATION.md`。在真實 staging 驗證完成前，不切換既有 COLA GO UI。
+
 ## API
 
 - `GET /api/v1/health`
