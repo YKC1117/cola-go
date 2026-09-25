@@ -5,6 +5,7 @@ on:
     branches:
       - temp/carkit-shortcut-sign
     paths:
+      - "carkit-sign/**"
       - ".github/workflows/carkit-ios-sim.yml"
 
 jobs:
