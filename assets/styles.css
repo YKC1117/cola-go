@@ -349,3 +349,9 @@ body{background:radial-gradient(circle at 50% -8%,#283443 0,#0b1017 34%,#070a0e 
 .route-tag,.location-card .area,.community-card .badges span,.specs span,.charging-source-chip,.parking-static-chip{background:#1b2430;color:#aeb8c2}
 .partner-hero,.community-hero,.certified-hero,.roadside-card{background:linear-gradient(145deg,#19232d,#111821)}
 @media (min-width:600px){.app-shell{border-color:#27313d}}
+
+.feedback-card{margin-top:26px;padding:22px;border-radius:22px;background:linear-gradient(145deg,#1b252f,#101720);border:1px solid #ffffff10;box-shadow:0 14px 34px #0003}
+.feedback-card h2{font-size:20px;line-height:1.35;margin:7px 0 8px;letter-spacing:-.035em}
+.feedback-card p{font-size:13px;line-height:1.7;color:var(--muted);margin:0 0 17px}
+.feedback-line{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:13px 15px;border-radius:14px;background:#06c755;color:white;text-decoration:none;font-size:14px;font-weight:750;box-shadow:0 9px 22px #06c75525}
+.feedback-line svg{width:18px;height:18px}
