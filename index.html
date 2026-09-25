@@ -73,7 +73,7 @@
           </button>
           <button data-go="parking">
             <span class="core-icon"><svg><use href="#i-park"/></svg></span>
-            <span><b>停車</b><small>即時空位</small></span>
+            <span><b>停車</b><small>全台搜尋</small></span>
           </button>
           <button data-go="highway">
             <span class="core-icon"><svg><use href="#i-road"/></svg></span>
@@ -116,9 +116,9 @@
         <section class="section compact-section">
           <div class="section-head clean-head"><div><h2>快速出發</h2></div><button class="text-link" data-go="trip">更多</button></div>
           <div class="quick-trips">
-            <button data-fill-route="台南|東山"><b>東山</b><small>台南出發</small></button>
-            <button data-fill-route="台南|嘉義"><b>嘉義</b><small>台南出發</small></button>
-            <button data-fill-route="台南|台北"><b>台北</b><small>台南出發</small></button>
+            <button data-go="trip"><b>規劃路線</b><small>自行輸入起點與目的地</small></button>
+            <button data-go="parking"><b>找停車</b><small>全台停車快速搜尋</small></button>
+            <button data-go="charging"><b>找充電</b><small>充電站與服務區</small></button>
           </div>
         </section>
 
@@ -140,7 +140,7 @@
         <div class="route-form">
           <label><small>起點</small><input id="tripFrom" placeholder="目前位置或輸入起點"></label>
           <label><small>目的地</small><input id="tripTo" placeholder="輸入目的地"></label>
-          <div class="route-chips"><button data-route="台南|東山">台南 → 東山</button><button data-route="台南|嘉義">台南 → 嘉義</button><button data-route="台南|台北">台南 → 台北</button></div>
+          <div class="route-chips"><span>不預設任何私人起點或常用路線</span></div>
           <button class="primary" id="planTripBtn">整理沿途資訊<svg><use href="#i-arrow"/></svg></button>
         </div>
         <div id="tripResult"></div>
@@ -180,16 +180,31 @@
       </section>
 
       <section class="view" data-view="parking">
-        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">PARKING</span><h1>停車</h1></div></div>
-        <div class="live-source-head">
-          <div><span class="mini-label">TAINAN LIVE</span><h2>臺南即時剩餘車位</h2></div>
-          <span class="updated" id="parkingLiveTime">等待同步</span>
+        <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">TAIWAN PARKING</span><h1>全台停車</h1></div></div>
+
+        <div class="parking-actions">
+          <button id="parkingNearbyGoogle"><span><b>找附近停車</b><small>Google Maps</small></span><svg><use href="#i-external"/></svg></button>
+          <button id="parkingNearbyApple"><span><b>找附近停車</b><small>Apple 地圖</small></span><svg><use href="#i-external"/></svg></button>
         </div>
+
+        <div class="parking-scope">
+          <label><span>縣市</span><select id="parkingCitySelect"><option value="all">全台灣</option><option value="Taipei">臺北市</option><option value="NewTaipei">新北市</option><option value="Taoyuan">桃園市</option><option value="Taichung">臺中市</option><option value="Tainan">臺南市</option><option value="Kaohsiung">高雄市</option><option value="Keelung">基隆市</option><option value="Hsinchu">新竹市</option><option value="HsinchuCounty">新竹縣</option><option value="MiaoliCounty">苗栗縣</option><option value="ChanghuaCounty">彰化縣</option><option value="NantouCounty">南投縣</option><option value="YunlinCounty">雲林縣</option><option value="Chiayi">嘉義市</option><option value="ChiayiCounty">嘉義縣</option><option value="PingtungCounty">屏東縣</option><option value="YilanCounty">宜蘭縣</option><option value="HualienCounty">花蓮縣</option><option value="TaitungCounty">臺東縣</option><option value="PenghuCounty">澎湖縣</option><option value="KinmenCounty">金門縣</option><option value="LienchiangCounty">連江縣</option></select></label>
+          <div class="parking-scope-copy">
+            <b id="parkingScopeTitle">全台灣</b>
+            <small id="parkingScopeStatus">22 縣市皆可搜尋與導航</small>
+          </div>
+        </div>
+
         <label class="inline-search parking-search"><svg><use href="#i-search"/></svg><input id="parkingSearch" type="search" placeholder="搜尋停車場、行政區、地址"></label>
-        <p class="notice">臺南市政府交通局公開資料會直接顯示官方剩餘格位；沒有取得即時資料時不顯示假空位。</p>
+        <p class="notice">COLA GO 以全台灣為範圍。官方有即時剩餘車位時才顯示即時數字；沒有即時資料時仍提供停車場資訊與地圖導航，不顯示假空位。</p>
+
+        <div id="parkingCityGrid" class="parking-city-grid"></div>
+
+        <div class="live-source-head parking-result-head">
+          <div><span class="mini-label">OFFICIAL DATA</span><h2 id="parkingResultTitle">全台停車</h2></div>
+          <span class="updated" id="parkingLiveTime">選擇縣市查看</span>
+        </div>
         <div id="liveParkingList" class="parking-live-list"></div>
-        <div class="section-head parking-other-head"><div><span class="mini-label">OTHER SOURCES</span><h2>其他縣市</h2></div></div>
-        <div class="list" id="parkingCities"></div>
       </section>
 
       <section class="view" data-view="highway">

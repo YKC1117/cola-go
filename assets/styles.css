@@ -289,3 +289,25 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .charging-status-line span{font-size:11px;color:var(--ink);font-weight:600}
 .charging-status-line small{font-size:11px;color:var(--muted)}
 @media(max-width:380px){.charging-actions{grid-template-columns:1fr}.charging-actions button{min-height:58px}.charging-filter-grid{grid-template-columns:1fr}}
+
+.parking-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.parking-actions button{min-height:64px;padding:12px 13px;border:1px solid var(--line);border-radius:14px;background:var(--card);display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left}
+.parking-actions b{display:block;font-size:13px;font-weight:650}
+.parking-actions small{display:block;font-size:11px;color:var(--muted);margin-top:4px}
+.parking-actions svg{width:17px;height:17px;color:var(--muted)}
+.parking-scope{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:end;padding:14px 0 16px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.parking-scope label span{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+.parking-scope select{width:100%;min-height:44px;border:0;background:transparent;font-size:15px;font-weight:600}
+.parking-scope-copy{text-align:right}
+.parking-scope-copy b{display:block;font-size:14px;font-weight:650}
+.parking-scope-copy small{display:block;font-size:11px;line-height:1.45;color:var(--muted);margin-top:4px}
+.parking-city-grid{display:flex;gap:7px;overflow-x:auto;padding:2px 0 12px;margin:2px 0 8px;scrollbar-width:none}
+.parking-city-grid::-webkit-scrollbar{display:none}
+.parking-city-grid button{flex:none;min-height:40px;padding:8px 11px;border:1px solid var(--line);border-radius:99px;background:var(--card);font-size:12px;font-weight:600;white-space:nowrap}
+.parking-city-grid button.active{background:var(--ink);color:white;border-color:var(--ink)}
+.parking-result-head{margin-top:12px}
+.parking-national-intro{padding:24px 0 8px}
+.parking-national-intro>b{display:block;font-size:17px;font-weight:650}
+.parking-national-intro p{font-size:13px;line-height:1.75;color:var(--muted);margin:8px 0 16px}
+.parking-static-chip{flex:none;border-radius:99px;background:var(--soft);color:var(--muted);font-size:11px;padding:6px 8px}
+@media(max-width:380px){.parking-scope{grid-template-columns:1fr}.parking-scope-copy{text-align:left}.parking-actions{grid-template-columns:1fr}}
