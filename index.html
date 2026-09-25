@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0b1017">
+  <meta name="theme-color" content="#ef1828">
   <meta name="description" content="COLA GO｜台灣車友出行工具。路線、停車、充電、國道路況、CCTV 與車主工具。">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="COLA GO">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/logo.svg" type="image/svg+xml">
@@ -55,12 +55,13 @@
 
     <main>
       <section class="view active" data-view="home">
+        <div class="cola-road-hero" aria-hidden="true"><span class="road-glow"></span><span class="road-line road-line-a"></span><span class="road-line road-line-b"></span></div>
         <div class="home-top">
           <div class="home-greeting">
             <div>
               <span class="eyebrow">DRIVE WITH COLA</span>
               <h1>今天要去哪？</h1>
-              <p>路線、停車、充電、路況，一次準備好。</p>
+              <p>探索、上路，更自由。</p>
             </div>
             <div class="cola-orbit" aria-hidden="true"><img src="./assets/logo.svg" alt=""></div>
           </div>
@@ -70,6 +71,11 @@
             <span><strong>搜尋目的地</strong><small>規劃路線、充電、停車與路況</small></span>
             <svg class="arrow"><use href="#i-arrow"/></svg>
           </button>
+        </div>
+
+        <div class="drive-strip" aria-label="COLA GO 快速狀態">
+          <span><i></i>READY TO GO</span>
+          <b>出發前 10 秒，一次看完</b>
         </div>
 
         <section class="core-actions" aria-label="主要功能">
