@@ -15,7 +15,9 @@ Durable Object 名稱固定使用 `global`，集中處理：
 - 最後成功 snapshot
 - fresh / stale / unavailable 狀態
 
-Cache API 只作區域性 edge cache，不當全域一致性資料庫。 靜態資料會沿用完整 fresh TTL，減少不必要的 Durable Object 請求；動態資料則以 5 分鐘為主，優先保護 TDX 免費額度。
+Cache API 只作區域性 edge cache，不當全域一致性資料庫。
+
+同一資料 key 在快取剛過期時會合併併發 refresh，避免多個使用者同時觸發重複 TDX 回源。 靜態資料會沿用完整 fresh TTL，減少不必要的 Durable Object 請求；動態資料則以 5 分鐘為主，優先保護 TDX 免費額度。
 
 ## API
 
@@ -31,6 +33,17 @@ Cache API 只作區域性 edge cache，不當全域一致性資料庫。 靜態�
 - `GET /api/v1/freeway/live`
 - `GET /api/v1/freeway/cctv`
 - `GET /api/v1/tunnel/xueshan/live`
+
+簡化相容入口（COLA GO 前端可直接採用）：
+- `GET /api/parking/:city/lots`
+- `GET /api/parking/:city/availability`
+- `GET /api/ev/:city/stations`
+- `GET /api/ev/:city/connectors`
+- `GET /api/ev/:city/status`
+- `GET /api/highway/traffic`
+- `GET /api/highway/cctv`
+
+既有 `/api/v1/...` 路由保留，不需重做現有整合。
 
 所有資料路由支援：
 - `limit=1..1000`
