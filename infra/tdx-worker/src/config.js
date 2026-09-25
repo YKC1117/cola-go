@@ -34,7 +34,7 @@ export const CAPABILITIES = {
   },
   charging: {
     city: EV_CITY_CITIES,
-    additionalScopes: ["freeway","tourism","port:TIPC","airport:CAA","airport:TAC","rail:TRA"]
+    additionalScopes: []
   },
   freeway: {
     sections: true,
