@@ -42,3 +42,22 @@ describe("route validation", () => {
     expect(upstreamSpec(route).path).toBe("/v2/Road/Traffic/CCTV/Freeway");
   });
 });
+
+
+describe("COLA GO simple route aliases", () => {
+  it("supports the simplified COLA GO aliases", () => {
+    const parking = matchRoute(new URL("https://api.example/api/parking/Tainan/lots"));
+    expect(parking.kind).toBe("parkingBasic");
+    expect(upstreamSpec(parking).path).toBe("/v1/Parking/OffStreet/CarPark/City/Tainan");
+
+    const ev = matchRoute(new URL("https://api.example/api/ev/Kaohsiung/status"));
+    expect(ev.kind).toBe("chargingAvailability");
+    expect(upstreamSpec(ev).path).toBe("/v1/EV/ConnectorLiveStatus/City/Kaohsiung");
+
+    const traffic = matchRoute(new URL("https://api.example/api/highway/traffic"));
+    expect(traffic.kind).toBe("freewayLive");
+
+    const cctv = matchRoute(new URL("https://api.example/api/highway/cctv"));
+    expect(cctv.kind).toBe("freewayCctv");
+  });
+});
