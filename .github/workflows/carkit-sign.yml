@@ -81,13 +81,15 @@ jobs:
           assert len(questions)==len(vehicle_action_indexes), (
               len(questions), len(vehicle_action_indexes)
           )
-          assert len(questions) <= 20, f"too many vehicle setup questions: {len(questions)}"
+          assert len(questions) == 15, f"Tesla v0.7 requires exactly 15 vehicle setup questions: {len(questions)}"
           for q in questions:
               assert q.get("Category")=="Parameter", q
               assert q.get("ParameterKey")=="vehicle", q
               assert "DefaultValue" not in q, "public shortcut must not embed a donor/default Tesla"
               idx=q.get("ActionIndex")
-              assert isinstance(idx,int) and idx in vehicle_action_indexes, q
+              assert isinstance(idx,int) and not isinstance(idx,bool), q
+              assert 0 <= idx < len(actions), q
+              assert idx in vehicle_action_indexes, q
               target=actions[idx]
               assert target.get("WFWorkflowActionParameters",{}).get("vehicle")=={
                   "Value":{"Type":"Ask"},
@@ -113,16 +115,44 @@ jobs:
           }
           ask={"Value":{"Type":"Ask"},"WFSerializationType":"WFTextTokenAttachment"}
 
+          expected_intent_counts={
+              "PreconditionIntent":2,
+              "HVACSetTempIntent":3,
+              "LockUnlockIntent":2,
+              "FrontTrunkIntent":1,
+              "RearTrunkIntent":1,
+              "ChargeLimitIntent":2,
+              "ChargePortIntent":1,
+              "FlashLightIntent":1,
+              "DefrostIntent":2,
+              "HVACSeatHeaterIntent":2,
+              "VentIntent":1,
+              "CloseWindowIntent":1,
+              "SentryModeIntent":1,
+          }
+          actual_intent_counts={k:0 for k in expected_intent_counts}
+          vehicle_required=evidenced-{"ChargeLimitIntent","FlashLightIntent","HVACSeatHeaterIntent"}
           for a in actions:
               ident=a.get("WFWorkflowActionIdentifier","")
               p=a.get("WFWorkflowActionParameters",{})
               if ident.startswith(bundle+"."):
                   intent=ident.split(".")[-1]
                   assert intent in evidenced, f"unsupported/unproven Tesla intent: {intent}"
+                  actual_intent_counts[intent]=actual_intent_counts.get(intent,0)+1
+                  descriptor=p.get("AppIntentDescriptor")
+                  assert isinstance(descriptor,dict), f"{intent}: missing AppIntentDescriptor"
+                  assert descriptor.get("TeamIdentifier")=="PS9EBAM2PU", f"{intent}: donor TeamIdentifier mismatch"
+                  assert descriptor.get("BundleIdentifier")==bundle, f"{intent}: donor BundleIdentifier mismatch"
+                  assert descriptor.get("AppIntentIdentifier")==intent, f"{intent}: descriptor/outer intent mismatch"
+                  assert ident==f"{bundle}.{descriptor['AppIntentIdentifier']}", f"{intent}: outer identifier mismatch"
                   if intent in {"ChargeLimitIntent","FlashLightIntent","HVACSeatHeaterIntent"}:
                       assert "vehicle" not in p, f"{intent}: invented vehicle parameter"
-                  elif "vehicle" in p:
+                  else:
+                      assert "vehicle" in p, f"{intent}: required donor vehicle parameter missing"
                       assert p["vehicle"] == ask, f"{intent}: vehicle is not runtime Ask candidate"
+          assert actual_intent_counts==expected_intent_counts, (actual_intent_counts,expected_intent_counts)
+          assert sum(actual_intent_counts.values())==20, actual_intent_counts
+          assert len(vehicle_action_indexes)==15, vehicle_action_indexes
 
           # Tesla iOS automation must not pretend Bluetooth Disconnect exists.
           # iOS 27 exposes Bluetooth connect only; parked-car location is supplied
@@ -164,23 +194,100 @@ jobs:
                   sensitive.append((i,ident))
           assert sensitive, "no sensitive actions found"
           assert len(sensitive)==3, f"sensitive Tesla actions duplicated: {sensitive}"
+          def named_variable_from_condition(p):
+              try:
+                  v=p["WFInput"]["Variable"]["Value"]
+                  if v.get("Type")=="Variable":
+                      return v.get("VariableName")
+              except (KeyError,TypeError):
+                  pass
+              return None
+
+          def branch_bounds(group):
+              start=end=None
+              for j,x in enumerate(actions):
+                  p=x.get("WFWorkflowActionParameters",{})
+                  if p.get("GroupingIdentifier")!=group:
+                      continue
+                  if p.get("WFControlFlowMode")==0: start=j
+                  if p.get("WFControlFlowMode")==2: end=j
+              return start,end
+
           for i,ident in sensitive:
-              recent=actions[max(0,i-80):i]
+              enclosing_yes=[]
+              for j,x in enumerate(actions[:i]):
+                  if x.get("WFWorkflowActionIdentifier")!="is.workflow.actions.conditional":
+                      continue
+                  p=x.get("WFWorkflowActionParameters",{})
+                  if p.get("WFControlFlowMode")!=0 or p.get("WFCondition")!=4:
+                      continue
+                  if p.get("WFConditionalActionString")!="YES":
+                      continue
+                  if named_variable_from_condition(p)!="SensitiveConfirmed":
+                      continue
+                  group=p.get("GroupingIdentifier")
+                  start,end=branch_bounds(group)
+                  if start is not None and end is not None and start < i < end:
+                      enclosing_yes.append((start,end,group))
+              assert len(enclosing_yes)==1, f"{ident} at {i}: not uniquely inside SensitiveConfirmed == YES branch"
+              gate_start,gate_end,_=enclosing_yes[0]
+              recent=actions[max(0,gate_start-70):gate_start]
               prompts=[
-                  x.get("WFWorkflowActionParameters",{}).get("WFAskActionPrompt","")
-                  for x in recent
+                  (j,x.get("WFWorkflowActionParameters",{}).get("WFAskActionPrompt",""),
+                   x.get("WFWorkflowActionParameters",{}).get("UUID"))
+                  for j,x in enumerate(actions[max(0,gate_start-70):gate_start],start=max(0,gate_start-70))
                   if x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.ask"
               ]
+              prompts=[x for x in prompts if all(word in x[1] for word in ["確認","確定","是"])]
+              assert prompts, f"{ident} at {i}: missing explicit confirmation prompt"
+              ask_index,_,ask_uuid=prompts[-1]
+
+              # Confirmation flag must be reset to NO before this ask.
+              init_ok=False
+              for j in range(max(0,ask_index-12),ask_index):
+                  x=actions[j]
+                  p=x.get("WFWorkflowActionParameters",{})
+                  if x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.setvariable" and p.get("WFVariableName")=="SensitiveConfirmed":
+                      src=p.get("WFInput",{}).get("Value",{}).get("OutputUUID")
+                      if src:
+                          for prev in actions[max(0,j-3):j]:
+                              pp=prev.get("WFWorkflowActionParameters",{})
+                              if pp.get("UUID")==src and pp.get("WFTextActionText")=="NO":
+                                  init_ok=True
+              assert init_ok, f"{ident} at {i}: SensitiveConfirmed not reset to NO"
+
+              # Only the three exact accepted words may write YES, and every
+              # accepted condition must read this confirmation Ask output.
+              yes_setters=[]
+              accepted=set()
+              for j in range(ask_index+1,gate_start):
+                  x=actions[j]
+                  p=x.get("WFWorkflowActionParameters",{})
+                  if x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.conditional" and p.get("WFControlFlowMode")==0:
+                      word=p.get("WFConditionalActionString")
+                      if word in {"確認","確定","是"}:
+                          assert p.get("WFCondition")==4
+                          try:
+                              v=p["WFInput"]["Variable"]["Value"]
+                              assert v.get("Type")=="ActionOutput" and v.get("OutputUUID")==ask_uuid
+                          except (KeyError,TypeError):
+                              raise AssertionError(f"{ident}: confirmation condition reads wrong input")
+                          accepted.add(word)
+                  if x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.setvariable" and p.get("WFVariableName")=="SensitiveConfirmed":
+                      src=p.get("WFInput",{}).get("Value",{}).get("OutputUUID")
+                      value=None
+                      for prev in actions[max(0,j-3):j]:
+                          pp=prev.get("WFWorkflowActionParameters",{})
+                          if pp.get("UUID")==src:
+                              value=pp.get("WFTextActionText")
+                      if value=="YES":
+                          yes_setters.append(j)
+              assert accepted=={"確認","確定","是"}, f"{ident}: confirmation words changed: {accepted}"
+              assert len(yes_setters)==3, f"{ident}: expected three YES normalizers, got {yes_setters}"
               assert any(
-                  all(word in prompt for word in ["確認","確定","是"])
-                  for prompt in prompts
-              ), f"{ident} at {i}: missing explicit confirmation prompt"
-              assert any(
-                  x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.conditional"
-                  and x.get("WFWorkflowActionParameters",{}).get("WFCondition")==4
-                  and x.get("WFWorkflowActionParameters",{}).get("WFConditionalActionString")=="YES"
-                  for x in recent
-              ), f"{ident} at {i}: missing SensitiveConfirmed YES gate"
+                  x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.exit"
+                  for x in actions[i+1:gate_end]
+              ), f"{ident}: sensitive YES branch must exit after physical action"
 
           # Donor-proven enum handling. Keep unresolved enums on Ask; only promote
           # a fixed value when a public native donor proves it.
