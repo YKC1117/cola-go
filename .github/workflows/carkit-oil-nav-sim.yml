@@ -161,12 +161,30 @@ jobs:
           fi
           sleep 6
 
-          open_shortcut_retry "%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
-          describe_retry /tmp/oil-nav-probe/editor.json
-          run_idb idb ui tap "play" --udid "$UDID"
-          sleep 2
+          # Run the shortcut for real. Opening it in the editor and tapping
+          # Play is not a reliable runtime signal on iOS 26 Simulator.
+          xcrun simctl openurl "$UDID" "shortcuts://run-shortcut?name=%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
+          sleep 3
 
           describe_retry /tmp/oil-nav-probe/main-menu.json
+          python3 - <<'PY'
+          import json
+          data=json.load(open("/tmp/oil-nav-probe/main-menu.json"))
+          vals=[]
+          def walk(v):
+              if isinstance(v,dict):
+                  for k in ("AXLabel","AXValue"):
+                      x=v.get(k)
+                      if isinstance(x,str): vals.append(x)
+                  for x in v.values(): walk(x)
+              elif isinstance(v,list):
+                  for x in v: walk(x)
+          walk(data)
+          assert "導航" in vals, vals[:120]
+          assert "神盾" in vals, vals[:120]
+          assert not any("Choose from menu with" in x for x in vals), vals[:120]
+          print("RUNTIME_MAIN_MENU=PASS")
+          PY
           tap_frame /tmp/oil-nav-probe/main-menu.json "導航"
           sleep 1
 
