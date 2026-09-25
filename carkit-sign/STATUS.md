@@ -1,6 +1,6 @@
 # CarKit TW Shortcut Status
 
-Updated: 2026-09-24
+Updated: 2026-09-25
 
 Branch: `temp/carkit-shortcut-sign`
 
@@ -58,6 +58,7 @@ Tesla actions whose donors contain a Vehicle AppEntity currently use Apple `Ask`
 Known donor exceptions:
 - `ChargeLimitIntent`: donor has no `vehicle` parameter.
 - `FlashLightIntent`: donor has no `vehicle` parameter.
+- `HVACSeatHeaterIntent`: donor has no `vehicle` parameter.
 
 These exceptions must remain unchanged until a newer native donor proves otherwise.
 
@@ -94,9 +95,10 @@ Sensitive Tesla commands:
 - unlock
 - front trunk
 - rear trunk
-- horn (when native donor is eventually added)
 
 must require independent explicit confirmation.
+
+Horn remains unsupported because no accepted native donor structure has been verified.
 
 Real Siri voice-dialog behavior remains NOT RUN without an iPhone Siri runtime.
 
@@ -200,10 +202,17 @@ Public-release consequence:
 
 ## iOS Simulator import evidence
 
-GitHub Actions Run #7 (CarKit iOS Simulator Probe):
-- signed Oil shortcut: Add Shortcut page visible -> Add Shortcut -> editor visible: PASS
-- signed Tesla shortcut: Add Shortcut page visible -> Add Shortcut -> editor visible: PASS
-- Shortcuts app accepted both AEA1 files: PASS
-- Tesla AppIntent execution: NOT RUN because the stock Simulator does not contain Tesla.app
-- Tesla logs explicitly report com.teslamotors.TeslaApp missing from linkd / LaunchServices, which is treated as an environment limitation rather than a shortcut-format failure
-- Tesla vehicle import picker: NOT RUN because Tesla AppEntity metadata is unavailable without the Tesla app
+Latest candidate evidence:
+- CarKit Shortcut Build Run #57 (commit e143f3a): PASS.
+- Tesla generated structure: 20 native Tesla AppIntent instances, including exactly 15 vehicle-backed actions and exactly 15 Vehicle Import Questions: PASS.
+- plist / semantic / privacy / safety validation: PASS.
+- shortcut signing and AEA1 header checks: PASS.
+- CarKit iOS Simulator Probe Run #16 (commit c97ab5e): SUCCESS.
+- signed Oil shortcut: native Add Shortcut flow -> editor -> independent reopen by name: PASS.
+- signed Tesla shortcut: native Add Shortcut flow -> editor -> independent reopen by name: PASS.
+- Simulator import PASS proves signed-file/import/editor compatibility only; it does not prove Tesla vehicle runtime.
+- Tesla AppIntent runtime: NOT RUN because the stock Simulator cannot establish real Tesla App behavior.
+- Tesla Vehicle AppEntity picker: NOT RUN because real Tesla App/AppEntity metadata and account context require a physical Apple/Tesla environment.
+- Physical iPhone import, vehicle selection/persistence, single/multi-car consistency, Ask fallback, Siri/lock-screen execution, real Tesla controls, Apple Watch, Škoda CarPlay, and Tesla Bluetooth remain NOT RUN.
+
+Current classification: program-side RC candidate; not a final public release.
