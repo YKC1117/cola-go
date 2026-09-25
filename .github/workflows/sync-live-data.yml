@@ -7,7 +7,7 @@ on:
       - "scripts/sync_traffic.py"
       - ".github/workflows/sync-live-data.yml"
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/30 * * * *"
 
 permissions:
   contents: write
