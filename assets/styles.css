@@ -503,3 +503,24 @@ select option{background:#11151b;color:#fff}
 .search-destination{position:relative;z-index:4;margin-top:4px;min-height:88px;border-radius:24px}
 .core-actions{position:relative;z-index:4}
 @media(max-width:430px){.cola-road-hero{height:410px}.concept-wordmark{padding-top:14px}.home-greeting h1{font-size:38px}.hero-car{width:140px;right:-25px;bottom:48px}}
+
+/* V3 visual departure cards + stronger feature tiles */
+.scenic-trips{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+.scenic-trips .trip-card{position:relative;min-height:142px!important;padding:0!important;overflow:hidden;border-radius:18px!important;text-align:left;background:#101319!important}
+.trip-art{display:block;position:relative;height:82px;overflow:hidden;background:linear-gradient(180deg,#8d2730,#18080c 58%,#090b0e)}
+.trip-art::before{content:"";position:absolute;left:-8%;right:-8%;bottom:12px;height:55px;background:#0b0d10;clip-path:polygon(0 80%,14% 42%,28% 65%,45% 20%,61% 64%,76% 34%,100% 70%,100% 100%,0 100%)}
+.trip-art::after{content:"";position:absolute;left:39%;right:39%;bottom:-18px;height:64px;background:#2c2d31;clip-path:polygon(42% 0,58% 0,100% 100%,0 100%);box-shadow:0 0 18px #ef182838}
+.trip-art i{position:absolute;z-index:2;left:50%;bottom:2px;width:2px;height:28px;background:#f6e9dc9e;transform:translateX(-50%)}
+.trip-park .trip-art{background:linear-gradient(180deg,#22435b,#0c1921 62%,#090b0e)}
+.trip-park .trip-art::before{clip-path:polygon(0 62%,18% 45%,31% 58%,50% 33%,68% 55%,84% 40%,100% 62%,100% 100%,0 100%)}
+.trip-charge .trip-art{background:linear-gradient(180deg,#553166,#180d22 60%,#090b0e)}
+.scenic-trips b,.scenic-trips small{display:block;padding-left:11px;padding-right:8px}.scenic-trips b{padding-top:9px;font-size:14px}.scenic-trips small{padding-top:2px;font-size:9px;line-height:1.25;color:#858d98}
+.core-actions button{min-height:112px!important;padding:15px!important;border-radius:20px!important}
+.core-actions .core-icon{width:48px;height:48px;display:grid;place-items:center}.core-actions .core-icon svg{width:27px;height:27px}
+.core-actions button:nth-child(2){background:linear-gradient(145deg,#173c71,#0d1829)}
+.core-actions button:nth-child(3){background:linear-gradient(145deg,#285f32,#102217)}
+.core-actions button:nth-child(4){background:linear-gradient(145deg,#563083,#1c102b)}
+.core-actions button:nth-child(2) .core-icon{background:#2879db2d;color:#65aaff}
+.core-actions button:nth-child(3) .core-icon{background:#4dc55b25;color:#75df7d}
+.core-actions button:nth-child(4) .core-icon{background:#9b59e82b;color:#bd7cff}
+@media(max-width:430px){.scenic-trips{grid-template-columns:repeat(3,minmax(0,1fr))!important}.scenic-trips .trip-card{min-height:138px!important}.trip-art{height:78px}.core-actions{gap:10px!important}.core-actions button{min-height:116px!important}}
