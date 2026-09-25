@@ -450,3 +450,19 @@ body{background:#050506}
 .view[data-view="charging"] .page-head,.view[data-view="parking"] .page-head{border-bottom-color:#ef18283b}
 .view[data-view="highway"] .page-head,.view[data-view="tunnel"] .page-head,.view[data-view="cctv"] .page-head{background:radial-gradient(circle at 85% 10%,#ef18283d,transparent 32%),linear-gradient(150deg,#190205,#080a0d 65%)}
 @media(min-width:600px){.view:not([data-view="home"])>.page-head{margin-left:-24px;margin-right:-24px;padding-left:24px;padding-right:24px;border-radius:0 0 26px 26px}.charging-actions{grid-template-columns:repeat(3,1fr)}.parking-actions{grid-template-columns:repeat(2,1fr)}}
+
+/* COLA Red Road — navigation + tactile polish */
+.bottom-nav{background:linear-gradient(180deg,#0b0d11f5,#07080afc);border-top:1px solid #ffffff10;box-shadow:0 -14px 38px #0008}
+.bottom-nav button{position:relative;color:#7f8792;font-weight:700}
+.bottom-nav button.active{color:#fff}
+.bottom-nav button.active::before{content:"";position:absolute;top:3px;left:50%;width:30px;height:3px;border-radius:8px;background:var(--cola-red-hot);transform:translateX(-50%);box-shadow:0 0 14px #ff3348}
+.bottom-nav button.active svg{color:var(--cola-red-hot)}
+.primary{background:linear-gradient(135deg,#f22938,#bd0713);box-shadow:0 12px 28px #ef182837;border:1px solid #ff69721f}
+.home-more,.more-list button,.quick-trips button{border:1px solid #ffffff0d;background:linear-gradient(145deg,#14181e,#0b0d11);box-shadow:0 9px 20px #0002}
+.home-camera{position:relative;overflow:hidden}
+.home-camera::after{content:"LIVE";position:absolute;right:14px;top:50%;transform:translateY(-50%);padding:4px 7px;border-radius:7px;background:#ef182820;color:#ff5360;font-size:9px;font-weight:900;letter-spacing:.1em}
+.notice{border-left:3px solid #ef1828;background:#ef18280d}
+.updated,.charging-source-chip{color:#ff6974}
+input,select,textarea{background:#11151b!important;color:#f7f7f7!important;border-color:#ffffff12!important}
+select option{background:#11151b;color:#fff}
+@media(prefers-reduced-motion:no-preference){.core-actions button,.quick-trips button,.home-more,.more-list button,.primary{transition:transform .16s ease,filter .16s ease}.core-actions button:active,.quick-trips button:active,.home-more:active,.more-list button:active,.primary:active{transform:scale(.975);filter:brightness(1.08)}}
