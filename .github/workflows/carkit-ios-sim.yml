@@ -385,14 +385,27 @@ jobs:
             return 1
           }
 
+          tap_frame_nav() {
+            local json_file="$1"
+            local label="$2"
+            local xy
+            xy="$(jq -r --arg l "$label" '[.. | objects | select(.AXLabel == $l and (.frame|type) == "object") | [((.frame.x + (.frame.width/2))|round), ((.frame.y + (.frame.height/2))|round)]][0] | @tsv' "$json_file")"
+            test -n "$xy"
+            read -r x y <<< "$xy"
+            echo "tap $label at $x,$y"
+            run_idb idb ui tap "$x" "$y" --udid "$UDID"
+          }
+
           # Prove the new navigation path reaches a real runtime destination
           # prompt instead of a missing-parameter sheet.
           open_shortcut_retry_nav "%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
           run_idb idb ui tap "play" --udid "$UDID"
           sleep 2
-          run_idb idb ui tap "導航" --udid "$UDID"
+          describe_retry /tmp/carkit-probe/oil-nav-main-menu.json
+          tap_frame_nav /tmp/carkit-probe/oil-nav-main-menu.json "導航"
           sleep 1
-          run_idb idb ui tap "Apple 地圖" --udid "$UDID"
+          describe_retry /tmp/carkit-probe/oil-nav-app-menu.json
+          tap_frame_nav /tmp/carkit-probe/oil-nav-app-menu.json "Apple 地圖"
           sleep 2
           describe_retry /tmp/carkit-probe/oil-navigation-prompt.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-navigation-prompt.png
