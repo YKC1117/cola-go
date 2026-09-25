@@ -146,9 +146,19 @@ jobs:
             sleep 2
           done
           sleep 4
-          describe_retry /tmp/oil-nav-probe/add.json
-          xcrun simctl io "$UDID" screenshot /tmp/oil-nav-probe/add.png
-          tap_frame /tmp/oil-nav-probe/add.json "Add Shortcut"
+          # The Add Shortcut sheet is a fullscreen native dialog and iOS
+          # Simulator sometimes exposes no accessibility tree at all. Capture
+          # evidence when possible, but use the previously measured stable
+          # button center as a fallback so this UI-driver limitation does not
+          # prevent the actual navigation-path test.
+          if describe_retry /tmp/oil-nav-probe/add.json; then
+            xcrun simctl io "$UDID" screenshot /tmp/oil-nav-probe/add.png
+            tap_frame /tmp/oil-nav-probe/add.json "Add Shortcut"
+          else
+            xcrun simctl io "$UDID" screenshot /tmp/oil-nav-probe/add.png || true
+            echo "Add Shortcut accessibility unavailable; using stable iPhone 17 Pro Max dialog coordinate"
+            run_idb idb ui tap 220 865 --udid "$UDID"
+          fi
           sleep 6
 
           open_shortcut_retry "%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
