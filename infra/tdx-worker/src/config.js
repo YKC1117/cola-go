@@ -17,12 +17,12 @@ export const EV_CITY_CITIES = ALL_CITIES.filter((city) => city !== "LienchiangCo
 
 export const TTL = {
   parkingBasic: { fresh: 86400, stale: 604800 },
-  parkingLive: { fresh: 60, stale: 600 },
+  parkingLive: { fresh: 300, stale: 900 },
   chargingStatic: { fresh: 86400, stale: 604800 },
-  chargingLive: { fresh: 60, stale: 300 },
+  chargingLive: { fresh: 300, stale: 900 },
   freewaySections: { fresh: 86400, stale: 604800 },
-  freewayLive: { fresh: 60, stale: 300 },
-  cctv: { fresh: 21600, stale: 604800 }
+  freewayLive: { fresh: 300, stale: 900 },
+  cctv: { fresh: 86400, stale: 604800 }
 };
 
 export const CAPABILITIES = {
