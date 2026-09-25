@@ -4,6 +4,15 @@ import {
 import { AppError } from "./errors.js";
 
 const ROUTES = [
+  // Simple public aliases used by COLA GO. Keep the versioned routes below for compatibility.
+  { pattern: /^\/api\/parking\/([^/]+)\/lots$/, kind: "parkingBasic", cityIndex: 1, cities: PARKING_BASIC_CITIES, ttl: TTL.parkingBasic },
+  { pattern: /^\/api\/parking\/([^/]+)\/availability$/, kind: "parkingLive", cityIndex: 1, cities: PARKING_LIVE_CITIES, ttl: TTL.parkingLive },
+  { pattern: /^\/api\/ev\/([^/]+)\/stations$/, kind: "chargingStations", cityIndex: 1, cities: EV_CITY_CITIES, ttl: TTL.chargingStatic },
+  { pattern: /^\/api\/ev\/([^/]+)\/connectors$/, kind: "chargingConnectors", cityIndex: 1, cities: EV_CITY_CITIES, ttl: TTL.chargingStatic },
+  { pattern: /^\/api\/ev\/([^/]+)\/status$/, kind: "chargingAvailability", cityIndex: 1, cities: EV_CITY_CITIES, ttl: TTL.chargingLive },
+  { pattern: /^\/api\/highway\/traffic$/, kind: "freewayLive", ttl: TTL.freewayLive },
+  { pattern: /^\/api\/highway\/cctv$/, kind: "freewayCctv", ttl: TTL.cctv },
+
   { pattern: /^\/api\/v1\/parking\/([^/]+)$/, kind: "parkingBasic", cityIndex: 1, cities: PARKING_BASIC_CITIES, ttl: TTL.parkingBasic },
   { pattern: /^\/api\/v1\/parking\/([^/]+)\/availability$/, kind: "parkingLive", cityIndex: 1, cities: PARKING_LIVE_CITIES, ttl: TTL.parkingLive },
   { pattern: /^\/api\/v1\/charging\/stations$/, kind: "chargingStations", scope: true, ttl: TTL.chargingStatic },
