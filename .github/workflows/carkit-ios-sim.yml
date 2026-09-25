@@ -268,6 +268,20 @@ jobs:
             done
             return 1
           }
+          open_shortcut_retry() {
+            local encoded_name="$1"
+            for attempt in 1 2 3; do
+              xcrun simctl launch "$UDID" com.apple.shortcuts || true
+              sleep 2
+              if xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=$encoded_name"; then
+                sleep 4
+                return 0
+              fi
+              echo "open-shortcut attempt $attempt failed; retrying"
+              sleep 2
+            done
+            return 1
+          }
           assert_menu() {
             local file="$1"
             local kind="$2"
@@ -300,11 +314,7 @@ jobs:
 
           # Tesla: run from the native editor's Play button and prove the
           # touch-first main menu appears before any Tesla AppIntent executes.
-          xcrun simctl terminate "$UDID" com.apple.shortcuts || true
-          xcrun simctl launch "$UDID" com.apple.shortcuts || true
-          sleep 2
-          xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=%E7%89%B9%E6%96%AF%E6%8B%89%E5%8A%A9%E6%89%8B"
-          sleep 5
+          open_shortcut_retry "%E7%89%B9%E6%96%AF%E6%8B%89%E5%8A%A9%E6%89%8B"
           run_idb idb ui tap "play" --udid "$UDID"
           sleep 3
           describe_retry /tmp/carkit-probe/tesla-play-menu.json
@@ -312,11 +322,7 @@ jobs:
           assert_menu /tmp/carkit-probe/tesla-play-menu.json tesla
 
           # Oil: independently prove the same menu-first interaction.
-          xcrun simctl terminate "$UDID" com.apple.shortcuts || true
-          xcrun simctl launch "$UDID" com.apple.shortcuts || true
-          sleep 2
-          xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
-          sleep 5
+          open_shortcut_retry "%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
           run_idb idb ui tap "play" --udid "$UDID"
           sleep 3
           describe_retry /tmp/carkit-probe/oil-play-menu.json
@@ -335,6 +341,20 @@ jobs:
           run_idb() {
             python3 -c 'import subprocess,sys; cmd=sys.argv[1:]; print("RUN_IDB "+repr(cmd),file=sys.stderr,flush=True); p=subprocess.run(cmd,timeout=30); raise SystemExit(p.returncode)' "$@"
           }
+          open_shortcut_retry_nav() {
+            local encoded_name="$1"
+            for attempt in 1 2 3; do
+              xcrun simctl launch "$UDID" com.apple.shortcuts || true
+              sleep 2
+              if xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=$encoded_name"; then
+                sleep 4
+                return 0
+              fi
+              echo "navigation open-shortcut attempt $attempt failed; retrying"
+              sleep 2
+            done
+            return 1
+          }
           describe_retry() {
             local out="$1"
             rm -f "$out"
@@ -349,11 +369,7 @@ jobs:
 
           # Prove the new navigation path reaches a real runtime destination
           # prompt instead of a missing-parameter sheet.
-          xcrun simctl terminate "$UDID" com.apple.shortcuts || true
-          xcrun simctl launch "$UDID" com.apple.shortcuts || true
-          sleep 2
-          xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
-          sleep 5
+          open_shortcut_retry_nav "%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
           run_idb idb ui tap "play" --udid "$UDID"
           sleep 2
           run_idb idb ui tap "導航" --udid "$UDID"
