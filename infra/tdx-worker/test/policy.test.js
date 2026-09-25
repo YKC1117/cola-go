@@ -80,15 +80,3 @@ describe("free-tier cache policy", () => {
   });
 });
 
-
-describe("free-tier cache policy", () => {
-  it("keeps live TTLs conservative enough to reduce upstream pressure", () => {
-    expect(TTL.parkingLive.fresh).toBeGreaterThanOrEqual(120);
-    expect(TTL.parkingLive.fresh).toBeLessThanOrEqual(300);
-    expect(TTL.chargingLive.fresh).toBeGreaterThanOrEqual(120);
-    expect(TTL.chargingLive.fresh).toBeLessThanOrEqual(300);
-    expect(TTL.freewayLive.fresh).toBeGreaterThanOrEqual(60);
-    expect(TTL.freewayLive.fresh).toBeLessThanOrEqual(300);
-    expect(TTL.cctv.fresh).toBe(86400);
-  });
-});
