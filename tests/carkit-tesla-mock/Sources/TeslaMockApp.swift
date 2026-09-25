@@ -13,7 +13,12 @@ struct VehicleEntity: AppEntity, Identifiable, Hashable {
     }
 }
 
-struct VehicleQuery: EntityQuery {
+// Use EntityStringQuery for the mock because Apple documents this as the query
+// used when people configure an AppEntity parameter in Shortcuts: initial
+// choices come from suggestedEntities(), and typed search uses entities(matching:).
+// EntityQuery alone should already support suggestedEntities(), but this stronger
+// conformance removes "missing searchable picker support" as a test-double variable.
+struct VehicleQuery: EntityStringQuery {
     private let all = [
         VehicleEntity(id: "mock-a", name: "測試車 A"),
         VehicleEntity(id: "mock-b", name: "測試車 B"),
@@ -26,14 +31,25 @@ struct VehicleQuery: EntityQuery {
     func suggestedEntities() async throws -> [VehicleEntity] {
         all
     }
+
+    func entities(matching string: String) async throws -> [VehicleEntity] {
+        let query = string.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return all }
+        return all.filter { $0.name.localizedCaseInsensitiveContains(query) }
+    }
 }
 
 struct FrontTrunkIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Front Trunk"
     static let description = IntentDescription("CarKit test-only mock Tesla intent.")
+    static let openAppWhenRun = false
 
     @Parameter(title: "Vehicle")
     var vehicle: VehicleEntity
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Open front trunk on \(.$vehicle)")
+    }
 
     func perform() async throws -> some IntentResult {
         .result()
@@ -58,9 +74,7 @@ struct TeslaMockApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
-            Text("CarKit Tesla AppIntent test double")
-                .padding()
-        }
+        Text("CarKit Tesla AppIntent test double")
+            .padding()
     }
 }
