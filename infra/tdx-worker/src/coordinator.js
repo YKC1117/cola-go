@@ -5,6 +5,7 @@ import { requestToken, fetchTdxPages, withOneAuthRefresh } from "./tdx.js";
 import { normalizeRoute } from "./normalize/index.js";
 import { classifySnapshot, snapshotEnvelope } from "./cache.js";
 import { assertBudget } from "./budget.js";
+import { assessLiveFreshness } from "./freshness.js";
 
 function iso(ms) {
   return new Date(ms).toISOString();
@@ -255,15 +256,19 @@ export class TdxCoordinator extends DurableObject {
       ? Object.values(raw).map((x) => x.sourceUpdatedAt).filter(Boolean).sort().at(-1) || null
       : raw.sourceUpdatedAt || null;
 
+    const requestedStatus = statusForKind(kind);
+    const freshness = requestedStatus === "live" ? assessLiveFreshness(items, Date.now(), ttl.fresh) : { fresh: true };
+    const liveIsFresh = requestedStatus !== "live" || freshness.fresh;
+
     const envelope = {
       schemaVersion: 1,
-      status: statusForKind(kind),
+      status: liveIsFresh ? requestedStatus : "stale",
       source: "TDX",
       scope: scope || (kind.startsWith("freeway") ? "freeway" : null),
       updatedAt: sourceUpdatedAt,
       fetchedAt,
       expiresAt: iso(Date.parse(fetchedAt) + ttl.fresh * 1000),
-      stale: false,
+      stale: !liveIsFresh,
       partial: false,
       snapshotId: crypto.randomUUID(),
       items,
