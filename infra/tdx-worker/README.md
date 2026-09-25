@@ -100,6 +100,17 @@ npm test
 npx wrangler deploy --dry-run --outdir .wrangler-dry-run
 ```
 
+## Staging 真實資料 smoke test
+
+Repository 內提供不含任何 Secret 的 smoke runner。它只接受已部署的 HTTPS Worker URL，先確認 `tdxEnabled=true`，再依序驗證停車、EV、國道路況與 CCTV 的公開 envelope。
+
+為避免主動撞上預設 4 calls / 60s 的免費額度保護，資料 route 預設間隔 16 秒；不要為了加速驗收把這個間隔任意調成 0。
+
+```bash
+BASE_URL="https://<staging-worker-host>" npm run smoke:staging
+```
+
+可用 `SMOKE_CITY` 與 `SMOKE_EV_CITY` 指定已支援城市。沒有真實 Cloudflare staging 與 TDX Secrets 時，本項應記為 NOT RUN，不得用 CI/mock 結果代替。
 ## Cache / stale TTL
 
 - 停車基本：fresh 24h / stale 7d
