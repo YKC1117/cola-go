@@ -238,15 +238,22 @@ jobs:
           tesla_opened=labels("tesla-opened.json")
           assert "Add Shortcut" in oil_before, oil_before
           assert "油車助手" in oil_before, oil_before
-          assert "Search Actions" in oil_after, oil_after
-          assert "Search Actions" in oil_opened, oil_opened
+          # iOS 26.x does not always expose the "Search Actions" field in
+          # the accessibility tree. Prove the native editor by requiring the
+          # shortcut's own top-level menu action plus the editor Play control.
+          def editor_open(labels,prompt):
+              return (
+                  "play" in labels
+                  and any(prompt in x for x in labels if isinstance(x,str))
+              )
+          assert editor_open(oil_after,"油車助手｜請選功能"), oil_after
+          assert editor_open(oil_opened,"油車助手｜請選功能"), oil_opened
           # Tesla's pre-import accessibility tree can transiently expose
           # only the Shortcuts root even while the native Add Shortcut sheet is
-          # visibly present. Do not make that transient snapshot a hard gate.
-          # The real gate is the successful native tap followed by the Tesla
-          # editor, plus an independent reopen by the Tesla shortcut name.
-          assert "Search Actions" in tesla_after, tesla_after
-          assert "Search Actions" in tesla_opened, tesla_opened
+          # visibly present. The post-add editor and independent reopen are the
+          # real gates.
+          assert editor_open(tesla_after,"特斯拉助手｜請選功能"), tesla_after
+          assert editor_open(tesla_opened,"特斯拉助手｜請選功能"), tesla_opened
           for name in required_json:
               json.loads((root/name).read_text())
           PY
