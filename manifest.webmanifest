@@ -1,12 +1,12 @@
 {
-  "name":"COLA GO｜台灣電動車出行工具",
+  "name":"COLA GO｜台灣車友出行工具",
   "short_name":"COLA GO",
-  "description":"充電、停車、國道路況、雪山隧道與沿途資訊整合工具",
+  "description":"路線、停車、充電、國道路況、CCTV 與車主工具",
   "start_url":"./#home",
   "scope":"./",
   "display":"standalone",
-  "background_color":"#f7f6f2",
-  "theme_color":"#f7f6f2",
+  "background_color":"#0b1017",
+  "theme_color":"#0b1017",
   "orientation":"any",
   "lang":"zh-Hant-TW",
   "icons":[
