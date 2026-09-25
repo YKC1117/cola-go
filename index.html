@@ -311,12 +311,14 @@
 
       <section class="view" data-view="delivery">
         <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">DELIVERY</span><h1>驗車清單</h1></div></div>
+        <div class="tool-scene delivery-scene"><span>DELIVERY READY</span><b>交車前，一項一項確認</b><i aria-hidden="true"></i></div>
         <div class="check-head"><span id="checkProgress">0 / 13</span><button id="resetChecklist">重置</button></div>
         <div id="deliveryChecklist" class="checklist"></div>
       </section>
 
       <section class="view" data-view="maintenance">
         <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">MAINTENANCE</span><h1>保養週期</h1></div></div>
+        <div class="tool-scene maintenance-scene"><span>KEEP IT READY</span><b>把日常保養變簡單</b><i aria-hidden="true"></i></div>
         <div class="timeline">
           <article><span>日常</span><div><b>胎壓、輪胎、燈具、雨刷水</b><p>長途出發前尤其值得快速檢查。</p></div></article>
           <article><span>約 1 年</span><div><b>輪胎換位／定位、雨刷、空調濾網</b><p>依里程與實際磨耗調整。</p></div></article>
@@ -501,6 +503,7 @@
       <section class="view" data-view="community">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">COMMUNITY</span><h1>社群・活動</h1></div></div>
         <div class="community-hero">
+          <div class="community-road" aria-hidden="true"><i></i><i></i><i></i></div>
           <span>公開招募中</span>
           <h2>不是先塞一堆假群組，而是讓真的社群自己加入。</h2>
           <p>LINE、Facebook、Discord、Telegram、車聚、露營、二手交易與區域車主社群都可以申請；上架時會標示主理人與平台。</p>
@@ -527,7 +530,7 @@
 
       <section class="view" data-view="partners">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">PARTNERS</span><h1>合作專區</h1></div></div>
-        <div class="partner-hero"><span>合作招募中</span><h2>歡迎洽談，一起把台灣電動車出行做得更好。</h2><p>COLA GO 核心功能維持免費；合作內容必須對車主真的有幫助，並清楚標示合作關係。</p></div>
+        <div class="partner-hero"><div class="partner-beam" aria-hidden="true"></div><span>合作招募中</span><h2>歡迎洽談，一起把台灣電動車出行做得更好。</h2><p>COLA GO 核心功能維持免費；合作內容必須對車主真的有幫助，並清楚標示合作關係。</p></div>
         <div class="partner-grid">
           <article><b>充電／停車</b><p>營運商、停車場、即時資料與優惠合作。</p></article>
           <article><b>保險／貸款</b><p>透明方案、車主專屬內容與實用工具。</p></article>
