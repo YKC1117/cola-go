@@ -150,8 +150,10 @@ jobs:
                   if "WFConditionalActionString" in p:
                       assert p.get("WFCondition")==4, f"non-exact text condition: {p}"
 
-          # Every sensitive physical action must have an explicit confirmation
-          # Ask action shortly before it in the same generated branch.
+          # Every sensitive physical action must be gated by the generated
+          # SensitiveConfirmed flag. The confirmation helper accepts only
+          # exact affirmative words, normalizes them to YES, and emits the
+          # physical Tesla AppIntent exactly once after a YES equality gate.
           sensitive=[]
           for i,a in enumerate(actions):
               ident=a.get("WFWorkflowActionIdentifier","")
@@ -161,14 +163,24 @@ jobs:
               elif ident.endswith(".LockUnlockIntent") and p.get("vehicleControlType")=="unlock":
                   sensitive.append((i,ident))
           assert sensitive, "no sensitive actions found"
+          assert len(sensitive)==3, f"sensitive Tesla actions duplicated: {sensitive}"
           for i,ident in sensitive:
-              recent=actions[max(0,i-16):i]
+              recent=actions[max(0,i-80):i]
               prompts=[
                   x.get("WFWorkflowActionParameters",{}).get("WFAskActionPrompt","")
                   for x in recent
                   if x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.ask"
               ]
-              assert any("確認" in p for p in prompts), f"{ident} at {i}: missing independent confirmation"
+              assert any(
+                  all(word in prompt for word in ["確認","確定","是"])
+                  for prompt in prompts
+              ), f"{ident} at {i}: missing explicit confirmation prompt"
+              assert any(
+                  x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.conditional"
+                  and x.get("WFWorkflowActionParameters",{}).get("WFCondition")==4
+                  and x.get("WFWorkflowActionParameters",{}).get("WFConditionalActionString")=="YES"
+                  for x in recent
+              ), f"{ident} at {i}: missing SensitiveConfirmed YES gate"
 
           # Donor-proven enum handling. Keep unresolved enums on Ask; only promote
           # a fixed value when a public native donor proves it.
