@@ -164,6 +164,36 @@ Scope note:
 - This is a real-device PASS for the tested app-opening and navigation flow.
 - It does not by itself validate Tesla Vehicle AppEntity selection, real Tesla vehicle controls, Siri voice behavior, Apple Watch runtime, or CarPlay/Bluetooth automation.
 
+## Product release classification
+
+### 油車助手 v1.2
+Classification: **public-share candidate**.
+
+Evidence already available:
+- signed build / AEA1: PASS
+- plist / semantic / privacy / safety gates: PASS
+- compact menu-first interaction: PASS
+- physical iPhone Open App resolution for the tested flow: PASS
+- physical iPhone destination navigation for the tested flow: PASS
+- no default private home/work destination embedded: PASS
+
+This classification means the Oil shortcut is the current shareable candidate.
+It does not imply every optional third-party app exists on every recipient's iPhone.
+If a recipient does not have an optional app installed, that app-specific action may still be unavailable.
+
+### 特斯拉助手 v1.2
+Classification: **RC / not public-release complete**.
+
+Still release-blocking:
+- real Tesla App Vehicle AppEntity import flow
+- single-car / multi-car vehicle selection consistency
+- real Tesla vehicle-control execution
+- Siri / lock-screen behavior for vehicle controls
+- Apple Watch runtime
+- real Tesla Bluetooth / vehicle environment
+
+Do not market Tesla v1.2 as fully validated until those physical Tesla-environment checks pass.
+
 ## Release acceptance
 
 PASS-able without hardware:
