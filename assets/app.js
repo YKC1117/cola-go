@@ -444,13 +444,12 @@ function renderParking(){
     state.parkingCity=b.dataset.parkingCity;
     if($("#parkingSearch"))$("#parkingSearch").value="";
     renderParking();
-    if(state.parkingCity!=="Tainan")ensureParkingCity(state.parkingCity).catch(()=>{});
   });
 
   if(city==="all"){
     $("#parkingLiveTime").textContent="全台 22 縣市";
     $("#parkingScopeStatus").textContent="22 縣市皆可搜尋與導航";
-    root.innerHTML='<div class="parking-national-intro"><b>選擇縣市查看官方停車資料</b><p>全台灣都是正式服務範圍。上方可直接找附近停車；選擇縣市後，COLA GO 會讀取該地官方停車場資料與可取得的即時剩餘車位。</p><div class="item-actions"><button class="go" data-national-map="google">Google Maps 找附近</button><button data-national-map="apple">Apple 地圖找附近</button></div></div>';
+    root.innerHTML='<div class="parking-national-intro"><b>全台停車快速入口</b><p>不用等待外部 API；直接選縣市或使用 Google Maps／Apple 地圖找附近停車。臺南另提供市府即時剩餘車位。</p><div class="item-actions"><button class="go" data-national-map="google">Google Maps 找附近</button><button data-national-map="apple">Apple 地圖找附近</button></div></div>';
   }else if(city==="Tainan"){
     const rows=parkingSelectedRows().filter(x=>!query||[x.name,x.town,x.address].join(" ").toLowerCase().includes(query)).sort((a,b)=>(b.available??-1)-(a.available??-1));
     $("#parkingLiveTime").textContent=state.parkingLive?.status==="live"?(state.parkingLive.updatedAt||"官方即時"):"官方即時暫不可用";
@@ -466,9 +465,9 @@ function renderParking(){
     $("#parkingScopeStatus").textContent="TDX 官方停車場資料 · "+state.parkingRemote.items.length+" 筆";
     root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>找不到符合的停車場</b><p>換個停車場名稱、行政區或地址試試。</p></div>';
   }else{
-    $("#parkingLiveTime").textContent="官方資料暫不可用";
-    $("#parkingScopeStatus").textContent=cityName+" 仍可搜尋與導航";
-    root.innerHTML='<div class="market-empty"><b>'+esc(cityName)+' 官方資料目前無法讀取</b><p>COLA GO 不會因此把這個縣市變成不能用；可直接以地圖搜尋 '+esc(cityName)+' 停車場。</p><div class="item-actions"><button class="go" data-city-map="google">Google Maps</button><button data-city-map="apple">Apple 地圖</button></div></div>';
+    $("#parkingLiveTime").textContent="地圖搜尋";
+    $("#parkingScopeStatus").textContent=cityName+" 可直接搜尋與導航";
+    root.innerHTML='<div class="market-empty"><b>'+esc(cityName)+' 停車快速搜尋</b><p>目前不要求註冊 TDX 帳號，也不讓你等失敗的 API；直接開地圖搜尋 '+esc(cityName)+' 停車場。</p><div class="item-actions"><button class="go" data-city-map="google">Google Maps</button><button data-city-map="apple">Apple 地圖</button></div></div>';
   }
 
   $$("[data-parking-map]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.parkingMap,"_blank","noopener"));
@@ -1146,7 +1145,6 @@ function bindFilters(){
     state.parkingCity=e.target.value;
     if($("#parkingSearch"))$("#parkingSearch").value="";
     renderParking();
-    if(state.parkingCity!=="all"&&state.parkingCity!=="Tainan")ensureParkingCity(state.parkingCity).catch(()=>{});
   });
   $("#parkingNearbyGoogle")?.addEventListener("click",()=>openParkingMap("google","停車場"));
   $("#parkingNearbyApple")?.addEventListener("click",()=>openParkingMap("apple","停車場"));
