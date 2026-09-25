@@ -624,3 +624,20 @@ select option{background:#11151b;color:#fff}
 .home-top{min-height:335px}.search-destination{position:relative;z-index:5;margin-top:8px!important;border-radius:18px!important;box-shadow:0 18px 36px #0009!important}
 .drive-strip{position:relative;z-index:4;margin-top:14px!important;background:#0d1015e8!important;border:1px solid #ffffff12!important}
 @media(max-width:599px){.concept-wordmark{padding-top:8px!important;margin-bottom:24px!important}.home-greeting{max-width:62%!important;min-height:150px!important}.home-greeting h1{font-size:43px!important}.home-top{min-height:350px}.core-actions{margin-top:16px!important}.core-actions button{border-radius:20px!important}.core-actions .core-icon{width:42px!important;height:42px!important}}
+
+/* V4 mobile feature deck */
+@media(max-width:599px){
+.core-actions{position:relative;z-index:5;gap:11px!important}
+.core-actions button{position:relative;min-height:124px!important;padding:15px!important;overflow:hidden;align-items:flex-end!important}
+.core-actions button::after{content:"";position:absolute;right:-20px;top:-20px;width:92px;height:92px;border-radius:50%;background:#fff08;filter:blur(2px)}
+.core-actions button:nth-child(1){background:linear-gradient(145deg,#f02235,#970610)!important}
+.core-actions button:nth-child(2){background:linear-gradient(145deg,#1678dc,#08386d)!important}
+.core-actions button:nth-child(3){background:linear-gradient(145deg,#16a26b,#075537)!important}
+.core-actions button:nth-child(4){background:linear-gradient(145deg,#7254d8,#322069)!important}
+.core-actions .core-icon{position:absolute!important;right:13px;top:13px;width:46px!important;height:46px!important;background:#ffffff18!important;border:1px solid #ffffff22!important}
+.core-actions button>span:last-child{position:relative;z-index:2}.core-actions b{font-size:19px!important;letter-spacing:-.03em}.core-actions small{font-size:11px!important;color:#ffffffe0!important}
+.road-now{padding:15px;border-radius:22px;background:linear-gradient(145deg,#15191f,#0c0f13);border:1px solid #ffffff0d}
+.road-now .section-head{margin-top:0}.road-now-grid{gap:7px!important}.road-now-grid button{min-height:88px;border-radius:15px!important;background:#090c10!important}
+.home-camera{border-radius:20px!important;background:linear-gradient(110deg,#171b21,#0c0f13)!important}
+.compact-section .section-head h2{font-size:21px}.scenic-trips .trip-card{border-radius:20px!important;box-shadow:0 14px 26px #0005}
+}
