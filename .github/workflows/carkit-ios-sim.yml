@@ -244,6 +244,80 @@ jobs:
           echo "TESLA_VEHICLE_ENTITY_PICKER=NOT_RUN"
           echo "REQUIRES_PHYSICAL_IPHONE_AND_TESLA_APP=1"
 
+      - name: Validate editor-run command prompt
+        timeout-minutes: 4
+        run: |
+          set -euxo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          run_idb() {
+            python3 -c 'import subprocess,sys; cmd=sys.argv[1:]; print("RUN_IDB "+repr(cmd),file=sys.stderr,flush=True); p=subprocess.run(cmd,timeout=30); raise SystemExit(p.returncode)' "$@"
+          }
+          describe_retry() {
+            local out="$1"
+            rm -f "$out"
+            for attempt in 1 2 3 4 5 6; do
+              if run_idb idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key frame --udid "$UDID" > "$out" && test -s "$out"; then
+                python3 -m json.tool "$out" >/dev/null && return 0
+              fi
+              echo "UI describe attempt $attempt not ready: $out"
+              sleep 2
+            done
+            return 1
+          }
+          assert_prompt() {
+            local file="$1"
+            python3 - "$file" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1]))
+          labels=[]
+          def walk(v):
+              if isinstance(v,dict):
+                  for key in ("AXLabel","AXValue"):
+                      x=v.get(key)
+                      if isinstance(x,str):
+                          labels.append(x)
+                  for x in v.values():
+                      walk(x)
+              elif isinstance(v,list):
+                  for x in v:
+                      walk(x)
+          walk(data)
+          if not any("要做什麼" in x for x in labels):
+              raise SystemExit("command prompt not observed: "+repr(labels[:120]))
+          print("COMMAND_PROMPT_OBSERVED=1")
+          PY
+          }
+
+          # Tesla: run from the native editor's Play button. This validates the
+          # shortcut reaches its first user command prompt before any Tesla
+          # AppIntent is attempted, even though Tesla.app is absent on Simulator.
+          xcrun simctl terminate "$UDID" com.apple.shortcuts || true
+          xcrun simctl launch "$UDID" com.apple.shortcuts || true
+          sleep 2
+          xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=%E7%89%B9%E6%96%AF%E6%8B%89%E5%8A%A9%E6%89%8B"
+          sleep 5
+          run_idb idb ui tap "play" --udid "$UDID"
+          sleep 3
+          describe_retry /tmp/carkit-probe/tesla-play-prompt.json
+          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-play-prompt.png
+          assert_prompt /tmp/carkit-probe/tesla-play-prompt.json
+
+          # Oil: independently prove the same first command prompt.
+          xcrun simctl terminate "$UDID" com.apple.shortcuts || true
+          xcrun simctl launch "$UDID" com.apple.shortcuts || true
+          sleep 2
+          xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
+          sleep 5
+          run_idb idb ui tap "play" --udid "$UDID"
+          sleep 3
+          describe_retry /tmp/carkit-probe/oil-play-prompt.json
+          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-play-prompt.png
+          assert_prompt /tmp/carkit-probe/oil-play-prompt.json
+
+          echo "TESLA_EDITOR_RUN_PROMPT=PASS"
+          echo "OIL_EDITOR_RUN_PROMPT=PASS"
+          echo "SIRI_VOICE_DIALOG=NOT_RUN"
+
       - name: Best-effort Tesla runtime diagnostics
         continue-on-error: true
         timeout-minutes: 2
