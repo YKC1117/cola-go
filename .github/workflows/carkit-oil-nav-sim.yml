@@ -161,10 +161,13 @@ jobs:
           fi
           sleep 6
 
-          # Run the shortcut for real. Opening it in the editor and tapping
-          # Play is not a reliable runtime signal on iOS 26 Simulator.
+          # Run the shortcut for real from a clean Shortcuts app state.
+          # iOS 26 Simulator can ignore run-shortcut while the editor is still
+          # foregrounded after import, so terminate first.
+          xcrun simctl terminate "$UDID" com.apple.shortcuts || true
+          sleep 2
           xcrun simctl openurl "$UDID" "shortcuts://run-shortcut?name=%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
-          sleep 3
+          sleep 4
 
           describe_retry /tmp/oil-nav-probe/main-menu.json
           python3 - <<'PY'
