@@ -19,7 +19,7 @@ async function request(path, options = {}) {
   try { body = await response.json(); } catch { throw new Error(path + ": response was not JSON (HTTP " + response.status + ")"); }
   if (response.status !== expect) throw new Error(path + ": expected HTTP " + expect + ", got " + response.status + ": " + JSON.stringify(body).slice(0, 500));
   if (options.tdxData) {
-    if (!["live", "static", "stale"].includes(body.status)) throw new Error(path + ": unexpected data status " + JSON.stringify(body.status));
+    if (!["live", "static"].includes(body.status) || body.stale !== false) throw new Error(path + ": primary real-data smoke requires fresh live/static data");
     if (body.source !== "TDX") throw new Error(path + ": expected source=TDX");
     if (!Array.isArray(body.items)) throw new Error(path + ": items must be an array");
     if (typeof body.stale !== "boolean") throw new Error(path + ": stale must be boolean");
@@ -46,7 +46,7 @@ async function main() {
     if (index > 0 && delayMs > 0) await sleep(delayMs);
     await request(dataRoutes[index], { tdxData: true });
   }
-  console.log("PASS staging smoke: real Worker responses satisfy the public contract");
+  console.log("PASS staging smoke: fresh non-empty real Worker responses satisfy the public contract");
 }
 
 main().catch((error) => {
