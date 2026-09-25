@@ -63,6 +63,11 @@ jobs:
 
           tesla=load("特斯拉助手.shortcut.xml")
           oil=load("油車助手.shortcut.xml")
+          # Product polish: stable public names/icons.
+          assert oil.get("WFWorkflowName")=="油車助手"
+          assert tesla.get("WFWorkflowName")=="特斯拉助手"
+          assert oil.get("WFWorkflowIcon",{}).get("WFWorkflowIconGlyphNumber")==59452
+          assert tesla.get("WFWorkflowIcon",{}).get("WFWorkflowIconGlyphNumber")==61447
           assert_unique_uuids(tesla,"Tesla")
           assert_unique_uuids(oil,"Oil")
 

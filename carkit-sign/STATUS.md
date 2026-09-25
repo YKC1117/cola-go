@@ -31,14 +31,10 @@ The build must pass:
 
 Product consequence:
 
-- Oil / Škoda:
-  - CarPlay Connect -> AUTO_START candidate.
-  - CarPlay Disconnect -> AUTO_END candidate.
-- Tesla:
-  - Tesla audio/phone Bluetooth Connect -> AUTO_START candidate.
-  - NO Bluetooth AUTO_END.
-  - Parked-car navigation uses Apple Maps Parked Car instead.
-  - Do not treat Phone Key BLE as a proven Shortcuts trigger.
+- The two user-facing main shortcuts do not consume Shortcut Input and contain no AUTO_START/AUTO_END markers.
+- CarPlay/Bluetooth automations, if added later, must call separate helper shortcuts so a normal tap never asks for missing input parameters.
+- Tesla has no documented Bluetooth Disconnect automation trigger; parked-car navigation uses Apple Maps Parked Car instead.
+- Do not treat Phone Key BLE as a proven Shortcuts trigger.
 
 ## Tesla public-share vehicle binding
 
@@ -85,11 +81,11 @@ Both main shortcuts use short names:
 - 油車助手
 
 Current interaction:
-- Siri runs shortcut by name.
-- shortcut asks: `要做什麼？`
-- exact-match routing is used.
-- contains matching is forbidden.
-- unknown, blank, negative, or ambiguous input must not fall into sensitive vehicle control.
+- Tapping either shortcut opens a compact native menu immediately.
+- Siri can run the shortcut by name and reaches the same menu-first interaction.
+- Oil top-level menu is limited to 6 grouped entries.
+- Tesla top-level menu is limited to 7 grouped entries.
+- Sensitive Tesla actions still require an independent confirmation menu.
 
 Sensitive Tesla commands:
 - unlock
