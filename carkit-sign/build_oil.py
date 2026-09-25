@@ -196,7 +196,6 @@ wf={
  "WFWorkflowMinimumClientVersion":900,
  "WFWorkflowMinimumClientVersionString":"900",
  "WFWorkflowTypes":["NCWidget","WatchKit"],
- "WFWorkflowInputContentItemClasses":["WFStringContentItem"],
  "WFWorkflowOutputContentItemClasses":[],
  "WFWorkflowIcon":{"WFWorkflowIconGlyphNumber":59511,"WFWorkflowIconStartColor":4282601983},
  "WFWorkflowActions":actions
