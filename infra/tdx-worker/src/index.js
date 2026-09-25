@@ -185,7 +185,7 @@ export default {
         }
       });
 
-      if (!body.stale) ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
+      if (!body.stale && cacheSeconds > 0) ctx.waitUntil(edgeCache.put(cacheKey, response.clone()));
       return withCors(response, cors);
     } catch (error) {
       const result = errorEnvelope(error);
