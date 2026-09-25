@@ -90,6 +90,13 @@ describe("TDX data client", () => {
     })).rejects.toMatchObject({code:"UPSTREAM_UNAVAILABLE"});
   });
 
+  it("rejects unknown JSON containers instead of treating them as empty live data", async () => {
+    await expect(fetchTdxPages({
+      env,token:"t",path:"/v2/Road/Traffic/Live/Freeway",
+      fetchImpl:async()=>Response.json({unexpected:"shape"})
+    })).rejects.toMatchObject({code:"UPSTREAM_SCHEMA_INVALID"});
+  });
+
   it("rejects invalid JSON instead of treating it as empty live data", async () => {
     await expect(fetchTdxPages({
       env,token:"t",path:"/v2/Road/Traffic/Live/Freeway",
