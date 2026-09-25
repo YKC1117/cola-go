@@ -117,7 +117,7 @@ jobs:
             local json_file="$1"
             local label="$2"
             local xy
-            xy="$(jq -r --arg l "$label" '[.. | objects | select(.AXLabel == $l and (.frame|type) == "object") | [(.frame.x + (.frame.width/2)), (.frame.y + (.frame.height/2))]][0] | @tsv' "$json_file")"
+            xy="$(jq -r --arg l "$label" '[.. | objects | select(.AXLabel == $l and (.frame|type) == "object") | [((.frame.x + (.frame.width/2))|round), ((.frame.y + (.frame.height/2))|round)]][0] | @tsv' "$json_file")"
             test -n "$xy"
             read -r x y <<< "$xy"
             echo "tap $label at $x,$y"
