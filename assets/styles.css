@@ -311,3 +311,97 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .parking-national-intro p{font-size:13px;line-height:1.75;color:var(--muted);margin:8px 0 16px}
 .parking-static-chip{flex:none;border-radius:99px;background:var(--soft);color:var(--muted);font-size:11px;padding:6px 8px}
 @media(max-width:380px){.parking-scope{grid-template-columns:1fr}.parking-scope-copy{text-align:left}.parking-actions{grid-template-columns:1fr}}
+
+
+/* Driver Dashboard skin — COLA GO signature */
+:root{
+  --bg:#090d12;--paper:#0d1219;--card:#151b24;--ink:#f7f8fa;--muted:#98a2ae;--line:#252e3a;
+  --soft:#111822;--coral:#ff3348;--coral-soft:#32151b;--good:#38d990;--warn:#ffbf47;--bad:#ff5c62;
+}
+html{background:#070a0e}
+body{background:radial-gradient(circle at 50% -8%,#283443 0,#0b1017 34%,#070a0e 72%);color:var(--ink)}
+.app-shell{background:linear-gradient(180deg,#101721 0,#0c1118 38%,#0a0f15 100%);box-shadow:0 0 70px #0008}
+.topbar{background:rgba(11,16,23,.88);border-bottom:1px solid #ffffff0b}
+.brand{letter-spacing:.035em;font-weight:850}.brand b{color:var(--coral)}
+.brand-bubble{background:linear-gradient(145deg,#ff4053,#c90f24);box-shadow:0 6px 18px #ff203844}
+.brand-bubble i{background:#fff}
+.home-top{padding-top:22px}
+.home-greeting h1{font-size:30px;font-weight:800;letter-spacing:-.055em;margin-bottom:16px}
+.home-greeting h1::after{content:"  COLA GO";font-size:11px;letter-spacing:.14em;color:var(--coral);margin-left:8px;vertical-align:middle}
+.search-destination{min-height:82px;border:1px solid #ffffff18;background:linear-gradient(135deg,#1b2430,#121922);box-shadow:0 14px 34px #0005,inset 0 1px #ffffff0d}
+.search-destination strong{font-size:17px}.search-destination small{color:#aab3bd}
+.core-actions{gap:10px;border:0;padding-bottom:8px}
+.core-actions button{background:#121923;border:1px solid #ffffff0d;padding:12px 4px 11px;box-shadow:0 8px 20px #0002}
+.core-icon{width:48px;height:42px}.core-actions button:first-child{background:linear-gradient(160deg,#32151b,#171820);border-color:#ff435c33}
+.core-actions button:first-child .core-icon{color:#ff4b5f}
+.road-now{padding:18px;border:1px solid #ffffff0d;border-radius:22px;background:linear-gradient(145deg,#151d27,#0f151d);box-shadow:0 14px 35px #0003}
+.road-now-grid{background:#0b1118;border:1px solid #ffffff0a}.road-now-grid button{border-color:#27313d}
+.quick-trips{gap:10px}.quick-trips button{background:linear-gradient(145deg,#161e28,#111821);border-color:#ffffff10;min-height:88px}
+.home-more button,.tool-shortcuts button,.link-cards button{border-color:#222c37}.home-more button>span,.shortcut-icon{color:#c4ccd5}
+.section-head h2,.live-source-head h2{font-size:18px;font-weight:750}
+.icon-btn,.back{background:#151d26;color:#dce2e8}
+.filter-row,.market-filter{border-color:#26303b}.filter-row button.active,.market-filter button.active{color:#fff}
+.inline-search,.external-btn,.location-links button,.item-actions button,.model-actions button,.location-actions button,.model-card{background:#131a23;border-color:#28323e}
+.primary{background:linear-gradient(135deg,#ff344b,#d7162d);box-shadow:0 10px 24px #e31a3240;font-weight:750}
+.empty,.market-empty,.info-box,.result-card,.calc-result,.compat-card,.market-summary{background:#111822}
+.bottom-nav{background:rgba(9,14,20,.94);border-color:#232c37}.bottom-nav button{color:#788492}.bottom-nav button.active{color:#ff4055}
+.toast{background:#f4f6f8;color:#111820}
+.route-tag,.location-card .area,.community-card .badges span,.specs span,.charging-source-chip,.parking-static-chip{background:#1b2430;color:#aeb8c2}
+.partner-hero,.community-hero,.certified-hero,.roadside-card{background:linear-gradient(145deg,#19232d,#111821)}
+@media (min-width:600px){.app-shell{border-color:#27313d}}
+
+.feedback-card{margin-top:26px;padding:22px;border-radius:22px;background:linear-gradient(145deg,#1b252f,#101720);border:1px solid #ffffff10;box-shadow:0 14px 34px #0003}
+.feedback-card h2{font-size:20px;line-height:1.35;margin:7px 0 8px;letter-spacing:-.035em}
+.feedback-card p{font-size:13px;line-height:1.7;color:var(--muted);margin:0 0 17px}
+.feedback-line{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:52px;padding:13px 15px;border-radius:14px;background:#06c755;color:white;text-decoration:none;font-size:14px;font-weight:750;box-shadow:0 9px 22px #06c75525}
+.feedback-line svg{width:18px;height:18px}
+
+.brand-logo{width:34px;height:34px;border-radius:10px;display:block;box-shadow:0 7px 18px #ff203832}
+
+.home-greeting{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px}
+.home-greeting h1{margin:3px 0 4px}.home-greeting h1::after{content:none}
+.home-greeting p{margin:0;color:var(--muted);font-size:13px}
+.eyebrow{display:block;color:var(--coral);font-size:10px;font-weight:800;letter-spacing:.16em}
+.cola-orbit{width:66px;height:66px;flex:none;padding:5px;border-radius:21px;background:linear-gradient(145deg,#222d3a,#111821);border:1px solid #ffffff12;box-shadow:0 14px 28px #0004}
+.cola-orbit img{width:100%;height:100%;display:block;border-radius:16px}
+@media(max-width:374px){.cola-orbit{width:58px;height:58px}.home-greeting h1{font-size:27px}.home-greeting p{font-size:12px}}
+
+/* High-glance driver controls */
+.core-actions button{min-height:96px;position:relative;overflow:hidden}
+.core-actions button::after{content:"";position:absolute;inset:auto -20px -34px auto;width:66px;height:66px;border-radius:50%;background:#ffffff05}
+.core-actions button:nth-child(2) .core-icon{color:#66a9ff}
+.core-actions button:nth-child(3) .core-icon{color:#ffbf47}
+.core-actions button:nth-child(4) .core-icon{color:#8dd6ff}
+.road-now-grid b{color:#fff}
+.road-now-grid button:active,.core-actions button:active,.quick-trips button:active{transform:scale(.98)}
+.bottom-nav button{transition:color .15s,transform .15s}.bottom-nav button:active{transform:translateY(1px)}
+.bottom-nav button.active svg{filter:drop-shadow(0 3px 8px #ff334866)}
+@media(max-width:430px){.core-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.core-actions button{min-height:88px;display:grid;grid-template-columns:48px 1fr;align-items:center;text-align:left;padding:11px 12px}.core-icon{width:42px}.core-actions b{font-size:16px}.core-actions small{font-size:11px}.road-now{padding:16px}.quick-trips{grid-template-columns:1fr}.quick-trips button{min-height:66px;padding:14px 16px}}
+
+/* Mobile-first product shell; desktop is a comfortable presentation layer */
+@media(max-width:599px){
+  :root{--nav:76px}
+  .app-shell{max-width:none}
+  .topbar{min-height:calc(62px + env(safe-area-inset-top,0px));padding-left:18px;padding-right:18px}
+  .view{padding-left:18px;padding-right:18px}
+  .home-top{padding-top:16px}
+  .search-destination{min-height:76px}
+  .section,.compact-section,.road-now{margin-top:20px}
+  main{padding-bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px) + 22px)}
+  .bottom-nav{height:calc(var(--nav) + env(safe-area-inset-bottom,0px));padding-left:8px;padding-right:8px}
+  .bottom-nav button{min-height:58px}
+}
+@media(min-width:600px){
+  :root{--shell:760px}
+  .app-shell{min-height:100vh}
+  .home-top{padding-top:28px}
+  .home-greeting h1{font-size:34px}
+  .core-actions{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .quick-trips{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(min-width:980px){
+  :root{--shell:900px}
+  body{padding:24px 0}
+  .app-shell{min-height:calc(100vh - 48px);border:1px solid #27313d;border-radius:28px;overflow:clip}
+  .bottom-nav{width:min(var(--shell),calc(100% - 48px));bottom:24px;border-radius:0 0 28px 28px}
+}

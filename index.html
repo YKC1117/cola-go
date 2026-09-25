@@ -3,13 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#faf9f6">
-  <meta name="description" content="COLA GO｜台灣電動車出行工具。充電、停車、國道路況、雪隧與沿途資訊。">
+  <meta name="theme-color" content="#0b1017">
+  <meta name="description" content="COLA GO｜台灣車友出行工具。路線、停車、充電、國道路況、CCTV 與車主工具。">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="COLA GO">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./assets/logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./assets/logo.svg">
   <link rel="stylesheet" href="./assets/styles.css">
   <title>COLA GO</title>
 </head>
@@ -43,7 +44,7 @@
   <div class="app-shell">
     <header class="topbar">
       <button class="brand" data-go="home" aria-label="COLA GO 首頁">
-        <span class="brand-bubble"><i></i><i></i><i></i></span>
+        <img class="brand-logo" src="./assets/logo.svg" alt="">
         <span>COLA <b>GO</b></span>
       </button>
       <div class="top-actions">
@@ -56,7 +57,12 @@
       <section class="view active" data-view="home">
         <div class="home-top">
           <div class="home-greeting">
-            <h1>今天要去哪？</h1>
+            <div>
+              <span class="eyebrow">DRIVE WITH COLA</span>
+              <h1>今天要去哪？</h1>
+              <p>路線、停車、充電、路況，一次準備好。</p>
+            </div>
+            <div class="cola-orbit" aria-hidden="true"><img src="./assets/logo.svg" alt=""></div>
           </div>
 
           <button class="search-destination home-search" data-go="trip">
@@ -120,6 +126,13 @@
             <button data-go="parking"><b>找停車</b><small>全台停車快速搜尋</small></button>
             <button data-go="charging"><b>找充電</b><small>充電站與服務區</small></button>
           </div>
+        </section>
+
+        <section class="feedback-card">
+          <span class="mini-label">COLA GO COMMUNITY</span>
+          <h2>一起把 COLA GO 變更好</h2>
+          <p>遇到資料錯誤、功能異常，或希望新增什麼功能？直接用 LINE 告訴我們。</p>
+          <a class="feedback-line" href="https://lin.ee/Tu89Qyk" target="_blank" rel="noopener noreferrer">LINE 回報問題・功能建議<svg><use href="#i-arrow"/></svg></a>
         </section>
 
         <section class="section compact-section">
