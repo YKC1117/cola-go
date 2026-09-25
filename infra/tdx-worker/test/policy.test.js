@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { classifySnapshot, snapshotEnvelope } from "../src/cache.js";
+import { classifySnapshot, publicCacheSeconds, snapshotEnvelope } from "../src/cache.js";
+import { TTL } from "../src/config.js";
 import { assertBudget, pointEstimate } from "../src/budget.js";
 
 describe("snapshot freshness", () => {
@@ -61,5 +62,20 @@ describe("stale snapshot contract", () => {
     expect(out.stale).toBe(true);
     expect(out.updatedAt).toBe(original.updatedAt);
     expect(out.fetchedAt).toBe(original.fetchedAt);
+  });
+});
+
+
+describe("free-tier cache policy", () => {
+  it("uses conservative live TTLs and long static/CCTV TTLs", () => {
+    expect(TTL.parkingLive.fresh).toBe(300);
+    expect(TTL.chargingLive.fresh).toBe(300);
+    expect(TTL.freewayLive.fresh).toBe(300);
+    expect(TTL.cctv.fresh).toBe(86400);
+  });
+
+  it("allows static edge cache to keep the full fresh TTL", () => {
+    expect(publicCacheSeconds({ttl:TTL.parkingBasic})).toBe(86400);
+    expect(publicCacheSeconds({ttl:TTL.parkingLive})).toBe(300);
   });
 });
