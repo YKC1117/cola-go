@@ -25,7 +25,7 @@ const ROUTES = [
   { pattern: /^\/api\/v1\/tunnel\/xueshan\/live$/, kind: "xueshanLive", ttl: TTL.freewayLive }
 ];
 
-const KNOWN_QUERY = new Set(["scope"]);
+const KNOWN_QUERY = new Set(["scope", "limit", "cursor"]);
 
 export function validateNoUnknownQuery(url) {
   for (const key of url.searchParams.keys()) {
