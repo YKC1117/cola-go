@@ -297,6 +297,8 @@ jobs:
               "準備出發","空調","車輛控制","充電","找車","導航","更多"
           ]
 
+          oblob=(g/"油車助手.shortcut.xml").read_text(encoding="utf-8")
+
           # Destination privacy guardrail: navigation asks at runtime and
           # never ships a default address/location.
           for name,wf_obj in [("Oil",oil),("Tesla",tesla)]:
