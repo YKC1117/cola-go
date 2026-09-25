@@ -34,15 +34,15 @@ async function readLimited(response,maxBytes) {
   return text+decoder.decode();
 }
 
-export async function fetchTdxPages({env,token,path,paginate=true,fetchImpl=fetch,beforeRequest=()=>{},onUsage=()=>{}}) {
+export async function fetchTdxPages({env,token,path,paginate=true,fetchImpl=fetch,beforeRequest=()=>{},onUsage=()=>{},startPage=0,onPage=()=>{},yieldOnBudget=false}) {
   const maxBytes=numericEnv(env,"MAX_UPSTREAM_BYTES",2097152),pageSize=paginate?1000:0,maxPages=paginate?20:1;
   const collected=[];let sourceUpdatedAt=null;
-  for(let page=0;page<maxPages;page++){
+  for(let page=startPage;page<maxPages;page++){
     const url=new URL(TDX_API_BASE+path);url.searchParams.set("$format","JSON");
     if(paginate){url.searchParams.set("$top",String(pageSize));url.searchParams.set("$skip",String(page*pageSize));}
-    beforeRequest();
     const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),numericEnv(env,"TDX_TIMEOUT_MS",8000));
     try{
+      beforeRequest();
       const response=await fetchImpl(url.toString(),{headers:{authorization:`Bearer ${token}`,accept:"application/json"},signal:controller.signal,redirect:"error"});
       if(response.status===401)throw new AppError(503,"UPSTREAM_AUTH_FAILED","TDX token rejected",{refreshToken:true});
       if(response.status===429){const retryAfter=Math.max(60,Number(response.headers.get("retry-after")||60));throw new AppError(503,"UPSTREAM_UNAVAILABLE","TDX rate limited",{retryAfterSeconds:retryAfter,cooldown:true});}
@@ -52,8 +52,10 @@ export async function fetchTdxPages({env,token,path,paginate=true,fetchImpl=fetc
       let payload;try{payload=JSON.parse(text);}catch{throw new AppError(502,"UPSTREAM_SCHEMA_INVALID","TDX returned invalid JSON");}
       const items=extractItems(payload);collected.push(...items);
       for(const item of items){const value=item?.DataCollectTime||item?.UpdateTime||item?.SrcUpdateTime;if(value&&(!sourceUpdatedAt||String(value)>sourceUpdatedAt))sourceUpdatedAt=String(value);}
-      if(!paginate||items.length<pageSize)return {items:collected,sourceUpdatedAt,complete:true};
+      onPage({page,items,sourceUpdatedAt});
+      if(!paginate||items.length<pageSize)return {items:collected,sourceUpdatedAt,complete:true,nextPage:null};
     }catch(error){
+      if(error instanceof AppError&&yieldOnBudget&&error.code==="BUDGET_EXHAUSTED")return {items:collected,sourceUpdatedAt,complete:false,nextPage:page,retryAfterSeconds:error.extra?.retryAfterSeconds||60};
       if(error instanceof AppError)throw error;
       throw new AppError(503,"UPSTREAM_UNAVAILABLE","TDX request timed out or failed",{retryAfterSeconds:60,cooldown:true});
     }finally{clearTimeout(timeout);}
