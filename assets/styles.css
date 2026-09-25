@@ -670,3 +670,19 @@ select option{background:#11151b;color:#fff}
 .v5-road-now{margin-top:18px!important;border-radius:16px!important;padding:13px!important}
 .line-quick{border-radius:14px!important}
 }
+
+/* V5 map-first secondary screens */
+@media(max-width:599px){
+.view[data-view="charging"],.view[data-view="parking"],.view[data-view="highway"],.view[data-view="tunnel"]{padding:10px 12px 96px!important;background:#050607!important}
+.page-head{min-height:58px!important;margin-bottom:8px!important}.page-head h1{font-size:23px!important}.page-head .mini-label{font-size:8px!important;letter-spacing:.16em}
+.v5-map-stage{height:260px!important;border-radius:15px!important;margin:8px 0 10px!important;background-color:#071018!important;background-image:linear-gradient(#0c293640 1px,transparent 1px),linear-gradient(90deg,#0c293640 1px,transparent 1px),radial-gradient(circle at 50% 55%,#0d385060,transparent 42%)!important;background-size:28px 28px,28px 28px,auto!important;box-shadow:inset 0 0 0 1px #ffffff10,0 14px 30px #0008!important}
+.v5-map-stage .map-pin{width:34px!important;height:34px!important;border-radius:50% 50% 50% 8px!important;display:grid!important;place-items:center!important}
+.v5-map-stage .map-pin span{display:block!important;transform:rotate(45deg)!important;font-style:normal!important;font-weight:1000!important}
+.charging-map .map-pin{background:#df2031!important;box-shadow:0 0 18px #e91e3b88!important}.parking-map .map-pin{background:#1679ed!important;box-shadow:0 0 18px #1679ed88!important}
+.v5-map-stage>b{font-size:15px!important}.v5-map-stage>small{font-size:9px!important}
+.charging-actions,.parking-actions{gap:7px!important}.charging-actions button,.parking-actions button{min-height:58px!important;border-radius:12px!important}
+.filter-row{gap:6px!important;overflow-x:auto!important;scrollbar-width:none}.filter-row button{min-height:36px!important;white-space:nowrap!important;border-radius:10px!important}
+.v5-traffic-stage{height:150px!important;border-radius:15px!important;margin:8px 0 10px!important}
+.v5-tunnel-stage{height:225px!important;border-radius:15px!important;margin-top:8px!important}
+.list article,.parking-live-list article{border-radius:13px!important}
+}
