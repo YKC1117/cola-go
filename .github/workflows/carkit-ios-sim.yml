@@ -327,6 +327,67 @@ jobs:
           echo "OIL_EDITOR_RUN_MENU=PASS"
           echo "SIRI_VOICE_DIALOG=NOT_RUN"
 
+      - name: Validate Oil runtime navigation prompt
+        timeout-minutes: 3
+        run: |
+          set -euxo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          run_idb() {
+            python3 -c 'import subprocess,sys; cmd=sys.argv[1:]; print("RUN_IDB "+repr(cmd),file=sys.stderr,flush=True); p=subprocess.run(cmd,timeout=30); raise SystemExit(p.returncode)' "$@"
+          }
+          describe_retry() {
+            local out="$1"
+            rm -f "$out"
+            for attempt in 1 2 3 4 5 6; do
+              if run_idb idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key frame --udid "$UDID" > "$out" && test -s "$out"; then
+                python3 -m json.tool "$out" >/dev/null && return 0
+              fi
+              sleep 2
+            done
+            return 1
+          }
+
+          # Prove the new navigation path reaches a real runtime destination
+          # prompt instead of a missing-parameter sheet.
+          xcrun simctl terminate "$UDID" com.apple.shortcuts || true
+          xcrun simctl launch "$UDID" com.apple.shortcuts || true
+          sleep 2
+          xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
+          sleep 5
+          run_idb idb ui tap "play" --udid "$UDID"
+          sleep 2
+          run_idb idb ui tap "導航" --udid "$UDID"
+          sleep 1
+          run_idb idb ui tap "Apple 地圖" --udid "$UDID"
+          sleep 2
+          describe_retry /tmp/carkit-probe/oil-navigation-prompt.json
+          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-navigation-prompt.png
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("/tmp/carkit-probe/oil-navigation-prompt.json")
+          data=json.loads(p.read_text())
+          values=[]
+          def walk(v):
+              if isinstance(v,dict):
+                  for key in ("AXLabel","AXValue"):
+                      x=v.get(key)
+                      if isinstance(x,str):
+                          values.append(x)
+                  for x in v.values():
+                      walk(x)
+              elif isinstance(v,list):
+                  for x in v:
+                      walk(x)
+          walk(data)
+          assert any("要去哪裡" in x for x in values), values[:180]
+          assert not any("請選擇此動作中每個參數的值" in x for x in values), values[:180]
+          assert not any("Please choose a value for each parameter" in x for x in values), values[:180]
+          print("OIL_RUNTIME_NAVIGATION_PROMPT=PASS")
+          PY
+          xcrun simctl terminate "$UDID" com.apple.shortcuts || true
+
       - name: Best-effort Tesla runtime diagnostics
         continue-on-error: true
         timeout-minutes: 2
