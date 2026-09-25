@@ -661,3 +661,27 @@ select option{background:#11151b;color:#fff}
 .bottom-nav{padding-bottom:max(7px,env(safe-area-inset-bottom))!important}
 .bottom-nav button{min-height:55px!important}
 }
+
+/* V4.1 concept-fidelity correction from real iPhone QA */
+@media(max-width:599px){
+.cola-road-hero{height:390px!important}
+.home-top{min-height:302px!important}
+.concept-wordmark{margin-bottom:18px!important}
+.home-greeting{max-width:58%!important;min-height:132px!important}
+.home-greeting h1{font-size:38px!important;line-height:.94!important}
+.home-greeting p{font-size:12px!important;line-height:1.35!important}
+.search-destination{min-height:68px!important;margin-top:0!important}
+.core-actions{margin-top:14px!important}
+.core-actions button{min-height:94px!important;padding:12px!important}
+.core-actions .core-icon{position:static!important;width:38px!important;height:38px!important}
+.core-actions button>span:last-child{align-self:end}
+.core-actions b{font-size:16px!important}.core-actions small{font-size:10px!important}
+.scenic-trips{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+.scenic-trips .trip-card{display:block!important;min-height:132px!important;padding:0 0 10px!important;overflow:hidden}
+.trip-art{display:block!important;width:100%!important;height:82px!important;margin-bottom:8px!important}
+.scenic-trips b,.scenic-trips small{display:block;padding:0 8px;text-align:left}
+.scenic-trips small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero-slogan{margin-top:16px}
+.drive-strip{margin-bottom:12px!important}
+.road-now{margin-top:14px!important}
+}
