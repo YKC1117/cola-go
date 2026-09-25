@@ -61,3 +61,11 @@ describe("COLA GO simple route aliases", () => {
     expect(cctv.kind).toBe("freewayCctv");
   });
 });
+
+
+describe("public pagination query", () => {
+  it("accepts documented limit and cursor parameters", () => {
+    const route=matchRoute(new URL("https://example.test/api/highway/cctv?limit=500&cursor=1000"));
+    expect(route.kind).toBe("freewayCctv");
+  });
+});
