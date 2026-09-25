@@ -3,7 +3,7 @@ from pathlib import Path
 
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
-VERSION="0.5"
+VERSION="0.6"
 
 def uid(seed):
     return str(uuid.uuid5(uuid.NAMESPACE_URL, f"CarKitTW/OilDriver/v{VERSION}/"+seed)).upper()
@@ -173,12 +173,12 @@ branches={
  "找我的車":find_car("menu-find-car"),
  "音樂":music,
 }
-manual_menu=menu("Oil Driver｜要做什麼？",items,branches,"main-menu")
+manual_menu=menu("油車助手｜請選功能",items,branches,"main-menu")
 
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Oil Driver v0.5｜油車助手\n- 與 Tesla Driver 完全分開\n- Siri：嘿 Siri，油車助手 → 只問「要做什麼？」\n- 語音採精確比對；未知或否定句不執行\n- 主線保留 CarPlay、神盾、導航、路況、停車、加油、eTag、找車與音樂"
+    "WFCommentActionText":"Oil Driver v0.6｜油車助手\n- 與 Tesla Driver 完全分開\n- 點開捷徑直接顯示功能選單，不需要輸入文字或背口令\n- Siri 呼叫「油車助手」時使用同一套選單\n- 主線保留 CarPlay、神盾、導航、路況、停車、加油、eTag、找車與音樂"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
@@ -198,43 +198,9 @@ actions += if_exact(
     "route-auto-end"
 )
 
-voice,voice_id=ask_text("要做什麼？","voice-command")
-actions.append(voice)
-
-# Fast Siri commands.
-actions += route_aliases(voice_id,["導航","Apple導航","蘋果導航"],
-    lambda s:[app("com.apple.Maps",s)],"voice-nav-apple")
-actions += route_aliases(voice_id,["Google導航","Google Maps"],
-    lambda s:[app("com.google.Maps",s)],"voice-nav-google")
-actions += route_aliases(voice_id,["Waze"],
-    lambda s:[app("com.waze.iphone",s)],"voice-nav-waze")
-actions += route_aliases(voice_id,["神盾"],
-    lambda s:[app("tw.com.ainvest.outpack",s)],"voice-shield")
-actions += route_aliases(voice_id,["路況","1968","高速公路"],
-    lambda s:[app("tw.gov.freeway1968Ver2.Freeway1968HD",s)],"voice-traffic")
-actions += route_aliases(voice_id,["停車","停車場"],
-    lambda s:url_open("https://maps.apple.com/?q=%E5%81%9C%E8%BB%8A%E5%A0%B4",s),"voice-parking")
-actions += route_aliases(voice_id,["停車大聲公"],
-    lambda s:[app("com.alfred.parkinglot",s)],"voice-parking-app")
-actions += route_aliases(voice_id,["加油","加油站"],
-    lambda s:url_open("https://maps.apple.com/?q=%E5%8A%A0%E6%B2%B9%E7%AB%99",s),"voice-fuel")
-actions += route_aliases(voice_id,["eTag","ETag","etag","通行費"],
-    lambda s:[app("fetci.eTagGO.PRD",s)],"voice-etag")
-actions += route_aliases(voice_id,["記停車","記錄停車","停車位置"],
-    save_parking,"voice-save-parking")
-actions += route_aliases(voice_id,["找車","找我的車"],
-    find_car,"voice-find-car")
-actions += route_aliases(voice_id,["音樂","Apple Music"],
-    lambda s:[app("com.apple.Music",s)],"voice-music")
-actions += route_aliases(voice_id,["Spotify"],
-    lambda s:[app("com.spotify.client",s)],"voice-spotify")
-actions += route_aliases(voice_id,["選單"],
-    lambda s:manual_menu,"voice-menu")
-
-actions += [
-  show("沒聽懂，未執行任何操作。","voice-unknown"),
-  exit_shortcut()
-]
+# Main interactive entry: one tap / Siri invocation goes straight to the menu.
+actions += manual_menu
+actions.append(exit_shortcut())
 
 wf={
  "WFWorkflowClientVersion":"3400.0",

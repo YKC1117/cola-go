@@ -4,7 +4,7 @@ from pathlib import Path
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
 
-VERSION="0.7"
+VERSION="0.8"
 TEAM="PS9EBAM2PU"
 BUNDLE="com.teslamotors.TeslaApp"
 
@@ -199,28 +199,11 @@ def charge_limit_action(pct,seed):
     return tesla("ChargeLimitIntent",seed,{"percent":str(pct)},vehicle_mode=False,show_when_run=False)
 
 def confirm_then(prompt,action_factory,seed):
-    # Keep exactly one physical AppIntent per sensitive canonical command.
-    # The three accepted replies only normalize an approval flag; the actual
-    # Tesla action is emitted once after that normalization.
-    out=set_variable("SensitiveConfirmed","NO",seed+"-init")
-    q,qid=ask_text(prompt+" 請說「確認」、「確定」或「是」。",seed+"-ask")
-    out.append(q)
-    for i,word in enumerate(["確認","確定","是"]):
-        out += if_exact(
-            cond_action_output(qid,"Provided Input"),
-            word,
-            set_variable("SensitiveConfirmed","YES",f"{seed}-approve-{i}"),
-            f"{seed}-confirm-{i}"
-        )
-    out += if_exact(
-        cond_named_var("SensitiveConfirmed"),
-        "YES",
-        [action_factory(seed+"-confirmed"), exit_shortcut()],
-        seed+"-execute"
-    )
-    out += [show("已取消",seed+"-cancel"),exit_shortcut()]
-    return out
-
+    # Touch-first safety confirmation: no exact phrase to memorize.
+    return menu(prompt,["確認執行","取消"],{
+      "確認執行":[action_factory(seed+"-confirmed"),exit_shortcut()],
+      "取消":[show("已取消",seed+"-cancel"),exit_shortcut()]
+    },seed+"-confirm-menu")
 def route_aliases(input_uuid,aliases,action_factory,seed):
     out=[]
     for i,word in enumerate(aliases):
@@ -355,7 +338,7 @@ main_branches={
     "哨兵模式":set_command("SENTRY","menu-sentry"),
     "更多":more_menu,
 }
-manual_menu=menu("Tesla Driver｜要做什麼？",main_items,main_branches,"main-menu")
+manual_menu=menu("特斯拉助手｜請選功能",main_items,main_branches,"main-menu")
 
 # ---- safe automation ----
 auto_start=[
@@ -366,7 +349,7 @@ auto_start=[
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v0.7｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- Siri：嘿 Siri，特斯拉助手 → 只問「要做什麼？」\n- 語音同義詞只做解析；每種 Tesla 車控只保留一個真正 AppIntent\n- 解鎖、前行李廂、後車廂需再次明確確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- vehicle-backed Tesla AppIntent 會建立安裝時 Import Question；未設定時仍保留 Ask Each Time 安全 fallback\n- Tesla 藍牙自動化只使用 Connect；不偽造 Bluetooth Disconnect\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
+    "WFCommentActionText":"Tesla Driver v0.8｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- 點開捷徑直接顯示功能選單，不需要輸入文字或背口令\n- Siri 呼叫「特斯拉助手」時使用同一套選單\n- 解鎖、前行李廂、後車廂改用按鈕再次確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- vehicle-backed Tesla AppIntent 仍使用原生安裝綁定；未設定時保留 Ask Each Time 安全 fallback\n- Tesla 藍牙自動化只使用 Connect；不偽造 Bluetooth Disconnect\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
@@ -385,63 +368,8 @@ actions += if_exact(cond_extension_input(),"AUTO_START",auto_start,"route-auto-s
 actions += set_command("NONE","command-init")
 actions += set_variable("PrepareMode","NO","prepare-init")
 
-voice,voice_id=ask_text("要做什麼？","voice-command")
-actions.append(voice)
-
-# ---- Tesla voice aliases normalize to canonical commands ----
-actions += normalize_aliases(voice_id,["預冷","冷氣","開冷氣"],"PRE_START","voice-pre-start")
-actions += normalize_aliases(voice_id,["停止預冷","關冷氣"],"PRE_STOP","voice-pre-stop")
-actions += normalize_aliases(voice_id,["22度","22 度","二十二度"],"TEMP_22","voice-temp22")
-actions += normalize_aliases(voice_id,["23度","23 度","二十三度"],"TEMP_23","voice-temp23")
-actions += normalize_aliases(voice_id,["24度","24 度","二十四度"],"TEMP_24","voice-temp24")
-actions += normalize_aliases(voice_id,["前車廂","前行李廂"],"FRUNK","voice-frunk")
-actions += normalize_aliases(voice_id,["後車廂","後行李廂"],"REAR","voice-rear")
-actions += normalize_aliases(voice_id,["鎖車"],"LOCK","voice-lock")
-actions += normalize_aliases(voice_id,["解鎖","開鎖"],"UNLOCK","voice-unlock")
-actions += normalize_aliases(voice_id,["充到80","充到 80","充到80%","充到 80%"],"CHARGE_80","voice-charge80")
-actions += normalize_aliases(voice_id,["充到90","充到 90","充到90%","充到 90%"],"CHARGE_90","voice-charge90")
-actions += normalize_aliases(voice_id,["充電孔","開充電孔","開啟充電孔"],"CHARGE_PORT_OPEN","voice-charge-port")
-actions += normalize_aliases(voice_id,["閃燈","閃燈尋車"],"FLASH","voice-flash")
-actions += normalize_aliases(voice_id,["除霧","除霜"],"DEFROST_ON","voice-defrost-on")
-actions += normalize_aliases(voice_id,["停止除霜","關除霜"],"DEFROST_OFF","voice-defrost-off")
-actions += normalize_aliases(voice_id,["座椅加熱","駕駛座加熱","開座椅加熱"],"SEAT_HIGH","voice-seat-high")
-actions += normalize_aliases(voice_id,["關座椅加熱","關閉座椅加熱"],"SEAT_OFF","voice-seat-off")
-for i,word in enumerate(["準備出發","出發"]):
-    actions += if_exact(
-        cond_action_output(voice_id,"Provided Input"),
-        word,
-        set_prepare(f"voice-prepare-{i}"),
-        f"voice-prepare-alias-{i}"
-    )
-
-# Non-Tesla commands can execute directly and exit.
-actions += route_aliases(voice_id,["找車","找我的車","停車位置"],
-    lambda s:find_parked_car(s),"voice-find-car")
-actions += route_aliases(voice_id,["神盾"],
-    lambda s:[app("tw.com.ainvest.outpack",s)],"voice-shield")
-actions += route_aliases(voice_id,["導航","Apple導航","蘋果導航"],
-    lambda s:[app("com.apple.Maps",s)],"voice-nav-apple")
-actions += route_aliases(voice_id,["Google導航","Google Maps"],
-    lambda s:[app("com.google.Maps",s)],"voice-nav-google")
-actions += route_aliases(voice_id,["Waze"],
-    lambda s:[app("com.waze.iphone",s)],"voice-nav-waze")
-
-# Ambiguous "充電" gets one short follow-up.
-charge_q,charge_qid=ask_text("充到 80、90，還是開 Tesla？","voice-charge-followup")
-charge_follow=[
-  charge_q,
-  *normalize_aliases(charge_qid,["80","80%","八十"],"CHARGE_80","voice-charge-followup-80"),
-  *normalize_aliases(charge_qid,["90","90%","九十"],"CHARGE_90","voice-charge-followup-90"),
-  *route_aliases(charge_qid,["Tesla","開 Tesla","App"],lambda s:[app(BUNDLE,s)],"voice-charge-followup-app")
-]
-actions += if_exact(cond_action_output(voice_id,"Provided Input"),"充電",charge_follow,"voice-charge-ambiguous")
-
-# Sentry is donor-backed but its fixed enum is not yet proven. Keep Tesla's own
-# Ask parameter instead of guessing on/off values.
-actions += normalize_aliases(voice_id,["哨兵","哨兵模式"],"SENTRY","voice-sentry")
-
-# Full touch menu is available by saying/selecting "選單".
-actions += if_exact(cond_action_output(voice_id,"Provided Input"),"選單",manual_menu,"voice-menu")
+# Main interactive entry: one tap / Siri invocation goes straight to the menu.
+actions += manual_menu
 
 # ---- one canonical Tesla AppIntent per actual function ----
 cmd=cond_named_var("Command")
@@ -476,7 +404,7 @@ actions += if_exact(cmd,"VENT",[vent_action("canonical-vent"),exit_shortcut()],"
 actions += if_exact(cmd,"WINDOW_CLOSE",[close_window_action("canonical-window-close"),exit_shortcut()],"run-window-close")
 actions += if_exact(cmd,"SENTRY",[sentry_action("canonical-sentry"),exit_shortcut()],"run-sentry")
 
-actions += [show("沒聽懂，未執行任何車控。","voice-unknown"),exit_shortcut()]
+actions.append(exit_shortcut())
 
 # ---- native install-time vehicle binding ----
 # A public Tesla donor proves that WFWorkflowImportQuestions can target an
@@ -511,7 +439,7 @@ for number,(index,intent) in enumerate(vehicle_indexes,1):
       "Category":"Parameter",
       "ParameterKey":"vehicle",
       "ActionIndex":index,
-      "Text":f"選擇同一台 Tesla（{number}/{total}）：{label}"
+      "Text":f"Tesla 設定 {number}/{total}｜請都選同一台車：{label}"
     })
 
 wf={
