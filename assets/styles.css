@@ -480,3 +480,116 @@ select option{background:#11151b;color:#fff}
 .more-list{gap:9px}.more-list button{min-height:62px}
 .feedback-line{background:linear-gradient(135deg,#08cf5b,#04a947);box-shadow:0 10px 25px #05c65325}
 @media(max-width:599px){.road-now-grid{gap:8px}.road-now-grid button{min-height:94px;padding:13px 10px}.road-now-grid b{font-size:22px}.section-head h2{font-size:19px}}
+
+/* Concept fidelity V3 — illustrated road hero, not a recolor */
+.view[data-view="home"]{padding-top:0}
+.cola-road-hero{height:390px;background:linear-gradient(180deg,#280006 0,#160006 42%,#07080a 100%);border-radius:0;overflow:hidden}
+.hero-sky{position:absolute;inset:0 0 44%;background:radial-gradient(ellipse at 60% 55%,#ff24363d,transparent 33%),linear-gradient(168deg,transparent 40%,#e9152730 41%,transparent 43%)}
+.hero-mountain{position:absolute;left:-10%;right:-10%;top:108px;height:120px;background:#08090b;clip-path:polygon(0 62%,8% 48%,16% 59%,28% 25%,37% 52%,48% 18%,58% 54%,68% 32%,78% 58%,89% 28%,100% 50%,100% 100%,0 100%);filter:drop-shadow(0 -8px 18px #e9142529)}
+.hero-road{position:absolute;left:3%;right:3%;bottom:-74px;height:235px;background:linear-gradient(90deg,#07080a,#171116 48%,#08090b);clip-path:polygon(38% 0,61% 0,100% 100%,0 100%)}
+.hero-road::before,.hero-road::after{content:"";position:absolute;top:5%;bottom:0;width:2px;background:linear-gradient(#fff2,#ff1e32)}
+.hero-road::before{left:38%;transform:rotate(12deg)}.hero-road::after{right:38%;transform:rotate(-12deg)}
+.hero-road i{position:absolute;left:49.5%;width:4px;height:36px;background:#f7e8dc8a;transform:perspective(90px) rotateX(35deg)}
+.hero-road i:nth-child(1){top:20px;height:14px}.hero-road i:nth-child(2){top:66px;height:25px}.hero-road i:nth-child(3){top:128px;height:44px}
+.hero-car{position:absolute;right:-15px;bottom:38px;width:150px;height:78px;filter:drop-shadow(0 15px 18px #000)}
+.car-roof{position:absolute;right:20px;top:0;width:85px;height:42px;background:linear-gradient(140deg,#201216,#07080a);clip-path:polygon(24% 0,80% 6%,100% 100%,0 100%)}
+.car-body{position:absolute;inset:31px 0 0;background:linear-gradient(165deg,#331015,#08090b 64%);border-radius:35px 9px 18px 18px;border-bottom:2px solid #e51b2a}
+.tail-light{position:absolute;right:13px;top:40px;width:56px;height:9px;border-radius:12px;background:#ff2035;box-shadow:0 0 9px #ff2035,0 0 22px #ff20358c}
+.concept-wordmark{position:relative;z-index:2;display:flex;align-items:center;gap:10px;padding-top:18px;margin-bottom:25px}
+.concept-wordmark img{width:42px;height:42px;border-radius:12px;box-shadow:0 0 22px #ef18284f}
+.concept-wordmark span{display:grid}.concept-wordmark strong{font-size:23px;font-style:italic;letter-spacing:-.045em;color:#fff}.concept-wordmark strong::first-letter{color:#fff}.concept-wordmark small{font-size:9px;font-weight:900;letter-spacing:.18em;color:#ff5b67}
+.home-greeting{min-height:125px}.home-greeting h1{font-size:40px;line-height:1.03}.home-greeting p{font-size:16px;color:#fff}
+.cola-orbit{display:none}
+.search-destination{position:relative;z-index:4;margin-top:4px;min-height:88px;border-radius:24px}
+.core-actions{position:relative;z-index:4}
+@media(max-width:430px){.cola-road-hero{height:410px}.concept-wordmark{padding-top:14px}.home-greeting h1{font-size:38px}.hero-car{width:140px;right:-25px;bottom:48px}}
+
+/* V3 visual departure cards + stronger feature tiles */
+.scenic-trips{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:10px!important}
+.scenic-trips .trip-card{position:relative;min-height:142px!important;padding:0!important;overflow:hidden;border-radius:18px!important;text-align:left;background:#101319!important}
+.trip-art{display:block;position:relative;height:82px;overflow:hidden;background:linear-gradient(180deg,#8d2730,#18080c 58%,#090b0e)}
+.trip-art::before{content:"";position:absolute;left:-8%;right:-8%;bottom:12px;height:55px;background:#0b0d10;clip-path:polygon(0 80%,14% 42%,28% 65%,45% 20%,61% 64%,76% 34%,100% 70%,100% 100%,0 100%)}
+.trip-art::after{content:"";position:absolute;left:39%;right:39%;bottom:-18px;height:64px;background:#2c2d31;clip-path:polygon(42% 0,58% 0,100% 100%,0 100%);box-shadow:0 0 18px #ef182838}
+.trip-art i{position:absolute;z-index:2;left:50%;bottom:2px;width:2px;height:28px;background:#f6e9dc9e;transform:translateX(-50%)}
+.trip-park .trip-art{background:linear-gradient(180deg,#22435b,#0c1921 62%,#090b0e)}
+.trip-park .trip-art::before{clip-path:polygon(0 62%,18% 45%,31% 58%,50% 33%,68% 55%,84% 40%,100% 62%,100% 100%,0 100%)}
+.trip-charge .trip-art{background:linear-gradient(180deg,#553166,#180d22 60%,#090b0e)}
+.scenic-trips b,.scenic-trips small{display:block;padding-left:11px;padding-right:8px}.scenic-trips b{padding-top:9px;font-size:14px}.scenic-trips small{padding-top:2px;font-size:9px;line-height:1.25;color:#858d98}
+.core-actions button{min-height:112px!important;padding:15px!important;border-radius:20px!important}
+.core-actions .core-icon{width:48px;height:48px;display:grid;place-items:center}.core-actions .core-icon svg{width:27px;height:27px}
+.core-actions button:nth-child(2){background:linear-gradient(145deg,#173c71,#0d1829)}
+.core-actions button:nth-child(3){background:linear-gradient(145deg,#285f32,#102217)}
+.core-actions button:nth-child(4){background:linear-gradient(145deg,#563083,#1c102b)}
+.core-actions button:nth-child(2) .core-icon{background:#2879db2d;color:#65aaff}
+.core-actions button:nth-child(3) .core-icon{background:#4dc55b25;color:#75df7d}
+.core-actions button:nth-child(4) .core-icon{background:#9b59e82b;color:#bd7cff}
+@media(max-width:430px){.scenic-trips{grid-template-columns:repeat(3,minmax(0,1fr))!important}.scenic-trips .trip-card{min-height:138px!important}.trip-art{height:78px}.core-actions{gap:10px!important}.core-actions button{min-height:116px!important}}
+
+/* V3 concept map stages */
+.concept-map{position:relative;height:245px;margin:0 0 14px;overflow:hidden;border-radius:22px;border:1px solid #ffffff10;background:radial-gradient(circle at 68% 34%,#16416355,transparent 25%),linear-gradient(145deg,#101c27,#071016 65%);box-shadow:0 18px 35px #0005}
+.concept-map::before{content:"";position:absolute;inset:0;opacity:.55;background-image:linear-gradient(31deg,transparent 47%,#214156 48%,#214156 49%,transparent 50%),linear-gradient(118deg,transparent 48%,#1d3545 49%,#1d3545 50%,transparent 51%);background-size:82px 62px,105px 80px}
+.concept-map::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 48%,#071016e8 100%);pointer-events:none}
+.concept-map>b,.concept-map>small{position:absolute;z-index:4;left:18px}.concept-map>b{bottom:31px;font-size:18px;color:#fff}.concept-map>small{bottom:14px;color:#8394a2;font-size:10px}
+.map-road{position:absolute;z-index:1;height:3px;width:140%;left:-20%;background:#28536c45;transform-origin:center}.map-road.r1{top:38%;transform:rotate(19deg)}.map-road.r2{top:56%;transform:rotate(-31deg)}.map-road.r3{top:25%;transform:rotate(68deg)}
+.map-pin{position:absolute;z-index:3;display:grid;place-items:center;width:34px;height:42px;padding-bottom:5px;border-radius:18px 18px 18px 3px;transform:rotate(-45deg);background:#df1727;color:#fff;font-size:14px;font-weight:900;font-style:normal;box-shadow:0 8px 20px #0008,0 0 16px #ef182847}
+.map-pin::first-line{transform:rotate(45deg)}
+.map-pin.p1{left:16%;top:34%}.map-pin.p2{left:45%;top:19%}.map-pin.p3{right:18%;top:40%}.map-pin.p4{left:58%;top:58%}
+.parking-map{background:radial-gradient(circle at 70% 30%,#125ca957,transparent 27%),linear-gradient(145deg,#0d1a28,#071016 65%)}
+.parking-map .map-pin{background:#1671df;box-shadow:0 8px 20px #0008,0 0 16px #1671df55}
+@media(max-width:430px){.concept-map{height:225px;border-radius:20px}}
+
+/* V3 highway + tunnel cinematic stages */
+.traffic-stage,.tunnel-stage{position:relative;height:170px;margin:12px 0 16px;overflow:hidden;border-radius:22px;border:1px solid #ffffff0e;background:linear-gradient(180deg,#15191e,#07090c);box-shadow:0 16px 34px #0005}
+.traffic-stage::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 75% 20%,#ef18282d,transparent 26%),linear-gradient(145deg,transparent 45%,#ffffff08 46%,transparent 47%)}
+.traffic-road{position:absolute;left:19%;right:19%;bottom:-55px;height:180px;background:#111318;clip-path:polygon(39% 0,61% 0,100% 100%,0 100%)}
+.traffic-road::before{content:"";position:absolute;left:49%;top:20px;width:3px;height:120px;background:repeating-linear-gradient(#f6e9dca8 0 17px,transparent 17px 35px)}
+.traffic-stage>div{position:absolute;z-index:2;left:18px;bottom:17px;display:grid}.traffic-stage b{font-size:20px}.traffic-stage small{font-size:10px;color:#89919b;margin-top:3px}
+.tunnel-stage{height:230px;background:radial-gradient(ellipse at 50% 60%,#3b281d 0,#17120f 28%,#050607 67%);perspective:300px}
+.tunnel-stage::before{content:"";position:absolute;inset:0;border-radius:50% 50% 0 0/72% 72% 0 0;border:20px solid #29221e;border-bottom:0;box-shadow:inset 0 0 55px #000}
+.tunnel-lights{position:absolute;z-index:2;left:50%;top:0;width:8px;height:155px;transform:translateX(-50%);background:repeating-linear-gradient(#fff8c8 0 8px,#9b7643 8px 17px);filter:drop-shadow(0 0 8px #ffd786)}
+.tunnel-road{position:absolute;left:18%;right:18%;bottom:-35px;height:145px;background:#171719;clip-path:polygon(39% 0,61% 0,100% 100%,0 100%)}
+.tunnel-road::after{content:"";position:absolute;left:49%;top:18px;width:3px;height:110px;background:repeating-linear-gradient(#fff9 0 14px,transparent 14px 29px)}
+.tunnel-car{position:absolute;z-index:3;left:50%;bottom:42px;width:42px;height:19px;transform:translateX(-50%);border-radius:12px 12px 4px 4px;background:#090909;box-shadow:-13px 6px 12px #ff1d30,13px 6px 12px #ff1d30}
+.tunnel-car::before,.tunnel-car::after{content:"";position:absolute;top:8px;width:9px;height:5px;border-radius:5px;background:#ff2336;box-shadow:0 0 9px #ff2336}.tunnel-car::before{left:5px}.tunnel-car::after{right:5px}
+.tunnel-stage>span,.tunnel-stage>small{position:absolute;z-index:4;left:18px}.tunnel-stage>span{bottom:29px;font-size:18px;font-weight:850}.tunnel-stage>small{bottom:13px;font-size:10px;color:#9a9290}
+
+/* V3 CCTV + owner garage */
+.camera-stage{position:relative;height:210px;margin-bottom:15px;overflow:hidden;border-radius:22px;border:1px solid #ffffff10;background:linear-gradient(180deg,#151922,#07090c 70%);box-shadow:0 16px 34px #0005}
+.camera-stage::before{content:"";position:absolute;left:-5%;right:-5%;bottom:50px;height:92px;background:#111419;clip-path:polygon(0 58%,18% 42%,32% 54%,50% 25%,67% 53%,83% 38%,100% 57%,100% 100%,0 100%)}
+.camera-road{position:absolute;left:23%;right:23%;bottom:-28px;height:120px;background:#1b1d21;clip-path:polygon(40% 0,60% 0,100% 100%,0 100%)}
+.camera-road::after{content:"";position:absolute;left:49%;top:16px;width:3px;height:88px;background:repeating-linear-gradient(#fff8 0 12px,transparent 12px 25px)}
+.camera-frame{position:absolute;z-index:3;inset:12px;border:1px solid #ffffff2a;border-radius:15px}.camera-frame span{position:absolute;top:9px;left:11px;color:#ff4250;font-size:9px;font-weight:900;letter-spacing:.12em}.camera-frame span::before{content:"";display:inline-block;width:6px;height:6px;margin-right:5px;border-radius:50%;background:#ff2639;box-shadow:0 0 8px #ff2639}
+.camera-frame i{position:absolute;width:18px;height:18px;border-color:#fff7;border-style:solid}.camera-frame i:nth-of-type(1){left:7px;top:7px;border-width:2px 0 0 2px}.camera-frame i:nth-of-type(2){right:7px;top:7px;border-width:2px 2px 0 0}.camera-frame i:nth-of-type(3){left:7px;bottom:7px;border-width:0 0 2px 2px}.camera-frame i:nth-of-type(4){right:7px;bottom:7px;border-width:0 2px 2px 0}
+.camera-stage>b,.camera-stage>small{position:absolute;z-index:4;left:23px}.camera-stage>b{bottom:28px;font-size:17px}.camera-stage>small{bottom:13px;font-size:10px;color:#8d949e}
+.tools-hero{margin-bottom:14px;padding:22px 18px;border-radius:22px;background:radial-gradient(circle at 90% 20%,#ef18283e,transparent 31%),linear-gradient(145deg,#251015,#0c0e12 68%);border:1px solid #ef18282c;box-shadow:0 15px 30px #0004}.tools-hero span{font-size:9px;font-weight:900;letter-spacing:.16em;color:#ff5a66}.tools-hero h2{margin:7px 0 4px;font-size:23px;letter-spacing:-.04em}.tools-hero p{margin:0;color:#9ba1aa;font-size:12px}
+.tools-grid button{min-height:112px;border-radius:20px;background:linear-gradient(145deg,#171b21,#0b0d11);border:1px solid #ffffff0e}.tools-grid button>span{background:#ef182818;color:#ff5260}
+
+/* V3 final mobile composition — 390px target */
+@media(max-width:599px){
+  .view[data-view="home"]{padding-left:14px;padding-right:14px}
+  .cola-road-hero{left:-14px;right:-14px;height:420px}
+  .concept-wordmark{padding-top:12px;margin-bottom:20px}
+  .concept-wordmark img{width:38px;height:38px}
+  .concept-wordmark strong{font-size:22px}
+  .home-greeting{min-height:118px;max-width:72%}
+  .home-greeting h1{font-size:37px;margin-bottom:7px}
+  .home-greeting p{font-size:14px;line-height:1.45}
+  .search-destination{min-height:80px;border-radius:22px;padding:0 16px}
+  .drive-strip{margin-top:12px}
+  .core-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important}
+  .core-actions button{min-height:106px!important}
+  .core-actions b{font-size:16px}.core-actions small{font-size:10px}
+  .road-now{margin-top:22px}
+  .road-now-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .road-now-grid button{min-width:0}
+  .scenic-trips{gap:8px!important}
+  .scenic-trips .trip-card{min-width:0}
+  .scenic-trips b{font-size:13px}
+  .feedback-card{border-radius:22px}
+}
+@media(max-width:360px){
+  .home-greeting{max-width:78%}.home-greeting h1{font-size:34px}
+  .scenic-trips{grid-template-columns:1fr!important}
+  .scenic-trips .trip-card{display:grid;grid-template-columns:112px 1fr;grid-template-rows:auto auto;min-height:88px!important}
+  .trip-art{grid-row:1/3;height:88px}.scenic-trips b{align-self:end}.scenic-trips small{align-self:start}
+}
