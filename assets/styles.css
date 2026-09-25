@@ -365,3 +365,15 @@ body{background:radial-gradient(circle at 50% -8%,#283443 0,#0b1017 34%,#070a0e 
 .cola-orbit{width:66px;height:66px;flex:none;padding:5px;border-radius:21px;background:linear-gradient(145deg,#222d3a,#111821);border:1px solid #ffffff12;box-shadow:0 14px 28px #0004}
 .cola-orbit img{width:100%;height:100%;display:block;border-radius:16px}
 @media(max-width:374px){.cola-orbit{width:58px;height:58px}.home-greeting h1{font-size:27px}.home-greeting p{font-size:12px}}
+
+/* High-glance driver controls */
+.core-actions button{min-height:96px;position:relative;overflow:hidden}
+.core-actions button::after{content:"";position:absolute;inset:auto -20px -34px auto;width:66px;height:66px;border-radius:50%;background:#ffffff05}
+.core-actions button:nth-child(2) .core-icon{color:#66a9ff}
+.core-actions button:nth-child(3) .core-icon{color:#ffbf47}
+.core-actions button:nth-child(4) .core-icon{color:#8dd6ff}
+.road-now-grid b{color:#fff}
+.road-now-grid button:active,.core-actions button:active,.quick-trips button:active{transform:scale(.98)}
+.bottom-nav button{transition:color .15s,transform .15s}.bottom-nav button:active{transform:translateY(1px)}
+.bottom-nav button.active svg{filter:drop-shadow(0 3px 8px #ff334866)}
+@media(max-width:430px){.core-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.core-actions button{min-height:88px;display:grid;grid-template-columns:48px 1fr;align-items:center;text-align:left;padding:11px 12px}.core-icon{width:42px}.core-actions b{font-size:16px}.core-actions small{font-size:11px}.road-now{padding:16px}.quick-trips{grid-template-columns:1fr}.quick-trips button{min-height:66px;padding:14px 16px}}
