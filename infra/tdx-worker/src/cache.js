@@ -10,7 +10,8 @@ export function classifySnapshot(row,now=Date.now()) {
 }
 export function publicCacheSeconds(route,envelope,now=Date.now()) {
   const configured=Math.max(1,Math.min(Number(route.ttl?.fresh||30),86400));
-  const expiresAt=Date.parse(envelope?.expiresAt||"");
+  if(!envelope)return configured;
+  const expiresAt=Date.parse(envelope.expiresAt||"");
   if(!Number.isFinite(expiresAt))return 0;
   return Math.max(0,Math.min(configured,Math.floor((expiresAt-now)/1000)));
 }
