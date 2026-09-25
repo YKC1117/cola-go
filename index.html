@@ -116,9 +116,9 @@
         <section class="section compact-section">
           <div class="section-head clean-head"><div><h2>快速出發</h2></div><button class="text-link" data-go="trip">更多</button></div>
           <div class="quick-trips">
-            <button data-fill-route="台南|東山"><b>東山</b><small>台南出發</small></button>
-            <button data-fill-route="台南|嘉義"><b>嘉義</b><small>台南出發</small></button>
-            <button data-fill-route="台南|台北"><b>台北</b><small>台南出發</small></button>
+            <button data-go="trip"><b>規劃路線</b><small>自行輸入起點與目的地</small></button>
+            <button data-go="parking"><b>找停車</b><small>全台停車快速搜尋</small></button>
+            <button data-go="charging"><b>找充電</b><small>充電站與服務區</small></button>
           </div>
         </section>
 
@@ -140,7 +140,7 @@
         <div class="route-form">
           <label><small>起點</small><input id="tripFrom" placeholder="目前位置或輸入起點"></label>
           <label><small>目的地</small><input id="tripTo" placeholder="輸入目的地"></label>
-          <div class="route-chips"><button data-route="台南|東山">台南 → 東山</button><button data-route="台南|嘉義">台南 → 嘉義</button><button data-route="台南|台北">台南 → 台北</button></div>
+          <div class="route-chips"><span>不預設任何私人起點或常用路線</span></div>
           <button class="primary" id="planTripBtn">整理沿途資訊<svg><use href="#i-arrow"/></svg></button>
         </div>
         <div id="tripResult"></div>
