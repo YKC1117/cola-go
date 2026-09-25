@@ -113,6 +113,37 @@ jobs:
             return 1
           }
 
+          tap_label_center() {
+            local json_file="$1"
+            local label="$2"
+            local xy
+            xy="$(python3 - "$json_file" "$label" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1]))
+          label=sys.argv[2]
+          matches=[]
+          def walk(v):
+              if isinstance(v,dict):
+                  if v.get("AXLabel")==label and isinstance(v.get("frame"),dict):
+                      f=v["frame"]
+                      try:
+                          matches.append((float(f["x"])+float(f["width"])/2, float(f["y"])+float(f["height"])/2))
+                      except Exception:
+                          pass
+                  for x in v.values(): walk(x)
+              elif isinstance(v,list):
+                  for x in v: walk(x)
+          walk(data)
+          if not matches:
+              raise SystemExit(f"label frame not found: {label}")
+          x,y=matches[0]
+          print(f"{x:.2f} {y:.2f}")
+          PY
+            )"
+            read -r x y <<< "$xy"
+            echo "TAP_FRAME label=$label x=$x y=$y"
+            run_idb idb ui tap "$x" "$y" --udid "$UDID"
+          }
           mkdir -p /tmp/carkit-probe
           git rev-parse HEAD > /tmp/carkit-probe/commit.txt
           xcrun simctl list runtimes > /tmp/carkit-probe/simulator-runtimes.txt
@@ -148,7 +179,7 @@ jobs:
           sleep 4
           describe_retry /tmp/carkit-probe/oil-before.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-before.png
-          run_idb idb ui tap "Add Shortcut" --udid "$UDID"
+          tap_label_center /tmp/carkit-probe/oil-before.json "Add Shortcut"
           sleep 6
           describe_retry /tmp/carkit-probe/oil-after-add.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-after-add.png
@@ -167,7 +198,7 @@ jobs:
           sleep 4
           describe_retry /tmp/carkit-probe/tesla-before.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-before.png
-          run_idb idb ui tap "Add Shortcut" --udid "$UDID"
+          tap_label_center /tmp/carkit-probe/tesla-before.json "Add Shortcut"
           sleep 6
           describe_retry /tmp/carkit-probe/tesla-after-add.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-after-add.png
@@ -268,7 +299,29 @@ jobs:
             done
             return 1
           }
-          open_shortcut_retry() {
+           tap_label_center_menu() {
+            local json_file="$1"
+            local label="$2"
+            local xy
+            xy="$(python3 - "$json_file" "$label" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1])); label=sys.argv[2]; hits=[]
+          def walk(v):
+              if isinstance(v,dict):
+                  if v.get("AXLabel")==label and isinstance(v.get("frame"),dict):
+                      f=v["frame"]; hits.append((float(f["x"])+float(f["width"])/2,float(f["y"])+float(f["height"])/2))
+                  for x in v.values(): walk(x)
+              elif isinstance(v,list):
+                  for x in v: walk(x)
+          walk(data)
+          if not hits: raise SystemExit(f"label frame not found: {label}")
+          print(f"{hits[0][0]:.2f} {hits[0][1]:.2f}")
+          PY
+            )"
+            read -r x y <<< "$xy"
+            run_idb idb ui tap "$x" "$y" --udid "$UDID"
+          }
+         open_shortcut_retry() {
             local encoded_name="$1"
             for attempt in 1 2 3; do
               xcrun simctl launch "$UDID" com.apple.shortcuts || true
@@ -315,7 +368,8 @@ jobs:
           # Tesla: run from the native editor's Play button and prove the
           # touch-first main menu appears before any Tesla AppIntent executes.
           open_shortcut_retry "%E7%89%B9%E6%96%AF%E6%8B%89%E5%8A%A9%E6%89%8B"
-          run_idb idb ui tap "play" --udid "$UDID"
+          describe_retry /tmp/carkit-probe/tesla-editor-before-play.json
+          tap_label_center_menu /tmp/carkit-probe/tesla-editor-before-play.json "play"
           sleep 3
           describe_retry /tmp/carkit-probe/tesla-play-menu.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-play-menu.png
@@ -323,7 +377,8 @@ jobs:
 
           # Oil: independently prove the same menu-first interaction.
           open_shortcut_retry "%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
-          run_idb idb ui tap "play" --udid "$UDID"
+          describe_retry /tmp/carkit-probe/oil-editor-before-play.json
+          tap_label_center_menu /tmp/carkit-probe/oil-editor-before-play.json "play"
           sleep 3
           describe_retry /tmp/carkit-probe/oil-play-menu.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-play-menu.png
@@ -367,14 +422,39 @@ jobs:
             return 1
           }
 
+          tap_label_center_nav() {
+            local json_file="$1"
+            local label="$2"
+            local xy
+            xy="$(python3 - "$json_file" "$label" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1])); label=sys.argv[2]; hits=[]
+          def walk(v):
+              if isinstance(v,dict):
+                  if v.get("AXLabel")==label and isinstance(v.get("frame"),dict):
+                      f=v["frame"]; hits.append((float(f["x"])+float(f["width"])/2,float(f["y"])+float(f["height"])/2))
+                  for x in v.values(): walk(x)
+              elif isinstance(v,list):
+                  for x in v: walk(x)
+          walk(data)
+          if not hits: raise SystemExit(f"label frame not found: {label}")
+          print(f"{hits[0][0]:.2f} {hits[0][1]:.2f}")
+          PY
+            )"
+            read -r x y <<< "$xy"
+            run_idb idb ui tap "$x" "$y" --udid "$UDID"
+          }
           # Prove the new navigation path reaches a real runtime destination
           # prompt instead of a missing-parameter sheet.
           open_shortcut_retry_nav "%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
-          run_idb idb ui tap "play" --udid "$UDID"
+          describe_retry /tmp/carkit-probe/oil-nav-editor.json
+          tap_label_center_nav /tmp/carkit-probe/oil-nav-editor.json "play"
           sleep 2
-          run_idb idb ui tap "導航" --udid "$UDID"
+          describe_retry /tmp/carkit-probe/oil-nav-main-menu.json
+          tap_label_center_nav /tmp/carkit-probe/oil-nav-main-menu.json "導航"
           sleep 1
-          run_idb idb ui tap "Apple 地圖" --udid "$UDID"
+          describe_retry /tmp/carkit-probe/oil-nav-app-menu.json
+          tap_label_center_nav /tmp/carkit-probe/oil-nav-app-menu.json "Apple 地圖"
           sleep 2
           describe_retry /tmp/carkit-probe/oil-navigation-prompt.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-navigation-prompt.png
