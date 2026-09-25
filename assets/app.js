@@ -1341,7 +1341,13 @@ function fillRoute(from,to){
 }
 
 function bindTrip(){
-  $$("[data-route]").forEach(b=>b.onclick=()=>{
+  $("[data-focus-route]").forEach(b=>b.onclick=()=>{
+    show("trip");
+    const target=b.dataset.focusRoute==="from" ? $("#tripFrom") : $("#tripTo");
+    requestAnimationFrame(()=>target?.focus());
+  });
+
+  $("[data-route]").forEach(b=>b.onclick=()=>{
     const parts=b.dataset.route.split("|");
     $("#tripFrom").value=parts[0];
     $("#tripTo").value=parts[1];
