@@ -348,6 +348,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-ios-simulator-install-flow-v0.8
+          name: carkit-ios-simulator-install-flow-v0.9
           path: /tmp/carkit-probe/
           if-no-files-found: error

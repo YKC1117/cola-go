@@ -3,7 +3,7 @@ from pathlib import Path
 
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
-VERSION="0.6"
+VERSION="0.9"
 
 def uid(seed):
     return str(uuid.uuid5(uuid.NAMESPACE_URL, f"CarKitTW/OilDriver/v{VERSION}/"+seed)).upper()
@@ -178,7 +178,7 @@ manual_menu=menu("油車助手｜請選功能",items,branches,"main-menu")
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Oil Driver v0.6｜油車助手\n- 與 Tesla Driver 完全分開\n- 點開捷徑直接顯示功能選單，不需要輸入文字或背口令\n- Siri 呼叫「油車助手」時使用同一套選單\n- 主線保留 CarPlay、神盾、導航、路況、停車、加油、eTag、找車與音樂"
+    "WFCommentActionText":"Oil Driver v0.9｜油車助手\n- 與 Tesla Driver 完全分開\n- 點開捷徑直接顯示功能選單，不需要輸入文字或背口令\n- Siri 呼叫「油車助手」時使用同一套選單\n- 主線保留 CarPlay、神盾、導航、路況、停車、加油、eTag、找車與音樂"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
@@ -186,18 +186,7 @@ actions=[
   }),
 ]
 
-# CarPlay / automation entry. AUTO_START/AUTO_END remain non-sensitive.
-actions += if_exact(
-    cond_extension_input(),"AUTO_START",
-    [app("tw.com.ainvest.outpack","auto-start-shield"),exit_shortcut()],
-    "route-auto-start"
-)
-actions += if_exact(
-    cond_extension_input(),"AUTO_END",
-    [*save_parking("auto-end-parking"),exit_shortcut()],
-    "route-auto-end"
-)
-
+# User-facing shortcut: no Shortcut Input dependency. Automations must use separate helper shortcuts.
 # Main interactive entry: one tap / Siri invocation goes straight to the menu.
 actions += manual_menu
 actions.append(exit_shortcut())

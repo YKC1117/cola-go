@@ -4,7 +4,7 @@ from pathlib import Path
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
 
-VERSION="0.8"
+VERSION="0.9"
 TEAM="PS9EBAM2PU"
 BUNDLE="com.teslamotors.TeslaApp"
 
@@ -349,7 +349,7 @@ auto_start=[
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v0.8｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- 點開捷徑直接顯示功能選單，不需要輸入文字或背口令\n- Siri 呼叫「特斯拉助手」時使用同一套選單\n- 解鎖、前行李廂、後車廂改用按鈕再次確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- vehicle-backed Tesla AppIntent 仍使用原生安裝綁定；未設定時保留 Ask Each Time 安全 fallback\n- Tesla 藍牙自動化只使用 Connect；不偽造 Bluetooth Disconnect\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
+    "WFCommentActionText":"Tesla Driver v0.9｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- 點開捷徑直接顯示功能選單，不需要輸入文字或背口令\n- Siri 呼叫「特斯拉助手」時使用同一套選單\n- 解鎖、前行李廂、後車廂改用按鈕再次確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- vehicle-backed Tesla AppIntent 仍使用原生安裝綁定；未設定時保留 Ask Each Time 安全 fallback\n- Tesla 藍牙自動化只使用 Connect；不偽造 Bluetooth Disconnect\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
@@ -361,8 +361,7 @@ actions=[
   })
 ]
 
-# AUTO_START only; no physical Tesla control is reachable here.
-actions += if_exact(cond_extension_input(),"AUTO_START",auto_start,"route-auto-start")
+# User-facing shortcut: no Shortcut Input dependency. Automations must use separate helper shortcuts.
 
 # Always initialize canonical command to empty text.
 actions += set_command("NONE","command-init")

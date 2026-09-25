@@ -81,7 +81,7 @@ jobs:
           assert len(questions)==len(vehicle_action_indexes), (
               len(questions), len(vehicle_action_indexes)
           )
-          assert len(questions) == 15, f"Tesla v0.8 requires exactly 15 vehicle setup questions: {len(questions)}"
+          assert len(questions) == 15, f"Tesla v0.9 requires exactly 15 vehicle setup questions: {len(questions)}"
           for q in questions:
               assert q.get("Category")=="Parameter", q
               assert q.get("ParameterKey")=="vehicle", q
@@ -272,6 +272,16 @@ jobs:
           ]:
               assert forbidden not in tblob, f"unproven intent leaked: {forbidden}"
 
+          # User-facing shortcuts must be runnable by a plain tap with no
+          # Shortcut Input / automation magic values. Those belong in separate
+          # helper shortcuts, never in the main UI.
+          oblob=(g/"油車助手.shortcut.xml").read_text(encoding="utf-8")
+          assert "ExtensionInput" not in tblob, "Tesla main shortcut still depends on Shortcut Input"
+          assert "ExtensionInput" not in oblob, "Oil main shortcut still depends on Shortcut Input"
+          for marker in ["AUTO_START","AUTO_END"]:
+              assert marker not in tblob, f"Tesla main shortcut leaked automation marker: {marker}"
+              assert marker not in oblob, f"Oil main shortcut leaked automation marker: {marker}"
+
           # Oil shortcut stays oil-only.
           oblob=(g/"油車助手.shortcut.xml").read_text(encoding="utf-8")
           assert "com.teslamotors.TeslaApp" not in oblob
@@ -338,13 +348,13 @@ jobs:
       - name: Upload signed shortcuts
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-signed-shortcuts-v0.8
+          name: carkit-signed-shortcuts-v0.9
           path: carkit-sign/out/*.shortcut
           if-no-files-found: error
 
       - name: Upload workflow sources
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-shortcut-sources-v0.8
+          name: carkit-shortcut-sources-v0.9
           path: carkit-sign/generated/*.shortcut.xml
           if-no-files-found: error
