@@ -433,3 +433,20 @@ body{background:#050506}
 .section-title h2,.road-now h2{letter-spacing:-.035em}
 .feedback-card{border-color:#ef18282e;background:linear-gradient(145deg,#1c1013,#0c0e12)}
 @media(min-width:600px){.cola-road-hero{height:330px;border-radius:0 0 38px 38px}.home-greeting{min-height:128px}.home-greeting h1{font-size:42px}}
+
+/* COLA Red Road — feature screens */
+.view:not([data-view="home"])>.page-head{position:relative;margin:-4px -18px 20px;padding:24px 18px 22px;overflow:hidden;background:radial-gradient(circle at 86% 8%,#ef182846,transparent 34%),linear-gradient(145deg,#210307,#090a0d 62%);border-bottom:1px solid #ef18282d}
+.view:not([data-view="home"])>.page-head::after{content:"";position:absolute;right:-34px;bottom:-42px;width:150px;height:80px;border:2px solid #ef18284f;border-radius:50%;transform:rotate(-12deg)}
+.page-head .back{background:#ffffff0d;border:1px solid #ffffff13;backdrop-filter:blur(12px)}
+.page-head h1{font-size:30px;letter-spacing:-.045em}.page-head .mini-label{color:#ff5360}
+.charging-actions,.parking-actions{display:grid;gap:10px}
+.charging-actions button,.parking-actions button{min-height:70px;border-radius:18px;background:linear-gradient(145deg,#171b21,#0c0e12);border:1px solid #ffffff10;box-shadow:0 10px 24px #0003}
+.charging-actions button:first-child,.parking-actions button:first-child{background:linear-gradient(145deg,#ed2635,#9e0711);border-color:#ff66701f}
+.charging-source,.parking-scope,.live-source-head{border-radius:18px;background:linear-gradient(145deg,#15191f,#0c0f13);border:1px solid #ffffff0d;box-shadow:0 10px 25px #0003}
+.filter-row{gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}.filter-row::-webkit-scrollbar{display:none}
+.filter-row button{flex:0 0 auto;border:1px solid #ffffff10;background:#14181e;color:#c9ced5}
+.filter-row button.active{background:var(--cola-white);color:#171719;border-color:var(--cola-white);box-shadow:0 6px 18px #0004}
+.list>article,.list>.card,.parking-live-list>article,.parking-live-list>.card{background:linear-gradient(145deg,#15191f,#0c0f13);border-color:#ffffff0d;box-shadow:0 10px 22px #0002}
+.view[data-view="charging"] .page-head,.view[data-view="parking"] .page-head{border-bottom-color:#ef18283b}
+.view[data-view="highway"] .page-head,.view[data-view="tunnel"] .page-head,.view[data-view="cctv"] .page-head{background:radial-gradient(circle at 85% 10%,#ef18283d,transparent 32%),linear-gradient(150deg,#190205,#080a0d 65%)}
+@media(min-width:600px){.view:not([data-view="home"])>.page-head{margin-left:-24px;margin-right:-24px;padding-left:24px;padding-right:24px;border-radius:0 0 26px 26px}.charging-actions{grid-template-columns:repeat(3,1fr)}.parking-actions{grid-template-columns:repeat(2,1fr)}}
