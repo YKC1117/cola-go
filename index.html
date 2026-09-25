@@ -311,12 +311,14 @@
 
       <section class="view" data-view="delivery">
         <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">DELIVERY</span><h1>驗車清單</h1></div></div>
+        <div class="tool-scene delivery-scene"><span>DELIVERY READY</span><b>交車前，一項一項確認</b><i aria-hidden="true"></i></div>
         <div class="check-head"><span id="checkProgress">0 / 13</span><button id="resetChecklist">重置</button></div>
         <div id="deliveryChecklist" class="checklist"></div>
       </section>
 
       <section class="view" data-view="maintenance">
         <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">MAINTENANCE</span><h1>保養週期</h1></div></div>
+        <div class="tool-scene maintenance-scene"><span>KEEP IT READY</span><b>把日常保養變簡單</b><i aria-hidden="true"></i></div>
         <div class="timeline">
           <article><span>日常</span><div><b>胎壓、輪胎、燈具、雨刷水</b><p>長途出發前尤其值得快速檢查。</p></div></article>
           <article><span>約 1 年</span><div><b>輪胎換位／定位、雨刷、空調濾網</b><p>依里程與實際磨耗調整。</p></div></article>
@@ -412,6 +414,7 @@
 
       <section class="view" data-view="market">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">MARKET</span><h1>買車・賣車・配件</h1></div></div>
+        <div class="market-hero"><span>COLA MARKET</span><h2>愛車的下一站</h2><p>找車、賣車、配件與車主服務，一個入口處理。</p><div class="market-car" aria-hidden="true"><i></i></div></div>
         <div class="market-summary">
           <button data-go="used-cars"><span><b id="usedCount">0</b><small>二手電車</small></span><svg><use href="#i-arrow"/></svg></button>
           <button data-go="accessories"><span><b id="accessoryCount">0</b><small>二手配件</small></span><svg><use href="#i-arrow"/></svg></button>
@@ -466,6 +469,7 @@
 
       <section class="view" data-view="tesla-db">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">TESLA DATABASE</span><h1>Tesla 車系比較</h1></div></div>
+        <div class="model-hero"><span>EV GARAGE</span><h2>把規格變成好比較的選擇</h2><p>以台灣官方可確認資料為主，沒有確認到的欄位不硬填。</p><div class="model-silhouette" aria-hidden="true"><i></i></div></div>
         <p class="notice strong">現行台灣車款以 Tesla 台灣官網可確認資料為主；沒有確認到的欄位不硬填。</p>
         <div class="filter-row" id="modelFilter"><button class="active" data-model-filter="all">全部</button><button data-model-filter="Model 3">Model 3</button><button data-model-filter="Model Y">Model Y</button></div>
         <div id="modelList" class="model-list"></div>
@@ -480,6 +484,7 @@
 
       <section class="view" data-view="locations">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">TESLA SUPPORT</span><h1>原廠據點</h1></div></div>
+        <div class="service-hero"><span>ROAD SUPPORT</span><h2>服務、救援、充電據點</h2><p>需要協助時，優先帶你到官方入口。</p><div class="service-road" aria-hidden="true"></div></div>
         <div class="roadside-card">
           <span>道路救援</span>
           <h2>需要協助，直接打 Tesla。</h2>
@@ -498,6 +503,7 @@
       <section class="view" data-view="community">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">COMMUNITY</span><h1>社群・活動</h1></div></div>
         <div class="community-hero">
+          <div class="community-road" aria-hidden="true"><i></i><i></i><i></i></div>
           <span>公開招募中</span>
           <h2>不是先塞一堆假群組，而是讓真的社群自己加入。</h2>
           <p>LINE、Facebook、Discord、Telegram、車聚、露營、二手交易與區域車主社群都可以申請；上架時會標示主理人與平台。</p>
@@ -524,7 +530,7 @@
 
       <section class="view" data-view="partners">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">PARTNERS</span><h1>合作專區</h1></div></div>
-        <div class="partner-hero"><span>合作招募中</span><h2>歡迎洽談，一起把台灣電動車出行做得更好。</h2><p>COLA GO 核心功能維持免費；合作內容必須對車主真的有幫助，並清楚標示合作關係。</p></div>
+        <div class="partner-hero"><div class="partner-beam" aria-hidden="true"></div><span>合作招募中</span><h2>歡迎洽談，一起把台灣電動車出行做得更好。</h2><p>COLA GO 核心功能維持免費；合作內容必須對車主真的有幫助，並清楚標示合作關係。</p></div>
         <div class="partner-grid">
           <article><b>充電／停車</b><p>營運商、停車場、即時資料與優惠合作。</p></article>
           <article><b>保險／貸款</b><p>透明方案、車主專屬內容與實用工具。</p></article>
