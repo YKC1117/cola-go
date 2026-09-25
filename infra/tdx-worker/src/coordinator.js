@@ -49,6 +49,12 @@ export class TdxCoordinator extends DurableObject {
         )
       `);
       this.sql.exec(`
+        CREATE TABLE IF NOT EXISTS upstream_calls (
+          called_at INTEGER NOT NULL
+        )
+      `);
+      this.sql.exec(`CREATE INDEX IF NOT EXISTS upstream_calls_time ON upstream_calls(called_at)`);
+      this.sql.exec(`
         CREATE TABLE IF NOT EXISTS month_budget (
           month TEXT PRIMARY KEY,
           calls INTEGER NOT NULL DEFAULT 0,
@@ -116,48 +122,56 @@ export class TdxCoordinator extends DurableObject {
     );
   }
 
+  getAuthCooldownUntil() {
+    const row = this.row("SELECT value FROM meta WHERE key = 'auth_cooldown_until'");
+    return row ? Number(row.value) : 0;
+  }
+
+  setAuthCooldown(seconds) {
+    const until = Date.now() + Math.max(1, Number(seconds || 60)) * 1000;
+    this.sql.exec(
+      `INSERT INTO meta(key, value) VALUES('auth_cooldown_until', ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+      String(until)
+    );
+  }
+
   budgetState() {
     const now = Date.now();
-    const minuteBucket = Math.floor(now / 60000);
-    this.sql.exec("DELETE FROM minute_budget WHERE bucket < ?", minuteBucket - 2);
-    const minute = this.row("SELECT calls FROM minute_budget WHERE bucket = ?", minuteBucket);
+    this.sql.exec("DELETE FROM upstream_calls WHERE called_at <= ?", now - 120000);
+    const recent = this.row("SELECT COUNT(*) AS calls FROM upstream_calls WHERE called_at > ?", now - 60000);
     const month = this.row("SELECT calls, bytes FROM month_budget WHERE month = ?", currentMonth());
-    return {
-      now,
-      minuteBucket,
-      callsThisMinute: Number(minute?.calls || 0),
-      monthCalls: Number(month?.calls || 0),
-      monthBytes: Number(month?.bytes || 0),
-      cooldownUntil: this.getCooldownUntil()
-    };
+    return { now, callsThisMinute: Number(recent?.calls || 0), monthCalls: Number(month?.calls || 0),
+      monthBytes: Number(month?.bytes || 0), cooldownUntil: this.getCooldownUntil() };
+  }
+
+  assertCanAttemptData() {
+    assertBudget({ ...this.budgetState(),
+      callsPerMinute: Math.max(1, numericEnv(this.env, "TDX_CALLS_PER_MINUTE", 4)),
+      monthlyPointBudget: Math.max(0.1, numericEnv(this.env, "TDX_MONTHLY_POINT_BUDGET", 2.4)) });
   }
 
   reserveUpstreamCall() {
     const state = this.budgetState();
     const callsPerMinute = Math.max(1, numericEnv(this.env, "TDX_CALLS_PER_MINUTE", 4));
     const monthlyPointBudget = Math.max(0.1, numericEnv(this.env, "TDX_MONTHLY_POINT_BUDGET", 2.4));
-    assertBudget({
-      ...state,
-      callsPerMinute,
-      monthlyPointBudget
-    });
+    const reservedBytes = Math.max(0, numericEnv(this.env, "MAX_UPSTREAM_BYTES", 2097152));
+    assertBudget({ ...state, monthBytes: state.monthBytes + reservedBytes, callsPerMinute, monthlyPointBudget });
+    this.sql.exec("INSERT INTO upstream_calls(called_at) VALUES(?)", state.now);
     this.sql.exec(
-      `INSERT INTO minute_budget(bucket, calls) VALUES(?, 1)
-       ON CONFLICT(bucket) DO UPDATE SET calls = calls + 1`,
-      state.minuteBucket
-    );
-    this.sql.exec(
-      `INSERT INTO month_budget(month, calls, bytes) VALUES(?, 1, 0)
-       ON CONFLICT(month) DO UPDATE SET calls = calls + 1`,
-      currentMonth()
+      `INSERT INTO month_budget(month, calls, bytes) VALUES(?, 1, ?)
+       ON CONFLICT(month) DO UPDATE SET calls = calls + 1, bytes = bytes + excluded.bytes`,
+      currentMonth(), reservedBytes
     );
   }
 
   recordBytes(bytes) {
+    const reservedBytes = Math.max(0, numericEnv(this.env, "MAX_UPSTREAM_BYTES", 2097152));
+    const delta = Math.max(0, Number(bytes || 0)) - reservedBytes;
     this.sql.exec(
       `INSERT INTO month_budget(month, calls, bytes) VALUES(?, 0, ?)
-       ON CONFLICT(month) DO UPDATE SET bytes = bytes + excluded.bytes`,
-      currentMonth(), Math.max(0, Number(bytes || 0))
+       ON CONFLICT(month) DO UPDATE SET bytes = MAX(0, bytes + excluded.bytes)`,
+      currentMonth(), delta
     );
   }
 
@@ -172,8 +186,21 @@ export class TdxCoordinator extends DurableObject {
 
     if (this.tokenInflight) return this.tokenInflight;
 
+    const authCooldownUntil = this.getAuthCooldownUntil();
+    if (authCooldownUntil > Date.now()) {
+      throw new AppError(503, "UPSTREAM_AUTH_FAILED", "TDX authentication cooldown active", {
+        retryAfterSeconds: Math.max(1, Math.ceil((authCooldownUntil - Date.now()) / 1000))
+      });
+    }
+
     this.tokenInflight = (async () => {
-      const result = await requestToken(this.env);
+      let result;
+      try {
+        result = await requestToken(this.env);
+      } catch (error) {
+        if (error instanceof AppError && error.extra?.authCooldown) this.setAuthCooldown(error.extra.retryAfterSeconds || 60);
+        throw error;
+      }
       const expiresAt = Date.now() + Math.max(60, result.expiresIn) * 1000;
       this.sql.exec(
         `INSERT INTO auth(id, token, expires_at, credential_version)
@@ -206,6 +233,7 @@ export class TdxCoordinator extends DurableObject {
   }
 
   async fetchWithAuth(spec) {
+    this.assertCanAttemptData();
     return withOneAuthRefresh({
       getToken: (force) => this.getAccessToken(force),
       request: (token) => this.fetchOne(spec, token)
