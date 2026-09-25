@@ -117,6 +117,17 @@ jobs:
             run_idb idb ui tap "$x" "$y" --udid "$UDID"
           }
 
+          tap_frame_prefix() {
+            local json_file="$1"
+            local prefix="$2"
+            local xy
+            xy="$(jq -r --arg p "$prefix" '[.. | objects | select((.AXLabel|type) == "string" and (.AXLabel|startswith($p)) and (.frame|type) == "object") | [((.frame.x + (.frame.width/2))|round), ((.frame.y + (.frame.height/2))|round)]][0] | @tsv' "$json_file")"
+            test -n "$xy"
+            read -r x y <<< "$xy"
+            echo "tap prefix $prefix at $x,$y"
+            run_idb idb ui tap "$x" "$y" --udid "$UDID"
+          }
+
           open_shortcut_retry() {
             local encoded="$1"
             for attempt in 1 2 3; do
@@ -161,13 +172,19 @@ jobs:
           fi
           sleep 6
 
-          # Run the shortcut for real from a clean Shortcuts app state.
-          # iOS 26 Simulator can ignore run-shortcut while the editor is still
-          # foregrounded after import, so terminate first.
+          # Run the shortcut exactly like a real user: return to the
+          # Shortcuts library and tap the Oil shortcut card itself. The
+          # shortcuts://run-shortcut URL is not a reliable runtime signal on
+          # iOS 26 Simulator and can merely foreground the library.
           xcrun simctl terminate "$UDID" com.apple.shortcuts || true
           sleep 2
-          xcrun simctl openurl "$UDID" "shortcuts://run-shortcut?name=%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
+          xcrun simctl launch "$UDID" com.apple.shortcuts || true
           sleep 4
+          describe_retry /tmp/oil-nav-probe/library.json
+          xcrun simctl io "$UDID" screenshot /tmp/oil-nav-probe/library.png
+          jq -e '[.. | objects | .AXLabel? // empty] | any(startswith("油車助手"))' /tmp/oil-nav-probe/library.json >/dev/null
+          tap_frame_prefix /tmp/oil-nav-probe/library.json "油車助手"
+          sleep 3
 
           describe_retry /tmp/oil-nav-probe/main-menu.json
           python3 - <<'PY'
