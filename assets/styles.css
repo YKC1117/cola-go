@@ -466,3 +466,17 @@ body{background:#050506}
 input,select,textarea{background:#11151b!important;color:#f7f7f7!important;border-color:#ffffff12!important}
 select option{background:#11151b;color:#fff}
 @media(prefers-reduced-motion:no-preference){.core-actions button,.quick-trips button,.home-more,.more-list button,.primary{transition:transform .16s ease,filter .16s ease}.core-actions button:active,.quick-trips button:active,.home-more:active,.more-list button:active,.primary:active{transform:scale(.975);filter:brightness(1.08)}}
+
+.drive-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:14px 0 10px;padding:0 2px;color:#8d949e;font-size:10px;letter-spacing:.08em}
+.drive-strip span{display:flex;align-items:center;gap:7px;font-weight:850;color:#ff6974}
+.drive-strip i{width:7px;height:7px;border-radius:50%;background:#ff3348;box-shadow:0 0 12px #ff3348}
+.drive-strip b{font-size:11px;color:#d4d7dc;letter-spacing:0}
+.road-now{position:relative;overflow:hidden}
+.road-now::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 100% 0,#ef182818,transparent 38%);pointer-events:none}
+.road-now-grid button{position:relative;background:#0b0e12;border:1px solid #ffffff0b}
+.road-now-grid button::after{content:"";position:absolute;left:12px;right:12px;bottom:0;height:2px;border-radius:3px;background:linear-gradient(90deg,#ef1828,transparent);opacity:.65}
+.core-icon{border-radius:15px;background:#ffffff0a}
+.core-actions button:first-child .core-icon{background:#ffffff18}
+.more-list{gap:9px}.more-list button{min-height:62px}
+.feedback-line{background:linear-gradient(135deg,#08cf5b,#04a947);box-shadow:0 10px 25px #05c65325}
+@media(max-width:599px){.road-now-grid{gap:8px}.road-now-grid button{min-height:94px;padding:13px 10px}.road-now-grid b{font-size:22px}.section-head h2{font-size:19px}}
