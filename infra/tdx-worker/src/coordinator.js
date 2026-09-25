@@ -68,6 +68,15 @@ export class TdxCoordinator extends DurableObject {
           value TEXT NOT NULL
         )
       `);
+      this.sql.exec(`
+        CREATE TABLE IF NOT EXISTS pagination_progress (
+          key TEXT PRIMARY KEY,
+          next_page INTEGER NOT NULL,
+          items TEXT NOT NULL,
+          source_updated_at TEXT,
+          updated_at INTEGER NOT NULL
+        )
+      `);
     });
   }
 
@@ -222,15 +231,86 @@ export class TdxCoordinator extends DurableObject {
     }
   }
 
+  loadPaginationProgress(key) {
+    const row = this.row("SELECT next_page, items, source_updated_at FROM pagination_progress WHERE key = ?", key);
+    if (!row) return { nextPage: 0, items: [], sourceUpdatedAt: null };
+    try {
+      const items = JSON.parse(row.items);
+      return { nextPage: Number(row.next_page || 0), items: Array.isArray(items) ? items : [], sourceUpdatedAt: row.source_updated_at || null };
+    } catch {
+      this.sql.exec("DELETE FROM pagination_progress WHERE key = ?", key);
+      return { nextPage: 0, items: [], sourceUpdatedAt: null };
+    }
+  }
+
+  savePaginationProgress(key, nextPage, items, sourceUpdatedAt) {
+    const body = JSON.stringify(items);
+    if (new TextEncoder().encode(body).byteLength > 1800000) {
+      throw new AppError(502, "UPSTREAM_SCHEMA_INVALID", "Pagination progress exceeds safe Durable Object row size");
+    }
+    this.sql.exec(
+      `INSERT INTO pagination_progress(key, next_page, items, source_updated_at, updated_at)
+       VALUES(?, ?, ?, ?, ?)
+       ON CONFLICT(key) DO UPDATE SET
+         next_page = excluded.next_page,
+         items = excluded.items,
+         source_updated_at = excluded.source_updated_at,
+         updated_at = excluded.updated_at`,
+      key, nextPage, body, sourceUpdatedAt, Date.now()
+    );
+  }
+
+  clearPaginationProgress(key) {
+    this.sql.exec("DELETE FROM pagination_progress WHERE key = ?", key);
+  }
+
   async fetchOne(spec, token) {
-    return fetchTdxPages({
+    if (spec.paginate === false) {
+      return fetchTdxPages({
+        env: this.env, token, path: spec.path, paginate: false,
+        beforeRequest: () => this.reserveUpstreamCall(),
+        onUsage: ({ bytes }) => this.recordBytes(bytes)
+      });
+    }
+
+    const saved = this.loadPaginationProgress(spec.key);
+    const accumulated = [...saved.items];
+    let latestSourceUpdatedAt = saved.sourceUpdatedAt;
+
+    const result = await fetchTdxPages({
       env: this.env,
       token,
       path: spec.path,
-      paginate: spec.paginate !== false,
+      paginate: true,
+      startPage: saved.nextPage,
+      yieldOnBudget: true,
       beforeRequest: () => this.reserveUpstreamCall(),
-      onUsage: ({ bytes }) => this.recordBytes(bytes)
+      onUsage: ({ bytes }) => this.recordBytes(bytes),
+      onPage: ({ page, items, sourceUpdatedAt }) => {
+        accumulated.push(...items);
+        if (sourceUpdatedAt) latestSourceUpdatedAt = sourceUpdatedAt;
+        this.savePaginationProgress(spec.key, page + 1, accumulated, latestSourceUpdatedAt);
+      }
     });
+
+    if (!result.complete) {
+      return {
+        items: accumulated,
+        sourceUpdatedAt: latestSourceUpdatedAt,
+        complete: false,
+        nextPage: result.nextPage,
+        retryAfterSeconds: result.retryAfterSeconds
+      };
+    }
+
+    const complete = {
+      items: accumulated,
+      sourceUpdatedAt: latestSourceUpdatedAt || result.sourceUpdatedAt,
+      complete: true,
+      nextPage: null
+    };
+    this.clearPaginationProgress(spec.key);
+    return complete;
   }
 
   async fetchWithAuth(spec) {
@@ -248,6 +328,16 @@ export class TdxCoordinator extends DurableObject {
       for (const part of upstream.multi) raw[part.name] = await this.fetchWithAuth(part);
     } else {
       raw = await this.fetchWithAuth(upstream);
+    }
+
+    const incomplete = upstream.multi
+      ? Object.values(raw).some((x) => x?.complete === false)
+      : raw?.complete === false;
+    if (incomplete) {
+      const retryAfterSeconds = upstream.multi
+        ? Math.max(...Object.values(raw).map((x) => Number(x?.retryAfterSeconds || 0)), 60)
+        : Number(raw.retryAfterSeconds || 60);
+      throw new AppError(503, "BUDGET_EXHAUSTED", "TDX pagination paused and will resume from persisted progress", { retryAfterSeconds });
     }
 
     const items = normalizeRoute(kind, raw, scope);
