@@ -322,7 +322,7 @@ jobs:
 
           for needle in [
               "https://maps.apple.com/?daddr=",
-              "https://www.google.com/maps/dir/?api=1&destination=",
+              "https://www.google.com/maps/dir/?api=1&amp;destination=",
               "https://waze.com/ul?q=",
           ]:
               assert needle in oblob and needle in tblob, f"missing dynamic navigation URL: {needle}"
