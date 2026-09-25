@@ -181,7 +181,20 @@
 
       <section class="view" data-view="cctv">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">LIVE CAMERA</span><h1>即時影像</h1></div></div>
-        <p class="notice strong">這裡只放真的能開啟的公開即時路況服務，不做假影像縮圖。</p>
+        <div class="live-source-head">
+          <div><span class="mini-label">FREEWAY CCTV</span><h2>國道攝影機</h2></div>
+          <span class="updated" id="cctvSourceState">點進頁面後讀取官方清單</span>
+        </div>
+        <div class="filter-row" id="cctvRoadFilter">
+          <button class="active" data-cctv-road="all">全部</button>
+          <button data-cctv-road="1">國 1</button><button data-cctv-road="2">國 2</button><button data-cctv-road="3">國 3</button>
+          <button data-cctv-road="4">國 4</button><button data-cctv-road="5">國 5</button><button data-cctv-road="6">國 6</button>
+        </div>
+        <label class="inline-search"><svg><use href="#i-search"/></svg><input id="cctvSearch" type="search" placeholder="搜尋國道、里程、路段"></label>
+        <p class="notice">攝影機清單來自官方開放資料；清單本身定期更新，按下「觀看即時影像」才開啟官方即時串流。</p>
+        <div id="cctvList" class="cctv-list"></div>
+
+        <div class="section-head cctv-official-head"><div><span class="mini-label">OFFICIAL</span><h2>官方入口</h2></div></div>
         <div class="link-cards">
           <button data-url="https://1968.freeway.gov.tw/"><span class="shortcut-icon q3"><svg><use href="#i-camera"/></svg></span><span><b>高速公路 1968</b><small>國道 CCTV、路況、事件、服務區資訊</small></span><svg class="shortcut-arrow"><use href="#i-external"/></svg></button>
           <button data-url="https://168.thb.gov.tw/thb168"><span class="shortcut-icon q2"><svg><use href="#i-camera"/></svg></span><span><b>幸福公路即時影像</b><small>省道、快速道路、國道影像與路況</small></span><svg class="shortcut-arrow"><use href="#i-external"/></svg></button>

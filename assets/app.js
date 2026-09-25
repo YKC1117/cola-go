@@ -16,6 +16,12 @@ const state={
   communityFilter:"all",
   community:{communities:[],events:[]},
   locations:{services:[]},
+  cctv:{status:"idle",items:[],source:"",error:""},
+  cctvRoad:"all",
+  cctvLoading:false,
+  cctvLastAttempt:0,
+  trafficFallbackStatus:"idle",
+  trafficFallbackAt:0,
   installPrompt:null
 };
 
@@ -38,6 +44,9 @@ function show(view,push=true){
   $$(".bottom-nav button").forEach(el=>el.classList.toggle("active",el.dataset.go===view));
   window.scrollTo({top:0,behavior:"instant"});
   if(push)history.replaceState(null,"","#"+view);
+  if(view==="cctv")ensureCCTV().catch(()=>{});
+  if((view==="highway"||view==="tunnel")&&state.traffic?.status!=="live")ensureClientTraffic().catch(()=>{});
+
 }
 
 function bindNav(){
@@ -113,6 +122,7 @@ function renderAll(){
   renderModels();
   renderCommunity();
   renderLocations();
+  renderCCTV();
 
   const live=state.traffic?.status==="live";
   $("#syncState").classList.toggle("ready",live);
@@ -156,14 +166,14 @@ function renderCharging(){
       '<div class="location-line"><svg><use href="#i-pin"/></svg><span>'+esc(x.location)+(x.note?" · "+esc(x.note):"")+'</span></div>'+
       '<div class="item-actions">'+
         '<button class="go" data-nav="'+encodeURIComponent(x.name)+'">導航</button>'+
-        '<button data-camera>即時影像</button>'+
+        '<button data-camera-road="'+esc(x.road)+'">即時影像</button>'+
         '<button data-copy="'+esc(x.name)+'">複製</button>'+
       '</div>'+
     '</article>'
   ).join(""):'<div class="empty"><b>沒有符合的充電站</b><p>換個服務區、業者或接頭名稱。</p></div>';
 
   $$("[data-nav]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.nav,"_blank","noopener"));
-  $$("[data-camera]",root).forEach(b=>b.onclick=()=>show("cctv"));
+  $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
   $$("[data-copy]",root).forEach(b=>b.onclick=async()=>{
     try{
       await navigator.clipboard.writeText(b.dataset.copy);
@@ -224,6 +234,372 @@ function renderParking(){
   ).join("")||'<div class="empty"><b>其他縣市資料尚未載入</b></div>';
 }
 
+
+const TDX_BASE="https://tdx.transportdata.tw/api/basic/v2/Road/Traffic";
+const TISV_BASE="https://tisvcloud.freeway.gov.tw/history/motc20";
+
+async function fetchWithTimeout(url,options={},timeout=7500){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),timeout);
+  try{
+    const response=await fetch(url,{...options,signal:controller.signal,cache:"no-store"});
+    if(!response.ok)throw new Error("HTTP "+response.status);
+    return response;
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+function roadNo(value){
+  const text=String(value||"");
+  let m=text.match(/國道\s*([1-6])/);
+  if(m)return m[1];
+  m=text.match(/(?:Freeway|National\s*Highway)(?:\s*No\.?)?\s*([1-6])/i);
+  if(m)return m[1];
+  m=text.match(/(?:^|[^0-9])([1-6])號(?:高速公路|國道)/);
+  return m?m[1]:null;
+}
+
+function findObjects(value,predicate,out=[]){
+  if(Array.isArray(value)){
+    value.forEach(v=>findObjects(v,predicate,out));
+  }else if(value&&typeof value==="object"){
+    if(predicate(value))out.push(value);
+    Object.values(value).forEach(v=>{
+      if(v&&typeof v==="object")findObjects(v,predicate,out);
+    });
+  }
+  return out;
+}
+
+function childText(node,name){
+  for(const child of Array.from(node.children||[])){
+    if(child.localName===name||child.tagName?.split(":").pop()===name)return (child.textContent||"").trim();
+  }
+  return "";
+}
+
+function xmlObjects(text,idField,requiredField){
+  const doc=new DOMParser().parseFromString(text,"application/xml");
+  if(doc.querySelector("parsererror"))throw new Error("XML parse failed");
+  return Array.from(doc.getElementsByTagName("*")).filter(node=>childText(node,idField)&&childText(node,requiredField));
+}
+
+function safeHttpUrl(value){
+  try{
+    const url=new URL(String(value||""));
+    return /^https?:$/.test(url.protocol)?url.href:"";
+  }catch{return "";}
+}
+
+function normalizeCCTVObject(x){
+  const stream=safeHttpUrl(x.VideoStreamURL||x.videoStreamURL||x.StreamURL||x.streamURL||"");
+  const id=x.CCTVID||x.CCTVId||x.cctvId||x.id||"";
+  if(!id||!stream)return null;
+  const roadName=x.RoadName||x.roadName||"";
+  const start=x.Start||x.start||"";
+  const end=x.End||x.end||"";
+  const mile=x.LocationMile||x.locationMile||x.Mile||"";
+  return {
+    id:String(id),
+    stream:String(stream),
+    road:roadName,
+    roadNo:roadNo(roadName+" "+start+" "+end),
+    direction:x.RoadDirection||x.roadDirection||"",
+    mile:String(mile||""),
+    start:String(start||""),
+    end:String(end||""),
+    lat:Number(x.PositionLat??x.positionLat??x.lat),
+    lon:Number(x.PositionLon??x.positionLon??x.lon)
+  };
+}
+
+function parseCCTVJson(data){
+  const rows=findObjects(data,x=>Boolean(x&&(x.CCTVID||x.CCTVId||x.cctvId)&&(x.VideoStreamURL||x.videoStreamURL||x.StreamURL)));
+  const seen=new Set();
+  return rows.map(normalizeCCTVObject).filter(x=>{
+    if(!x||seen.has(x.id))return false;
+    seen.add(x.id);
+    return true;
+  });
+}
+
+function parseCCTVXml(text){
+  const rows=xmlObjects(text,"CCTVID","VideoStreamURL");
+  const seen=new Set();
+  return rows.map(node=>normalizeCCTVObject({
+    CCTVID:childText(node,"CCTVID"),
+    VideoStreamURL:childText(node,"VideoStreamURL"),
+    RoadName:childText(node,"RoadName"),
+    RoadDirection:childText(node,"RoadDirection"),
+    LocationMile:childText(node,"LocationMile"),
+    Start:childText(node,"Start"),
+    End:childText(node,"End"),
+    PositionLat:childText(node,"PositionLat"),
+    PositionLon:childText(node,"PositionLon")
+  })).filter(x=>{
+    if(!x||seen.has(x.id))return false;
+    seen.add(x.id);
+    return true;
+  });
+}
+
+async function ensureCCTV(){
+  if(state.cctv.status==="ready"||state.cctvLoading)return;
+  if(state.cctv.status==="unavailable"&&Date.now()-state.cctvLastAttempt<60000)return;
+  state.cctvLastAttempt=Date.now();
+  state.cctvLoading=true;
+  state.cctv={...state.cctv,status:"loading",error:""};
+  renderCCTV();
+
+  try{
+    const cached=JSON.parse(sessionStorage.getItem("cola-go-cctv-v1")||"null");
+    if(cached&&Date.now()-cached.savedAt<6*60*60*1000&&Array.isArray(cached.items)&&cached.items.length){
+      state.cctv={status:"ready",items:cached.items,source:cached.source||"官方快取",error:""};
+      state.cctvLoading=false;
+      renderCCTV();
+      return;
+    }
+  }catch{}
+
+  let lastError="";
+  try{
+    const response=await fetchWithTimeout(TDX_BASE+"/CCTV/Freeway?%24format=JSON",{headers:{Accept:"application/json"}},7000);
+    const rows=parseCCTVJson(await response.json());
+    if(rows.length){
+      state.cctv={status:"ready",items:rows,source:"TDX／交通部高速公路局",error:""};
+      try{sessionStorage.setItem("cola-go-cctv-v1",JSON.stringify({savedAt:Date.now(),source:state.cctv.source,items:rows}));}catch{}
+      state.cctvLoading=false;
+      renderCCTV();
+      return;
+    }
+    lastError="TDX 回傳沒有可用攝影機";
+  }catch(error){
+    lastError=String(error?.message||error);
+  }
+
+  try{
+    const response=await fetchWithTimeout(TISV_BASE+"/CCTV.xml",{headers:{Accept:"application/xml,text/xml,*/*"}},7000);
+    const rows=parseCCTVXml(await response.text());
+    if(rows.length){
+      state.cctv={status:"ready",items:rows,source:"交通部高速公路局 CCTV.xml",error:""};
+      try{sessionStorage.setItem("cola-go-cctv-v1",JSON.stringify({savedAt:Date.now(),source:state.cctv.source,items:rows}));}catch{}
+      return;
+    }
+    lastError="高公局回傳沒有可用攝影機";
+  }catch(error){
+    lastError=String(error?.message||error);
+  }finally{
+    state.cctvLoading=false;
+    if(state.cctv.status!=="ready")state.cctv={status:"unavailable",items:[],source:"",error:lastError};
+    renderCCTV();
+  }
+}
+
+function renderCCTV(){
+  const root=$("#cctvList");
+  const status=$("#cctvSourceState");
+  if(!root||!status)return;
+  const q=($("#cctvSearch")?.value||"").trim().toLowerCase();
+
+  if(state.cctv.status==="idle"){
+    status.textContent="點進頁面後讀取官方清單";
+    root.innerHTML="";
+    return;
+  }
+  if(state.cctv.status==="loading"){
+    status.textContent="讀取官方攝影機清單中…";
+    root.innerHTML='<div class="empty"><b>正在連線官方資料</b><p>若官方來源無回應，仍可使用下方 1968／幸福公路入口。</p></div>';
+    return;
+  }
+  if(state.cctv.status!=="ready"){
+    status.textContent="官方清單暫時無法讀取";
+    root.innerHTML='<div class="empty"><b>目前無法載入站內攝影機清單</b><p>沒有顯示假影像；請使用下方官方入口直接查看。</p></div>';
+    return;
+  }
+
+  const all=state.cctv.items||[];
+  const matched=all.filter(x=>
+    (state.cctvRoad==="all"||x.roadNo===state.cctvRoad)&&
+    (!q||[x.road,x.direction,x.mile,x.start,x.end,x.id].join(" ").toLowerCase().includes(q))
+  );
+  status.textContent=state.cctv.source+" · "+all.length+" 支";
+  const rows=matched.slice(0,50);
+  root.innerHTML=rows.length?rows.map(x=>{
+    const title=[x.road,x.mile].filter(Boolean).join(" · ")||("攝影機 "+x.id);
+    const detail=[x.direction,x.start&&x.end?(x.start+" → "+x.end):(x.start||x.end)].filter(Boolean).join(" · ");
+    const mapOk=Number.isFinite(x.lat)&&Number.isFinite(x.lon)&&Math.abs(x.lat)<=90&&Math.abs(x.lon)<=180;
+    return '<article class="cctv-card">'+
+      '<div class="cctv-card-head"><div><h3>'+esc(title)+'</h3><p>'+esc(detail||x.id)+'</p></div><span class="route-tag">'+esc(x.roadNo?("國 "+x.roadNo):"國道")+'</span></div>'+
+      '<div class="item-actions"><button class="go" data-cctv-stream="'+encodeURIComponent(x.stream)+'">觀看即時影像</button>'+
+      (mapOk?'<button data-cctv-map="'+x.lat+','+x.lon+'">地圖</button>':"")+'</div>'+
+    '</article>';
+  }).join(""):'<div class="empty"><b>沒有符合的攝影機</b><p>換一條國道或搜尋里程、路段名稱。</p></div>';
+
+  if(matched.length>50)root.insertAdjacentHTML("beforeend",'<p class="cctv-more">符合 '+matched.length+' 支，目前先顯示前 50 支；可用搜尋縮小範圍。</p>');
+  $$("[data-cctv-stream]",root).forEach(b=>b.onclick=()=>window.open(decodeURIComponent(b.dataset.cctvStream),"_blank","noopener"));
+  $$("[data-cctv-map]",root).forEach(b=>b.onclick=()=>{
+    const [lat,lon]=b.dataset.cctvMap.split(",");
+    window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(lat+","+lon),"_blank","noopener");
+  });
+}
+
+function parseSectionJson(data){
+  const rows=findObjects(data,x=>Boolean(x&&x.SectionID&&(x.SectionName||x.RoadName||x.Start||x.End)));
+  const map=new Map();
+  rows.forEach(x=>{
+    const id=String(x.SectionID);
+    if(map.has(id))return;
+    const start=String(x.Start||"");
+    const end=String(x.End||"");
+    const name=String(x.SectionName||([start,end].filter(Boolean).join(" → "))||id);
+    const roadName=String(x.RoadName||"");
+    map.set(id,{id,name,road:roadNo(roadName+" "+name),roadName,direction:String(x.RoadDirection||""),start,end});
+  });
+  return map;
+}
+
+function parseLiveJson(data,sections){
+  const rows=findObjects(data,x=>Boolean(x&&x.SectionID&&(x.TravelSpeed!==undefined||x.DataCollectTime)));
+  return normalizeTrafficRows(rows,sections);
+}
+
+function normalizeTrafficRows(rows,sections){
+  const highways={1:[],2:[],3:[],4:[],5:[],6:[]};
+  let newest="";
+  rows.forEach(x=>{
+    const id=String(x.SectionID||"");
+    const sec=sections.get(id)||{};
+    let speed=Number(x.TravelSpeed);
+    if(speed===250||!Number.isFinite(speed))speed=-1;
+    const rn=String(sec.road||roadNo(sec.roadName+" "+sec.name)||"");
+    if(!highways[rn])return;
+    const collect=String(x.DataCollectTime||"");
+    if(collect>newest)newest=collect;
+    highways[rn].push({
+      id,
+      name:sec.name||id,
+      direction:sec.direction||"",
+      speed,
+      level:x.CongestionLevel!==undefined?congestionLabel(Number(x.CongestionLevel)):speedLevel(speed),
+      dataCollectTime:collect
+    });
+  });
+  const total=Object.values(highways).reduce((sum,rows)=>sum+rows.length,0);
+  if(!total)throw new Error("No freeway live rows");
+  return {status:"live",updatedAt:newest||new Date().toISOString(),source:"使用者端官方即時資料",highways};
+}
+
+function speedLevel(speed){
+  if(speed<0)return "異常";
+  if(speed>=80)return "順暢";
+  if(speed>=60)return "車較多";
+  if(speed>=40)return "車多";
+  if(speed>=20)return "較壅塞";
+  return "壅塞";
+}
+function congestionLabel(level){
+  const labels={0:"順暢",1:"車較多",2:"車多",3:"較壅塞",4:"壅塞",5:"壅塞"};
+  return labels[level]||"路況";
+}
+
+function parseSectionXml(text){
+  const rows=xmlObjects(text,"SectionID","RoadName");
+  const map=new Map();
+  rows.forEach(node=>{
+    const id=childText(node,"SectionID");
+    const start=childText(node,"Start");
+    const end=childText(node,"End");
+    const name=childText(node,"SectionName")||[start,end].filter(Boolean).join(" → ")||id;
+    const roadName=childText(node,"RoadName");
+    map.set(id,{id,name,road:roadNo(roadName+" "+name),roadName,direction:childText(node,"RoadDirection"),start,end});
+  });
+  return map;
+}
+
+function parseLiveXml(text,sections){
+  const rows=xmlObjects(text,"SectionID","TravelSpeed").map(node=>({
+    SectionID:childText(node,"SectionID"),
+    TravelSpeed:childText(node,"TravelSpeed"),
+    CongestionLevel:childText(node,"CongestionLevel"),
+    DataCollectTime:childText(node,"DataCollectTime")
+  }));
+  return normalizeTrafficRows(rows,sections);
+}
+
+function buildTunnelFromTraffic(traffic){
+  const tunnel={status:"live",updatedAt:traffic.updatedAt,source:traffic.source,south:[],north:[]};
+  (traffic.highways?.["5"]||traffic.highways?.[5]||[]).forEach(row=>{
+    const text=String(row.name||"");
+    if(!["坪林","頭城","雪山","石碇"].some(k=>text.includes(k)))return;
+    const item={name:row.name,speed:row.speed,note:"國 5 即時路段速度",dataCollectTime:row.dataCollectTime};
+    const d=String(row.direction||"").toUpperCase();
+    if(d.includes("S")||d.includes("南"))tunnel.south.push(item);
+    else if(d.includes("N")||d.includes("北"))tunnel.north.push(item);
+  });
+  return tunnel;
+}
+
+async function ensureClientTraffic(){
+  if(state.traffic?.status==="live"||state.trafficFallbackStatus==="loading")return;
+  if(state.trafficFallbackStatus==="failed"&&Date.now()-state.trafficFallbackAt<60000)return;
+  state.trafficFallbackStatus="loading";
+  state.trafficFallbackAt=Date.now();
+
+  try{
+    const cached=JSON.parse(sessionStorage.getItem("cola-go-traffic-client-v1")||"null");
+    if(cached&&Date.now()-cached.savedAt<120000&&cached.traffic?.status==="live"){
+      state.traffic=cached.traffic;
+      state.tunnel=cached.tunnel||buildTunnelFromTraffic(cached.traffic);
+      state.trafficFallbackStatus="done";
+      renderAll();
+      return;
+    }
+  }catch{}
+
+  let traffic=null;
+  try{
+    const [sectionResponse,liveResponse]=await Promise.all([
+      fetchWithTimeout(TDX_BASE+"/Section/Freeway?%24format=JSON",{headers:{Accept:"application/json"}},7000),
+      fetchWithTimeout(TDX_BASE+"/Live/Freeway?%24format=JSON",{headers:{Accept:"application/json"}},7000)
+    ]);
+    const sections=parseSectionJson(await sectionResponse.json());
+    traffic=parseLiveJson(await liveResponse.json(),sections);
+    traffic.source="TDX／交通部高速公路局即時資料";
+  }catch{}
+
+  if(!traffic){
+    try{
+      const [sectionResponse,liveResponse]=await Promise.all([
+        fetchWithTimeout(TISV_BASE+"/Section.xml",{headers:{Accept:"application/xml,text/xml,*/*"}},7000),
+        fetchWithTimeout(TISV_BASE+"/LiveTraffic.xml",{headers:{Accept:"application/xml,text/xml,*/*"}},7000)
+      ]);
+      const sections=parseSectionXml(await sectionResponse.text());
+      traffic=parseLiveXml(await liveResponse.text(),sections);
+      traffic.source="交通部高速公路局即時資料";
+    }catch{}
+  }
+
+  if(traffic){
+    state.traffic=traffic;
+    state.tunnel=buildTunnelFromTraffic(traffic);
+    state.trafficFallbackStatus="done";
+    try{sessionStorage.setItem("cola-go-traffic-client-v1",JSON.stringify({savedAt:Date.now(),traffic:state.traffic,tunnel:state.tunnel}));}catch{}
+    renderAll();
+  }else{
+    state.trafficFallbackStatus="failed";
+    renderTraffic();
+    renderTunnel();
+  }
+}
+
+function openCCTVForRoad(road){
+  state.cctvRoad=String(road||"all");
+  $$("#cctvRoadFilter button").forEach(b=>b.classList.toggle("active",b.dataset.cctvRoad===state.cctvRoad));
+  show("cctv");
+  renderCCTV();
+}
+
 function renderTraffic(){
   const root=$("#highwayList");
   if(!root)return;
@@ -244,7 +620,7 @@ function renderTraffic(){
 
   root.innerHTML=list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
-  $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>show("cctv"));
+  $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(state.highway));
 }
 
 function renderTunnel(){
@@ -267,7 +643,7 @@ function renderTunnel(){
 
   root.innerHTML=list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
-  $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>show("cctv"));
+  $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad("5"));
 }
 
 function renderMarket(){
@@ -478,6 +854,13 @@ function bindFilters(){
 
   if($("#chargingSearch"))$("#chargingSearch").oninput=renderCharging;
   if($("#parkingSearch"))$("#parkingSearch").oninput=renderParking;
+  if($("#cctvSearch"))$("#cctvSearch").oninput=renderCCTV;
+  $$("#cctvRoadFilter button").forEach(b=>b.onclick=()=>{
+    $$("#cctvRoadFilter button").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    state.cctvRoad=b.dataset.cctvRoad;
+    renderCCTV();
+  });
 
   $$("#highwayTabs button").forEach(b=>b.onclick=()=>{
     $$("#highwayTabs button").forEach(x=>x.classList.remove("active"));
