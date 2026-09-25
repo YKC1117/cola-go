@@ -1,4 +1,4 @@
-const base = String(process.env.BASE_URL || "").replace(/\\\/$/, "");
+const rawBase = String(process.env.BASE_URL || "");\nconst base = rawBase.endsWith("/") ? rawBase.slice(0, -1) : rawBase;
 const origin = process.env.ORIGIN || "https://ykc1117.github.io";
 const city = process.env.SMOKE_CITY || "Tainan";
 const evCity = process.env.SMOKE_EV_CITY || city;
