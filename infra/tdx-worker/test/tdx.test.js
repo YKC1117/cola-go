@@ -127,6 +127,24 @@ describe("resumable pagination", () => {
   });
 });
 
+describe("resume from persisted page", () => {
+  it("starts at the saved page without refetching completed pages", async () => {
+    const urls=[];
+    const result=await fetchTdxPages({
+      env,token:"t",path:"/v1/Parking/OffStreet/CarPark/City/Tainan",
+      startPage:2,
+      fetchImpl:async(url)=>{
+        urls.push(String(url));
+        return Response.json([{CarParkID:"last"}]);
+      }
+    });
+    expect(urls).toHaveLength(1);
+    expect(new URL(urls[0]).searchParams.get("$skip")).toBe("2000");
+    expect(result).toMatchObject({complete:true,nextPage:null});
+    expect(result.items).toEqual([{CarParkID:"last"}]);
+  });
+});
+
 describe("single auth refresh policy", () => {
   it("refreshes once after a token rejection", async () => {
     const tokens=[];
