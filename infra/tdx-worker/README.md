@@ -7,10 +7,11 @@
 GitHub Pages / PWA → Cloudflare Worker → edge Cache API → SQLite Durable Object → TDX
 
 Durable Object 名稱固定使用 `global`，集中處理：
-- OAuth access token 共用與更新
+- OAuth access token 共用與更新（併發 token 請求去重）
 - TDX 每分鐘呼叫預算
 - 月點數估算預算
 - 429 全域 cooldown
+- 同一資料集併發 refresh 去重，避免熱門時段重複回源
 - 最後成功 snapshot
 - fresh / stale / unavailable 狀態
 
