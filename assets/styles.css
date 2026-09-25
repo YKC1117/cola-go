@@ -648,3 +648,25 @@ select option{background:#11151b;color:#fff}
 
 .hero-slogan{display:flex;align-items:flex-end;justify-content:space-between;margin:17px 1px 5px}.hero-slogan b{font-size:21px;font-weight:1000;font-style:italic;letter-spacing:-.055em;color:#fff}.hero-slogan span{font-size:9px;font-weight:1000;letter-spacing:.17em;color:#ff4050}
 @media(max-width:599px){.hero-slogan{margin-top:18px}.drive-strip{border-radius:15px!important}.drive-strip b{font-size:10px}.drive-strip span{font-size:9px}.home-camera{margin-top:10px}.bottom-nav{background:#090c10ed!important;backdrop-filter:blur(20px);border-top:1px solid #ffffff10!important}.bottom-nav button.active{color:#ff3547!important}.bottom-nav button.active::before{content:"";position:absolute;top:4px;width:20px;height:3px;border-radius:4px;background:#ff2639;box-shadow:0 0 13px #ff2639}}
+
+/* ===== COLA GO V5 — approved concept as UI spec ===== */
+@media(max-width:599px){
+.view[data-view="home"]{padding:0 14px 100px!important;background:#050607!important}
+.v5-hero{position:relative;min-height:318px!important;padding-top:14px!important}
+.v5-hero .concept-wordmark{margin:0 0 26px!important}
+.v5-hero .cola-mark,.v5-hero .go-mark{font-size:32px!important}
+.v5-hero .home-greeting{max-width:61%!important;min-height:126px!important}
+.v5-hero .home-greeting h1{font-size:38px!important;line-height:.93!important}
+.v5-hero .home-greeting p{font-size:12px!important;max-width:190px!important}
+.v5-hero .search-destination{min-height:64px!important;border-radius:32px!important;padding:0 17px!important}
+.v5-core-actions{grid-template-columns:repeat(2,1fr)!important;gap:8px!important;margin:14px 0 0!important}
+.v5-core-actions button{min-height:82px!important;border-radius:14px!important;padding:11px 12px!important;display:grid!important;grid-template-columns:42px 1fr!important;align-items:center!important}
+.v5-core-actions .core-icon{position:static!important;width:39px!important;height:39px!important}
+.v5-core-actions button>span:last-child{align-self:center!important}
+.v5-core-actions b{font-size:16px!important}.v5-core-actions small{font-size:9px!important}
+.v5-scenic-trips{grid-template-columns:repeat(3,1fr)!important;gap:7px!important}
+.v5-scenic-trips .trip-card{min-height:126px!important;border-radius:12px!important;background:#101317!important}
+.v5-scenic-trips .trip-art{height:78px!important;margin-bottom:7px!important}
+.v5-road-now{margin-top:18px!important;border-radius:16px!important;padding:13px!important}
+.line-quick{border-radius:14px!important}
+}
