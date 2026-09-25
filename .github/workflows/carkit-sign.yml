@@ -90,7 +90,7 @@ jobs:
           assert len(questions)==len(vehicle_action_indexes), (
               len(questions), len(vehicle_action_indexes)
           )
-          assert len(questions) == 15, f"Tesla v1.1 requires exactly 15 vehicle setup questions: {len(questions)}"
+          assert len(questions) == 15, f"Tesla v1.2 requires exactly 15 vehicle setup questions: {len(questions)}"
           for q in questions:
               assert q.get("Category")=="Parameter", q
               assert q.get("ParameterKey")=="vehicle", q
@@ -299,33 +299,64 @@ jobs:
 
           oblob=(g/"油車助手.shortcut.xml").read_text(encoding="utf-8")
 
-          # Destination privacy guardrail: navigation asks at runtime and
-          # never ships a default address/location.
+          # iOS 26 app-picker regression guard: every Open App action must
+          # carry both the bundle identifier and the selected-app descriptor.
           for name,wf_obj in [("Oil",oil),("Tesla",tesla)]:
-              nav_asks=[
+              open_apps=[
                   a for a in wf_obj["WFWorkflowActions"]
+                  if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.openapp"
+              ]
+              assert open_apps, f"{name}: expected Open App actions"
+              for a in open_apps:
+                  p=a.get("WFWorkflowActionParameters",{})
+                  bundle=p.get("WFAppIdentifier")
+                  selected=p.get("WFSelectedApp",{})
+                  assert bundle, f"{name}: Open App missing WFAppIdentifier"
+                  assert selected.get("BundleIdentifier")==bundle, (
+                      f"{name}: Open App selected bundle mismatch: {bundle!r} vs {selected!r}"
+                  )
+                  assert selected.get("Name"), f"{name}: Open App missing selected app name"
+
+          # Navigation regression guard: use Shortcuts-native Open Directions.
+          # The destination must be the output of the runtime Ask action, never
+          # a baked-in address and never a hand-built URL.
+          for name,wf_obj in [("Oil",oil),("Tesla",tesla)]:
+              aa=wf_obj["WFWorkflowActions"]
+              asks={
+                  a.get("WFWorkflowActionParameters",{}).get("UUID")
+                  for a in aa
                   if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.ask"
                   and a.get("WFWorkflowActionParameters",{}).get("WFAskActionPrompt")
                      =="要去哪裡？可輸入地址、店名或地標"
+              }
+              directions=[
+                  a for a in aa
+                  if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.getdirections"
               ]
-              assert len(nav_asks)==3, f"{name}: expected 3 runtime destination prompts, got {len(nav_asks)}"
-              assert all(
-                  "WFAskActionDefaultAnswer" not in a.get("WFWorkflowActionParameters",{})
-                  for a in nav_asks
-              ), f"{name}: navigation must not contain a default destination"
-              enc=[
-                  a for a in wf_obj["WFWorkflowActions"]
-                  if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.urlencode"
-                  and a.get("WFWorkflowActionParameters",{}).get("WFEncodeMode")=="Encode"
-              ]
-              assert len(enc)==3, f"{name}: expected 3 URL Encode actions, got {len(enc)}"
-
-          for needle in [
-              "https://maps.apple.com/?daddr=",
-              "https://www.google.com/maps/dir/?api=1&amp;destination=",
-              "https://waze.com/ul?q=",
-          ]:
-              assert needle in oblob and needle in tblob, f"missing dynamic navigation URL: {needle}"
+              assert len(asks)==3, f"{name}: expected 3 navigation Ask actions, got {len(asks)}"
+              assert len(directions)==3, f"{name}: expected 3 Open Directions actions, got {len(directions)}"
+              assert {
+                  a.get("WFWorkflowActionParameters",{}).get("WFGetDirectionsActionApp")
+                  for a in directions
+              }=={"Maps","Google Maps","Waze"}, f"{name}: navigation app set is wrong"
+              for a in directions:
+                  p=a.get("WFWorkflowActionParameters",{})
+                  dest=p.get("WFDestination",{})
+                  assert dest.get("WFSerializationType")=="WFTextTokenAttachment", (
+                      f"{name}: Open Directions destination is not an action-output token"
+                  )
+                  v=dest.get("Value",{})
+                  assert v.get("Type")=="ActionOutput", f"{name}: destination is not ActionOutput"
+                  assert v.get("OutputUUID") in asks, (
+                      f"{name}: destination is not connected to its runtime Ask action"
+                  )
+                  assert v.get("OutputName")=="Provided Input"
+                  if p.get("WFGetDirectionsActionApp") in {"Maps","Google Maps"}:
+                      assert p.get("WFGetDirectionsActionMode")=="Driving"
+              assert not any(
+                  a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.urlencode"
+                  for a in aa
+              ), f"{name}: legacy URL navigation remains"
 
           # User-facing shortcuts must be runnable by a plain tap with no
           # Shortcut Input / automation magic values. Those belong in separate
@@ -403,13 +434,13 @@ jobs:
       - name: Upload signed shortcuts
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-signed-shortcuts-v1.1
+          name: carkit-signed-shortcuts-v1.2
           path: carkit-sign/out/*.shortcut
           if-no-files-found: error
 
       - name: Upload workflow sources
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-shortcut-sources-v1.1
+          name: carkit-shortcut-sources-v1.2
           path: carkit-sign/generated/*.shortcut.xml
           if-no-files-found: error
