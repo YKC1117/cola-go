@@ -234,12 +234,14 @@
       <section class="view" data-view="highway">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">LIVE TRAFFIC</span><h1>國道路況</h1></div></div>
         <div class="filter-row" id="highwayTabs"><button class="active" data-highway="1">國 1</button><button data-highway="2">國 2</button><button data-highway="3">國 3</button><button data-highway="4">國 4</button><button data-highway="5">國 5</button><button data-highway="6">國 6</button></div>
+        <div class="traffic-stage" aria-hidden="true"><span class="traffic-road"></span><div><b>即時路況</b><small>速度與壅塞狀態，以官方資料為準</small></div></div>
         <div class="list" id="highwayList"></div>
       </section>
 
       <section class="view" data-view="tunnel">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">SNOW MOUNTAIN</span><h1>雪隧</h1></div></div>
         <div class="filter-row direction" id="tunnelDirection"><button class="active" data-direction="south">南下 台北 → 宜蘭</button><button data-direction="north">北上 宜蘭 → 台北</button></div>
+        <div class="tunnel-stage" aria-hidden="true"><div class="tunnel-lights"></div><div class="tunnel-road"></div><div class="tunnel-car"></div><span>雪山隧道</span><small>即時車流資訊</small></div>
         <div class="list" id="tunnelList"></div>
       </section>
 
