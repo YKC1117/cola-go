@@ -405,3 +405,31 @@ body{background:radial-gradient(circle at 50% -8%,#283443 0,#0b1017 34%,#070a0e 
   .app-shell{min-height:calc(100vh - 48px);border:1px solid #27313d;border-radius:28px;overflow:clip}
   .bottom-nav{width:min(var(--shell),calc(100% - 48px));bottom:24px;border-radius:0 0 28px 28px}
 }
+
+/* COLA Red Road — mobile hero system */
+:root{--cola-red:#ef1828;--cola-red-hot:#ff3348;--cola-deep:#7e0710;--cola-white:#fff7f3}
+body{background:#050506}
+.app-shell{background:linear-gradient(180deg,#08090b 0,#0a0d11 62%,#08090b 100%)}
+.topbar{background:linear-gradient(180deg,#090a0df5,#090a0dc9);border-bottom-color:#ffffff0b}
+.brand{font-style:italic;letter-spacing:-.045em}.brand b{color:var(--cola-red-hot)}
+.view[data-view="home"]{position:relative;isolation:isolate}
+.cola-road-hero{position:absolute;z-index:-1;top:0;left:0;right:0;height:300px;overflow:hidden;background:radial-gradient(circle at 72% 20%,#ff23334a,transparent 30%),linear-gradient(155deg,#270308 0,#0a090b 54%,#050506 100%);border-radius:0 0 30px 30px}
+.cola-road-hero::before{content:"";position:absolute;inset:38px -20% -40px;background:linear-gradient(110deg,transparent 43%,#d4142352 44%,#ff2c3b 47%,transparent 49%),linear-gradient(70deg,transparent 45%,#741019 46%,#e51b2a 48%,transparent 50%);transform:perspective(260px) rotateX(56deg);filter:blur(.2px)}
+.road-glow{position:absolute;width:210px;height:210px;border-radius:50%;right:-50px;top:-80px;background:#ef182835;filter:blur(28px)}
+.road-line{position:absolute;bottom:28px;width:90px;height:3px;background:#fff4;border-radius:8px;transform:rotate(64deg)}
+.road-line-a{left:36%}.road-line-b{left:55%;bottom:3px}
+.home-top{padding-top:30px}
+.home-greeting{min-height:112px;align-items:flex-start}
+.home-greeting h1{font-size:36px;color:var(--cola-white);text-shadow:0 4px 22px #000}
+.home-greeting p{color:#f2d9d9;font-weight:650}
+.eyebrow{color:#ff5360;text-shadow:0 0 16px #ff233366}
+.cola-orbit{background:linear-gradient(145deg,#e71727,#77050d);border-color:#ff6b742d;box-shadow:0 14px 36px #e1112447}
+.search-destination{background:#fff;color:#15171b;border:0;box-shadow:0 14px 30px #0007}
+.search-destination .search-copy small{color:#777}.search-destination svg{color:var(--cola-red)}
+.core-actions{margin-top:14px}
+.core-actions button{background:linear-gradient(145deg,#171a20,#0d0f13);border:1px solid #ffffff10;box-shadow:0 12px 24px #0004}
+.core-actions button:first-child{background:linear-gradient(145deg,#ef2937,#9f0712);border-color:#ff68721f}
+.core-actions button:first-child .core-icon,.core-actions button:first-child b,.core-actions button:first-child small{color:#fff}
+.section-title h2,.road-now h2{letter-spacing:-.035em}
+.feedback-card{border-color:#ef18282e;background:linear-gradient(145deg,#1c1013,#0c0e12)}
+@media(min-width:600px){.cola-road-hero{height:330px;border-radius:0 0 38px 38px}.home-greeting{min-height:128px}.home-greeting h1{font-size:42px}}
