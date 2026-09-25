@@ -1,0 +1,198 @@
+name: CarKit Oil Navigation Probe
+
+concurrency:
+  group: carkit-oil-nav-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - temp/carkit-shortcut-sign
+    paths:
+      - ".github/workflows/carkit-oil-nav-sim.yml"
+
+jobs:
+  oil-nav:
+    runs-on: macos-26
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and sign Oil shortcut
+        run: |
+          set -euxo pipefail
+          rm -rf carkit-sign/generated carkit-sign/out
+          python3 carkit-sign/build_oil.py
+          mkdir -p carkit-sign/out
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          p=Path("carkit-sign/generated/油車助手.shortcut.xml")
+          payload=json.dumps({
+              "shortcutName":"油車助手",
+              "shortcut":p.read_text(encoding="utf-8")
+          }).encode()
+          req=Request(
+              "https://hubsign.routinehub.services/sign",
+              data=payload,
+              headers={"Content-Type":"application/json","User-Agent":"cherri/1.3.0"},
+              method="POST",
+          )
+          with urlopen(req,timeout=60) as resp:
+              signed=resp.read()
+          assert signed[:4]==b"AEA1", signed[:16]
+          Path("carkit-sign/out/油車助手.shortcut").write_bytes(signed)
+          print("OIL_SIGNED=1",len(signed))
+          PY
+
+      - name: Boot newest iPhone simulator
+        id: sim
+        run: |
+          set -euxo pipefail
+          UDID="$(python3 - <<'PY'
+          import json,re,subprocess
+          data=json.loads(subprocess.check_output(["xcrun","simctl","list","devices","available","-j"]))
+          out=[]
+          for runtime,devices in data["devices"].items():
+              m=re.search(r"iOS-(\d+)-(\d+)",runtime)
+              if not m:
+                  continue
+              version=(int(m.group(1)),int(m.group(2)))
+              for d in devices:
+                  if d.get("isAvailable") and "iPhone" in d.get("name",""):
+                      rank=1 if "Pro Max" in d["name"] else 0
+                      out.append((version,rank,d["name"],d["udid"]))
+          if not out:
+              raise SystemExit("No iPhone simulator")
+          out.sort(reverse=True)
+          print(out[0][3])
+          PY
+          )"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$UDID" || true
+          open -a Simulator --args -CurrentDeviceUDID "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl listapps "$UDID" | grep -q "com.apple.shortcuts"
+
+      - name: Install simulator UI driver
+        run: |
+          set -euxo pipefail
+          brew tap facebook/fb
+          brew trust facebook/fb
+          brew install facebook/fb/idb
+          idb list-targets
+
+      - name: Import Oil and verify navigation prompt
+        timeout-minutes: 6
+        run: |
+          set -euxo pipefail
+          UDID="${{ steps.sim.outputs.udid }}"
+          mkdir -p /tmp/oil-nav-probe
+
+          run_idb() {
+            python3 -c 'import subprocess,sys; cmd=sys.argv[1:]; print("RUN_IDB "+repr(cmd),file=sys.stderr,flush=True); p=subprocess.run(cmd,timeout=30); raise SystemExit(p.returncode)' "$@"
+          }
+
+          describe_retry() {
+            local out="$1"
+            rm -f "$out"
+            for attempt in 1 2 3 4 5 6; do
+              if run_idb idb ui describe-all --key AXLabel --key AXValue --key frame --udid "$UDID" > "$out" && test -s "$out"; then
+                python3 -m json.tool "$out" >/dev/null && return 0
+              fi
+              sleep 2
+            done
+            return 1
+          }
+
+          tap_frame() {
+            local json_file="$1"
+            local label="$2"
+            local xy
+            xy="$(jq -r --arg l "$label" '[.. | objects | select(.AXLabel == $l and (.frame|type) == "object") | [((.frame.x + (.frame.width/2))|round), ((.frame.y + (.frame.height/2))|round)]][0] | @tsv' "$json_file")"
+            test -n "$xy"
+            read -r x y <<< "$xy"
+            echo "tap $label at $x,$y"
+            run_idb idb ui tap "$x" "$y" --udid "$UDID"
+          }
+
+          open_shortcut_retry() {
+            local encoded="$1"
+            for attempt in 1 2 3; do
+              xcrun simctl launch "$UDID" com.apple.shortcuts || true
+              sleep 2
+              if xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=$encoded"; then
+                sleep 4
+                return 0
+              fi
+              sleep 2
+            done
+            return 1
+          }
+
+          SHORTCUTS_DATA="$(xcrun simctl get_app_container "$UDID" com.apple.shortcuts data)"
+          mkdir -p "$SHORTCUTS_DATA/Documents/CarKitTW"
+          cp "carkit-sign/out/油車助手.shortcut" "$SHORTCUTS_DATA/Documents/CarKitTW/"
+          OIL_PATH="$SHORTCUTS_DATA/Documents/CarKitTW/油車助手.shortcut"
+
+          xcrun simctl launch "$UDID" com.apple.shortcuts || true
+          sleep 2
+          for attempt in 1 2 3; do
+            if xcrun simctl openurl "$UDID" "file://$OIL_PATH"; then
+              break
+            fi
+            test "$attempt" -lt 3
+            sleep 2
+          done
+          sleep 4
+          describe_retry /tmp/oil-nav-probe/add.json
+          xcrun simctl io "$UDID" screenshot /tmp/oil-nav-probe/add.png
+          tap_frame /tmp/oil-nav-probe/add.json "Add Shortcut"
+          sleep 6
+
+          open_shortcut_retry "%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
+          describe_retry /tmp/oil-nav-probe/editor.json
+          run_idb idb ui tap "play" --udid "$UDID"
+          sleep 2
+
+          describe_retry /tmp/oil-nav-probe/main-menu.json
+          tap_frame /tmp/oil-nav-probe/main-menu.json "導航"
+          sleep 1
+
+          describe_retry /tmp/oil-nav-probe/nav-menu.json
+          tap_frame /tmp/oil-nav-probe/nav-menu.json "Apple 地圖"
+          sleep 2
+
+          describe_retry /tmp/oil-nav-probe/destination.json
+          xcrun simctl io "$UDID" screenshot /tmp/oil-nav-probe/destination.png
+
+          python3 - <<'PY'
+          import json
+          data=json.load(open("/tmp/oil-nav-probe/destination.json"))
+          values=[]
+          def walk(v):
+              if isinstance(v,dict):
+                  for k in ("AXLabel","AXValue"):
+                      x=v.get(k)
+                      if isinstance(x,str):
+                          values.append(x)
+                  for x in v.values():
+                      walk(x)
+              elif isinstance(v,list):
+                  for x in v:
+                      walk(x)
+          walk(data)
+          assert any("要去哪裡" in x for x in values), values[:200]
+          assert not any("請選擇此動作中每個參數的值" in x for x in values), values[:200]
+          assert not any("Please choose a value for each parameter" in x for x in values), values[:200]
+          print("OIL_RUNTIME_NAVIGATION_PROMPT=PASS")
+          PY
+
+      - name: Upload Oil navigation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: carkit-oil-navigation-v1.1
+          path: /tmp/oil-nav-probe/
+          if-no-files-found: warn
