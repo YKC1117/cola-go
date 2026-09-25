@@ -480,3 +480,26 @@ select option{background:#11151b;color:#fff}
 .more-list{gap:9px}.more-list button{min-height:62px}
 .feedback-line{background:linear-gradient(135deg,#08cf5b,#04a947);box-shadow:0 10px 25px #05c65325}
 @media(max-width:599px){.road-now-grid{gap:8px}.road-now-grid button{min-height:94px;padding:13px 10px}.road-now-grid b{font-size:22px}.section-head h2{font-size:19px}}
+
+/* Concept fidelity V3 — illustrated road hero, not a recolor */
+.view[data-view="home"]{padding-top:0}
+.cola-road-hero{height:390px;background:linear-gradient(180deg,#280006 0,#160006 42%,#07080a 100%);border-radius:0;overflow:hidden}
+.hero-sky{position:absolute;inset:0 0 44%;background:radial-gradient(ellipse at 60% 55%,#ff24363d,transparent 33%),linear-gradient(168deg,transparent 40%,#e9152730 41%,transparent 43%)}
+.hero-mountain{position:absolute;left:-10%;right:-10%;top:108px;height:120px;background:#08090b;clip-path:polygon(0 62%,8% 48%,16% 59%,28% 25%,37% 52%,48% 18%,58% 54%,68% 32%,78% 58%,89% 28%,100% 50%,100% 100%,0 100%);filter:drop-shadow(0 -8px 18px #e9142529)}
+.hero-road{position:absolute;left:3%;right:3%;bottom:-74px;height:235px;background:linear-gradient(90deg,#07080a,#171116 48%,#08090b);clip-path:polygon(38% 0,61% 0,100% 100%,0 100%)}
+.hero-road::before,.hero-road::after{content:"";position:absolute;top:5%;bottom:0;width:2px;background:linear-gradient(#fff2,#ff1e32)}
+.hero-road::before{left:38%;transform:rotate(12deg)}.hero-road::after{right:38%;transform:rotate(-12deg)}
+.hero-road i{position:absolute;left:49.5%;width:4px;height:36px;background:#f7e8dc8a;transform:perspective(90px) rotateX(35deg)}
+.hero-road i:nth-child(1){top:20px;height:14px}.hero-road i:nth-child(2){top:66px;height:25px}.hero-road i:nth-child(3){top:128px;height:44px}
+.hero-car{position:absolute;right:-15px;bottom:38px;width:150px;height:78px;filter:drop-shadow(0 15px 18px #000)}
+.car-roof{position:absolute;right:20px;top:0;width:85px;height:42px;background:linear-gradient(140deg,#201216,#07080a);clip-path:polygon(24% 0,80% 6%,100% 100%,0 100%)}
+.car-body{position:absolute;inset:31px 0 0;background:linear-gradient(165deg,#331015,#08090b 64%);border-radius:35px 9px 18px 18px;border-bottom:2px solid #e51b2a}
+.tail-light{position:absolute;right:13px;top:40px;width:56px;height:9px;border-radius:12px;background:#ff2035;box-shadow:0 0 9px #ff2035,0 0 22px #ff20358c}
+.concept-wordmark{position:relative;z-index:2;display:flex;align-items:center;gap:10px;padding-top:18px;margin-bottom:25px}
+.concept-wordmark img{width:42px;height:42px;border-radius:12px;box-shadow:0 0 22px #ef18284f}
+.concept-wordmark span{display:grid}.concept-wordmark strong{font-size:23px;font-style:italic;letter-spacing:-.045em;color:#fff}.concept-wordmark strong::first-letter{color:#fff}.concept-wordmark small{font-size:9px;font-weight:900;letter-spacing:.18em;color:#ff5b67}
+.home-greeting{min-height:125px}.home-greeting h1{font-size:40px;line-height:1.03}.home-greeting p{font-size:16px;color:#fff}
+.cola-orbit{display:none}
+.search-destination{position:relative;z-index:4;margin-top:4px;min-height:88px;border-radius:24px}
+.core-actions{position:relative;z-index:4}
+@media(max-width:430px){.cola-road-hero{height:410px}.concept-wordmark{padding-top:14px}.home-greeting h1{font-size:38px}.hero-car{width:140px;right:-25px;bottom:48px}}
