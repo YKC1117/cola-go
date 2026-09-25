@@ -117,19 +117,8 @@ jobs:
             local json_file="$1"
             local label="$2"
             local xy
-            xy="$(python3 -c 'import json,sys
-d=json.load(open(sys.argv[1])); label=sys.argv[2]; hits=[]
-def walk(v):
-    if isinstance(v,dict):
-        f=v.get("frame")
-        if v.get("AXLabel")==label and isinstance(f,dict):
-            hits.append((float(f["x"])+float(f["width"])/2,float(f["y"])+float(f["height"])/2))
-        for x in v.values(): walk(x)
-    elif isinstance(v,list):
-        for x in v: walk(x)
-walk(d)
-assert hits, "label frame not found: "+label
-print("%.2f %.2f"%hits[0])' "$json_file" "$label")"
+            xy="$(jq -r --arg l "$label" '[.. | objects | select(.AXLabel == $l and (.frame|type) == "object") | [(.frame.x + (.frame.width/2)), (.frame.y + (.frame.height/2))]][0] | @tsv' "$json_file")"
+            test -n "$xy"
             read -r x y <<< "$xy"
             echo "tap $label at $x,$y"
             run_idb idb ui tap "$x" "$y" --udid "$UDID"
