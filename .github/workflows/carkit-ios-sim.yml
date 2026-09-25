@@ -291,7 +291,7 @@ jobs:
           if kind=="tesla":
               required_any=["特斯拉助手","準備出發","空調 / 車室","充電"]
           else:
-              required_any=["油車助手","開始開車","導航","即時路況"]
+              required_any=["油車助手","神盾","導航","路況"]
           if not any(any(token in x for token in required_any) for x in labels):
               raise SystemExit("main menu not observed: "+repr(labels[:160]))
           print(kind.upper()+"_MAIN_MENU_OBSERVED=1")
@@ -352,6 +352,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-ios-simulator-install-flow-v1.0
+          name: carkit-ios-simulator-install-flow-v1.1
           path: /tmp/carkit-probe/
           if-no-files-found: warn

@@ -4,7 +4,7 @@ from pathlib import Path
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
 
-VERSION="1.0"
+VERSION="1.1"
 TEAM="PS9EBAM2PU"
 BUNDLE="com.teslamotors.TeslaApp"
 
@@ -16,6 +16,23 @@ def ao(u,n):
 
 def named_var(name):
     return {"WFSerializationType":"WFTextTokenAttachment","Value":{"Type":"Variable","VariableName":name}}
+
+
+def token_string(prefix,output_uuid,output_name,suffix=""):
+    marker="\uFFFC"
+    return {
+      "Value":{
+        "attachmentsByRange":{
+          f"{{{len(prefix)}, 1}}":{
+            "Type":"ActionOutput",
+            "OutputUUID":output_uuid,
+            "OutputName":output_name
+          }
+        },
+        "string":prefix+marker+suffix
+      },
+      "WFSerializationType":"WFTextTokenString"
+    }
 
 def cond_action_output(u,n):
     return {"Type":"Variable","Variable":ao(u,n)}
@@ -74,6 +91,29 @@ def url_open(url,seed):
     return [
       act("is.workflow.actions.url",{"UUID":u,"WFURLActionURL":url}),
       act("is.workflow.actions.openurl",{"UUID":uid(seed+"-open"),"WFInput":ao(u,"URL")})
+    ]
+
+
+def navigate_to(prefix,suffix,seed):
+    ask,ask_uuid=ask_text("要去哪裡？可輸入地址、店名或地標",seed+"-ask")
+    encoded=uid(seed+"-encode")
+    url_uuid=uid(seed+"-url")
+    return [
+      ask,
+      act("is.workflow.actions.urlencode",{
+        "UUID":encoded,
+        "WFEncodeMode":"Encode",
+        "WFInput":ao(ask_uuid,"Provided Input")
+      }),
+      act("is.workflow.actions.url",{
+        "UUID":url_uuid,
+        "WFURLActionURL":token_string(prefix,encoded,"URL Encoded Text",suffix)
+      }),
+      act("is.workflow.actions.openurl",{
+        "UUID":uid(seed+"-open"),
+        "WFInput":ao(url_uuid,"URL")
+      }),
+      exit_shortcut()
     ]
 
 def menu(prompt,items,branches,seed):
@@ -317,9 +357,9 @@ find_menu=menu("找車",["Apple 地圖找車","閃燈尋車"],{
 },"find-menu")
 
 nav_menu=menu("導航",["Apple 地圖","Google Maps","Waze"],{
-    "Apple 地圖":[app("com.apple.Maps","menu-nav-apple"),exit_shortcut()],
-    "Google Maps":[app("com.google.Maps","menu-nav-google"),exit_shortcut()],
-    "Waze":[app("com.waze.iphone","menu-nav-waze"),exit_shortcut()],
+    "Apple 地圖":navigate_to("https://maps.apple.com/?daddr=","&dirflg=d","menu-nav-apple"),
+    "Google Maps":navigate_to("https://www.google.com/maps/dir/?api=1&destination=","&travelmode=driving","menu-nav-google"),
+    "Waze":navigate_to("https://waze.com/ul?q=","&navigate=yes","menu-nav-waze"),
 },"nav-menu")
 
 more_menu=menu("更多功能",["神盾","Tesla App","高速公路1968","哨兵模式"],{
@@ -352,7 +392,7 @@ auto_start=[
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v1.0｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- 點開捷徑直接顯示 7 個主要功能，不需要輸入文字或背口令\n- Siri 呼叫「特斯拉助手」時使用同一套選單\n- 解鎖、前行李廂、後車廂改用按鈕再次確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- vehicle-backed Tesla AppIntent 仍使用原生安裝綁定；未設定時保留 Ask Each Time 安全 fallback\n- Tesla 藍牙自動化只使用 Connect；不偽造 Bluetooth Disconnect\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
+    "WFCommentActionText":"Tesla Driver v1.1｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- 點開捷徑直接顯示 7 個主要功能，不需要背口令\n- 導航每次詢問目的地，不保存任何預設地址\n- Siri 呼叫「特斯拉助手」時使用同一套選單\n- 解鎖、前行李廂、後車廂改用按鈕再次確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- vehicle-backed Tesla AppIntent 仍使用原生安裝綁定；未設定時保留 Ask Each Time 安全 fallback\n- Tesla 藍牙自動化只使用 Connect；不偽造 Bluetooth Disconnect\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
