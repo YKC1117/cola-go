@@ -95,8 +95,36 @@ jobs:
           run_idb() {
             python3 -c 'import subprocess,sys; cmd=sys.argv[1:]; print("RUN_IDB "+repr(cmd),file=sys.stderr,flush=True); p=subprocess.run(cmd,timeout=35); raise SystemExit(p.returncode)' "$@"
           }
+          describe_retry() {
+            local out="$1"; shift
+            rm -f "$out"
+            for attempt in 1 2 3 4 5 6; do
+              if run_idb idb ui describe-all --key AXLabel --key frame --udid "$UDID" > "$out" && test -s "$out"; then
+                python3 -m json.tool "$out" >/dev/null && return 0
+              fi
+              echo "UI describe attempt $attempt not ready: $out"
+              sleep 2
+            done
+            echo "Required UI evidence unavailable: $out" >&2
+            return 1
+          }
 
           mkdir -p /tmp/carkit-probe
+          git rev-parse HEAD > /tmp/carkit-probe/commit.txt
+          xcrun simctl list runtimes > /tmp/carkit-probe/simulator-runtimes.txt
+          xcrun simctl list devices > /tmp/carkit-probe/simulator-devices.txt
+          shasum -a 256 carkit-sign/out/*.shortcut > /tmp/carkit-probe/signed-sha256.txt
+          if xcrun simctl listapps "$UDID" > /tmp/carkit-probe/app-inventory.txt; then
+            echo "APP_INVENTORY_QUERY=PASS" > /tmp/carkit-probe/app-inventory-status.txt
+            if grep -q 'com.teslamotors.TeslaApp' /tmp/carkit-probe/app-inventory.txt; then
+              echo "TESLA_APP_PRESENT=1" >> /tmp/carkit-probe/app-inventory-status.txt
+            else
+              echo "TESLA_APP_PRESENT=0" >> /tmp/carkit-probe/app-inventory-status.txt
+            fi
+          else
+            echo "APP_INVENTORY_QUERY=FAIL" > /tmp/carkit-probe/app-inventory-status.txt
+            echo "TESLA_APP_PRESENT=UNKNOWN" >> /tmp/carkit-probe/app-inventory-status.txt
+          fi
           echo "TARGET_UDID=$UDID" | tee /tmp/carkit-probe/target.txt
           idb list-targets | tee /tmp/carkit-probe/idb-targets.txt || true
           command -v idb_companion | tee /tmp/carkit-probe/idb-companion-path.txt || true
@@ -114,17 +142,17 @@ jobs:
           sleep 2
           xcrun simctl openurl "$UDID" "file://$OIL_PATH"
           sleep 4
-          run_idb idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/oil-before.json || true
+          describe_retry /tmp/carkit-probe/oil-before.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-before.png
           run_idb idb ui tap "Add Shortcut" --udid "$UDID"
           sleep 6
-          run_idb idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/oil-after-add.json || true
+          describe_retry /tmp/carkit-probe/oil-after-add.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-after-add.png
 
           # Confirm Oil exists in the library/editor by asking Shortcuts to open it.
           xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B" || true
           sleep 5
-          run_idb idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/oil-opened.json || true
+          describe_retry /tmp/carkit-probe/oil-opened.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-opened.png
 
           # Tesla: direct file, tap Add Shortcut, then inspect setup/import questions.
@@ -133,12 +161,19 @@ jobs:
           sleep 2
           xcrun simctl openurl "$UDID" "file://$TESLA_PATH"
           sleep 4
-          run_idb idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/tesla-before.json || true
+          describe_retry /tmp/carkit-probe/tesla-before.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-before.png
           run_idb idb ui tap "Add Shortcut" --udid "$UDID"
           sleep 6
-          run_idb idb ui describe-all --key AXLabel --key frame --udid "$UDID" > /tmp/carkit-probe/tesla-after-add.json || true
+          describe_retry /tmp/carkit-probe/tesla-after-add.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-after-add.png
+
+          # Re-open Tesla by its own name so the import proof cannot accidentally
+          # be satisfied by the previously imported Oil shortcut.
+          xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=%E7%89%B9%E6%96%AF%E6%8B%89%E5%8A%A9%E6%89%8B"
+          sleep 5
+          describe_retry /tmp/carkit-probe/tesla-opened.json
+          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-opened.png
 
           echo "=== OIL BEFORE LABELS ==="
           cat /tmp/carkit-probe/oil-before.json || true
@@ -151,15 +186,55 @@ jobs:
       - name: Validate simulator import evidence
         run: |
           set -euxo pipefail
-          test -s /tmp/carkit-probe/oil-after-add.json
-          test -s /tmp/carkit-probe/tesla-before.json
-          test -s /tmp/carkit-probe/tesla-after-add.json
-          grep -q '"AXLabel":"Add Shortcut"' /tmp/carkit-probe/tesla-before.json
-          grep -q '"AXLabel":"Search Actions"' /tmp/carkit-probe/oil-after-add.json
-          grep -q '"AXLabel":"Search Actions"' /tmp/carkit-probe/tesla-after-add.json
-          grep -q '"AXLabel":"特斯拉助手"' /tmp/carkit-probe/tesla-before.json
-          test -s /tmp/carkit-probe/oil-after-add.png
-          test -s /tmp/carkit-probe/tesla-after-add.png
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root=Path("/tmp/carkit-probe")
+          required_json=[
+              "oil-before.json","oil-after-add.json","oil-opened.json",
+              "tesla-before.json","tesla-after-add.json","tesla-opened.json",
+          ]
+          required_png=[
+              "oil-before.png","oil-after-add.png","oil-opened.png",
+              "tesla-before.png","tesla-after-add.png","tesla-opened.png",
+          ]
+          def labels(name):
+              p=root/name
+              assert p.stat().st_size>0, f"{name}: empty evidence"
+              data=json.loads(p.read_text())
+              out=[]
+              def walk(v):
+                  if isinstance(v,dict):
+                      x=v.get("AXLabel")
+                      if isinstance(x,str): out.append(x)
+                      for y in v.values(): walk(y)
+                  elif isinstance(v,list):
+                      for y in v: walk(y)
+              walk(data)
+              return out
+          for name in required_png:
+              assert (root/name).stat().st_size>0, f"{name}: missing screenshot"
+          oil_before=labels("oil-before.json")
+          oil_after=labels("oil-after-add.json")
+          oil_opened=labels("oil-opened.json")
+          tesla_before=labels("tesla-before.json")
+          tesla_after=labels("tesla-after-add.json")
+          tesla_opened=labels("tesla-opened.json")
+          assert "Add Shortcut" in oil_before, oil_before
+          assert "油車助手" in oil_before, oil_before
+          assert "Search Actions" in oil_after, oil_after
+          assert "Search Actions" in oil_opened, oil_opened
+          assert "Add Shortcut" in tesla_before, tesla_before
+          assert "特斯拉助手" in tesla_before, tesla_before
+          assert "Search Actions" in tesla_after, tesla_after
+          assert "Search Actions" in tesla_opened, tesla_opened
+          for name in required_json:
+              json.loads((root/name).read_text())
+          PY
+          test -s /tmp/carkit-probe/commit.txt
+          test -s /tmp/carkit-probe/signed-sha256.txt
+          test -s /tmp/carkit-probe/app-inventory-status.txt
           echo "OIL_SIMULATOR_IMPORT=PASS"
           echo "TESLA_SIMULATOR_IMPORT=PASS"
           echo "TESLA_APPINTENT_RUNTIME=NOT_RUN"
