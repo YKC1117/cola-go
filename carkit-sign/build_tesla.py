@@ -23,6 +23,9 @@ def cond_action_output(u,n):
 def cond_named_var(name):
     return {"Type":"Variable","Variable":named_var(name)}
 
+def ask_token():
+    return {"Value":{"Type":"Ask"},"WFSerializationType":"WFTextTokenAttachment"}
+
 def act(i,p=None):
     return {"WFWorkflowActionIdentifier":i,"WFWorkflowActionParameters":p or {}}
 

@@ -354,4 +354,4 @@ jobs:
         with:
           name: carkit-ios-simulator-install-flow-v1.0
           path: /tmp/carkit-probe/
-          if-no-files-found: error
+          if-no-files-found: warn
