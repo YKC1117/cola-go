@@ -244,7 +244,7 @@ jobs:
           echo "TESLA_VEHICLE_ENTITY_PICKER=NOT_RUN"
           echo "REQUIRES_PHYSICAL_IPHONE_AND_TESLA_APP=1"
 
-      - name: Validate editor-run command prompt
+      - name: Validate editor-run main menu
         timeout-minutes: 4
         run: |
           set -euxo pipefail
@@ -264,11 +264,13 @@ jobs:
             done
             return 1
           }
-          assert_prompt() {
+          assert_menu() {
             local file="$1"
-            python3 - "$file" <<'PY'
+            local kind="$2"
+            python3 - "$file" "$kind" <<'PY'
           import json,sys
           data=json.load(open(sys.argv[1]))
+          kind=sys.argv[2]
           labels=[]
           def walk(v):
               if isinstance(v,dict):
@@ -282,15 +284,18 @@ jobs:
                   for x in v:
                       walk(x)
           walk(data)
-          if not any("要做什麼" in x for x in labels):
-              raise SystemExit("command prompt not observed: "+repr(labels[:120]))
-          print("COMMAND_PROMPT_OBSERVED=1")
+          if kind=="tesla":
+              required_any=["特斯拉助手","準備出發","空調 / 車室","充電"]
+          else:
+              required_any=["油車助手","開始開車","導航","即時路況"]
+          if not any(any(token in x for token in required_any) for x in labels):
+              raise SystemExit("main menu not observed: "+repr(labels[:160]))
+          print(kind.upper()+"_MAIN_MENU_OBSERVED=1")
           PY
           }
 
-          # Tesla: run from the native editor's Play button. This validates the
-          # shortcut reaches its first user command prompt before any Tesla
-          # AppIntent is attempted, even though Tesla.app is absent on Simulator.
+          # Tesla: run from the native editor's Play button and prove the
+          # touch-first main menu appears before any Tesla AppIntent executes.
           xcrun simctl terminate "$UDID" com.apple.shortcuts || true
           xcrun simctl launch "$UDID" com.apple.shortcuts || true
           sleep 2
@@ -298,11 +303,11 @@ jobs:
           sleep 5
           run_idb idb ui tap "play" --udid "$UDID"
           sleep 3
-          describe_retry /tmp/carkit-probe/tesla-play-prompt.json
-          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-play-prompt.png
-          assert_prompt /tmp/carkit-probe/tesla-play-prompt.json
+          describe_retry /tmp/carkit-probe/tesla-play-menu.json
+          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-play-menu.png
+          assert_menu /tmp/carkit-probe/tesla-play-menu.json tesla
 
-          # Oil: independently prove the same first command prompt.
+          # Oil: independently prove the same menu-first interaction.
           xcrun simctl terminate "$UDID" com.apple.shortcuts || true
           xcrun simctl launch "$UDID" com.apple.shortcuts || true
           sleep 2
@@ -310,12 +315,12 @@ jobs:
           sleep 5
           run_idb idb ui tap "play" --udid "$UDID"
           sleep 3
-          describe_retry /tmp/carkit-probe/oil-play-prompt.json
-          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-play-prompt.png
-          assert_prompt /tmp/carkit-probe/oil-play-prompt.json
+          describe_retry /tmp/carkit-probe/oil-play-menu.json
+          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-play-menu.png
+          assert_menu /tmp/carkit-probe/oil-play-menu.json oil
 
-          echo "TESLA_EDITOR_RUN_PROMPT=PASS"
-          echo "OIL_EDITOR_RUN_PROMPT=PASS"
+          echo "TESLA_EDITOR_RUN_MENU=PASS"
+          echo "OIL_EDITOR_RUN_MENU=PASS"
           echo "SIRI_VOICE_DIALOG=NOT_RUN"
 
       - name: Best-effort Tesla runtime diagnostics
@@ -332,10 +337,10 @@ jobs:
           run_idb idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key frame --udid "$UDID" > /tmp/carkit-probe/tesla-runtime-prompt.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-runtime-prompt.png || true
           xcrun simctl spawn "$UDID" log show --last 4m --style compact --predicate 'process == "Shortcuts" OR subsystem CONTAINS[c] "workflow"' > /tmp/carkit-probe/shortcuts.log || true
-          if grep -q '要做什麼' /tmp/carkit-probe/tesla-runtime-prompt.json 2>/dev/null; then
-            echo "TESLA_ENTRY_PROMPT_OBSERVED=1"
+          if grep -Eq '特斯拉助手|準備出發|空調 / 車室|充電' /tmp/carkit-probe/tesla-runtime-prompt.json 2>/dev/null; then
+            echo "TESLA_ENTRY_MENU_OBSERVED=1"
           else
-            echo "TESLA_ENTRY_PROMPT_OBSERVED=0"
+            echo "TESLA_ENTRY_MENU_OBSERVED=0"
           fi
           echo "Tesla AppIntent runtime remains NOT RUN: stock Simulator cannot establish real Tesla App/AppEntity behavior."
 
@@ -343,6 +348,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-ios-simulator-install-flow-v0.7
+          name: carkit-ios-simulator-install-flow-v0.8
           path: /tmp/carkit-probe/
           if-no-files-found: error
