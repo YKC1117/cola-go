@@ -22,6 +22,8 @@ export class TdxCoordinator extends DurableObject {
   constructor(ctx, env) {
     super(ctx, env);
     this.sql = ctx.storage.sql;
+    this.refreshInflight = new Map();
+    this.tokenInflight = null;
     ctx.blockConcurrencyWhile(async () => {
       this.sql.exec(`
         CREATE TABLE IF NOT EXISTS snapshots (
@@ -168,18 +170,28 @@ export class TdxCoordinator extends DurableObject {
       }
     }
 
-    const result = await requestToken(this.env);
-    const expiresAt = Date.now() + Math.max(60, result.expiresIn) * 1000;
-    this.sql.exec(
-      `INSERT INTO auth(id, token, expires_at, credential_version)
-       VALUES(1, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET
-         token = excluded.token,
-         expires_at = excluded.expires_at,
-         credential_version = excluded.credential_version`,
-      result.token, expiresAt, version
-    );
-    return result.token;
+    if (this.tokenInflight) return this.tokenInflight;
+
+    this.tokenInflight = (async () => {
+      const result = await requestToken(this.env);
+      const expiresAt = Date.now() + Math.max(60, result.expiresIn) * 1000;
+      this.sql.exec(
+        `INSERT INTO auth(id, token, expires_at, credential_version)
+         VALUES(1, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           token = excluded.token,
+           expires_at = excluded.expires_at,
+           credential_version = excluded.credential_version`,
+        result.token, expiresAt, version
+      );
+      return result.token;
+    })();
+
+    try {
+      return await this.tokenInflight;
+    } finally {
+      this.tokenInflight = null;
+    }
   }
 
   async fetchOne(spec, token) {
@@ -236,6 +248,19 @@ export class TdxCoordinator extends DurableObject {
     return envelope;
   }
 
+  async refreshShared(kind, scope, upstream, ttl) {
+    const key = upstream.key;
+    if (this.refreshInflight.has(key)) return this.refreshInflight.get(key);
+
+    const pending = this.refresh(kind, scope, upstream, ttl);
+    this.refreshInflight.set(key, pending);
+    try {
+      return await pending;
+    } finally {
+      this.refreshInflight.delete(key);
+    }
+  }
+
   async getResource({ kind, scope, upstream, ttl }) {
     const row = this.loadSnapshot(upstream.key);
     const state = classifySnapshot(row);
@@ -248,7 +273,7 @@ export class TdxCoordinator extends DurableObject {
     }
 
     try {
-      const envelope = await this.refresh(kind, scope, upstream, ttl);
+      const envelope = await this.refreshShared(kind, scope, upstream, ttl);
       return { ok: true, envelope };
     } catch (error) {
       if (error instanceof AppError && error.extra?.cooldown) {
