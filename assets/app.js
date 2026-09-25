@@ -54,9 +54,6 @@ function show(view,push=true){
   $$(".bottom-nav button").forEach(el=>el.classList.toggle("active",el.dataset.go===view));
   window.scrollTo({top:0,behavior:"instant"});
   if(push)history.replaceState(null,"","#"+view);
-  if(view==="cctv")ensureCCTV().catch(()=>{});
-  if(view==="parking"&&state.parkingCity!=="all"&&state.parkingCity!=="Tainan")ensureParkingCity(state.parkingCity).catch(()=>{});
-  if((view==="highway"||view==="tunnel")&&state.traffic?.status!=="live")ensureClientTraffic().catch(()=>{});
 
 }
 
@@ -108,7 +105,8 @@ async function load(){
     getJSON("./data/tesla-models.json"),
     getJSON("./data/marketplace.json"),
     getJSON("./data/community.json"),
-    getJSON("./data/tesla-locations.json")
+    getJSON("./data/tesla-locations.json"),
+    getJSON("./data/cctv.json")
   ]);
 
   if(results[0].status==="fulfilled")state.charging=results[0].value;
@@ -120,6 +118,7 @@ async function load(){
   if(results[6].status==="fulfilled")state.market=results[6].value;
   if(results[7].status==="fulfilled")state.community=results[7].value;
   if(results[8].status==="fulfilled")state.locations=results[8].value;
+  if(results[9].status==="fulfilled"&&Array.isArray(results[9].value?.items))state.cctv=results[9].value;
 
   renderAll();
 }
