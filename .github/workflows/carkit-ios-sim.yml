@@ -1,5 +1,9 @@
 name: CarKit iOS Simulator Probe
 
+concurrency:
+  group: carkit-ios-sim-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -348,6 +352,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-ios-simulator-install-flow-v0.9
+          name: carkit-ios-simulator-install-flow-v1.0
           path: /tmp/carkit-probe/
           if-no-files-found: error

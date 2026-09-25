@@ -4,7 +4,7 @@ from pathlib import Path
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
 
-VERSION="0.9"
+VERSION="1.0"
 TEAM="PS9EBAM2PU"
 BUNDLE="com.teslamotors.TeslaApp"
 
@@ -22,18 +22,6 @@ def cond_action_output(u,n):
 
 def cond_named_var(name):
     return {"Type":"Variable","Variable":named_var(name)}
-
-def cond_extension_input():
-    return {
-      "Type":"Variable",
-      "Variable":{
-        "Value":{"Type":"ExtensionInput"},
-        "WFSerializationType":"WFTextTokenAttachment"
-      }
-    }
-
-def ask_token():
-    return {"Value":{"Type":"Ask"},"WFSerializationType":"WFTextTokenAttachment"}
 
 def act(i,p=None):
     return {"WFWorkflowActionIdentifier":i,"WFWorkflowActionParameters":p or {}}
@@ -309,33 +297,45 @@ window_menu=menu("車窗",["通風","關閉車窗"],{
     "關閉車窗":set_command("WINDOW_CLOSE","menu-close-window"),
 },"window-menu")
 
+vehicle_menu=menu("車輛控制",[
+    "鎖車","解鎖","前行李廂","後車廂","車窗通風","關閉車窗"
+],{
+    "鎖車":set_command("LOCK","menu-vehicle-lock"),
+    "解鎖":set_command("UNLOCK","menu-vehicle-unlock"),
+    "前行李廂":set_command("FRUNK","menu-vehicle-frunk"),
+    "後車廂":set_command("REAR","menu-vehicle-rear"),
+    "車窗通風":set_command("VENT","menu-vehicle-vent"),
+    "關閉車窗":set_command("WINDOW_CLOSE","menu-vehicle-close-window"),
+},"vehicle-menu")
+
+find_menu=menu("找車",["Apple 地圖找車","閃燈尋車"],{
+    "Apple 地圖找車":[*find_parked_car("menu-find-parked-car"),exit_shortcut()],
+    "閃燈尋車":set_command("FLASH","menu-flash-find"),
+},"find-menu")
+
 nav_menu=menu("導航",["Apple 地圖","Google Maps","Waze"],{
     "Apple 地圖":[app("com.apple.Maps","menu-nav-apple"),exit_shortcut()],
     "Google Maps":[app("com.google.Maps","menu-nav-google"),exit_shortcut()],
     "Waze":[app("com.waze.iphone","menu-nav-waze"),exit_shortcut()],
 },"nav-menu")
 
-more_menu=menu("更多功能",["Tesla App","車窗","高速公路1968"],{
+more_menu=menu("更多功能",["神盾","Tesla App","高速公路1968","哨兵模式"],{
+    "神盾":[app("tw.com.ainvest.outpack","menu-shield"),exit_shortcut()],
     "Tesla App":[app(BUNDLE,"menu-tesla-app"),exit_shortcut()],
-    "車窗":window_menu,
     "高速公路1968":[app("tw.gov.freeway1968Ver2.Freeway1968HD","menu-1968"),exit_shortcut()],
+    "哨兵模式":set_command("SENTRY","menu-sentry"),
 },"more-menu")
 
 main_items=[
-    "準備出發","空調 / 車室","行李廂","車門控制","充電",
-    "神盾","導航","找我的車","閃燈尋車","哨兵模式","更多"
+    "準備出發","空調","車輛控制","充電","找車","導航","更多"
 ]
 main_branches={
     "準備出發":set_prepare("menu-prepare"),
-    "空調 / 車室":climate_menu,
-    "行李廂":trunk_menu,
-    "車門控制":door_menu,
+    "空調":climate_menu,
+    "車輛控制":vehicle_menu,
     "充電":charge_menu,
-    "神盾":[app("tw.com.ainvest.outpack","menu-shield"),exit_shortcut()],
+    "找車":find_menu,
     "導航":nav_menu,
-    "找我的車":[*find_parked_car("menu-find-parked-car"),exit_shortcut()],
-    "閃燈尋車":set_command("FLASH","menu-flash-find"),
-    "哨兵模式":set_command("SENTRY","menu-sentry"),
     "更多":more_menu,
 }
 manual_menu=menu("特斯拉助手｜請選功能",main_items,main_branches,"main-menu")
@@ -349,7 +349,7 @@ auto_start=[
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v0.9｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- 點開捷徑直接顯示功能選單，不需要輸入文字或背口令\n- Siri 呼叫「特斯拉助手」時使用同一套選單\n- 解鎖、前行李廂、後車廂改用按鈕再次確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- vehicle-backed Tesla AppIntent 仍使用原生安裝綁定；未設定時保留 Ask Each Time 安全 fallback\n- Tesla 藍牙自動化只使用 Connect；不偽造 Bluetooth Disconnect\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
+    "WFCommentActionText":"Tesla Driver v1.0｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- 點開捷徑直接顯示 7 個主要功能，不需要輸入文字或背口令\n- Siri 呼叫「特斯拉助手」時使用同一套選單\n- 解鎖、前行李廂、後車廂改用按鈕再次確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- vehicle-backed Tesla AppIntent 仍使用原生安裝綁定；未設定時保留 Ask Each Time 安全 fallback\n- Tesla 藍牙自動化只使用 Connect；不偽造 Bluetooth Disconnect\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),

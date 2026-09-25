@@ -1,5 +1,9 @@
 name: CarKit Shortcut Build
 
+concurrency:
+  group: carkit-build-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -81,7 +85,7 @@ jobs:
           assert len(questions)==len(vehicle_action_indexes), (
               len(questions), len(vehicle_action_indexes)
           )
-          assert len(questions) == 15, f"Tesla v0.9 requires exactly 15 vehicle setup questions: {len(questions)}"
+          assert len(questions) == 15, f"Tesla v1.0 requires exactly 15 vehicle setup questions: {len(questions)}"
           for q in questions:
               assert q.get("Category")=="Parameter", q
               assert q.get("ParameterKey")=="vehicle", q
@@ -272,6 +276,22 @@ jobs:
           ]:
               assert forbidden not in tblob, f"unproven intent leaked: {forbidden}"
 
+          # Product UX guardrail: keep the public top-level menus compact.
+          def top_menu_items(wf_obj,prompt):
+              for a in wf_obj["WFWorkflowActions"]:
+                  p=a.get("WFWorkflowActionParameters",{})
+                  if (a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.choosefrommenu"
+                      and p.get("WFControlFlowMode")==0
+                      and p.get("WFMenuPrompt")==prompt):
+                      return p.get("WFMenuItems",[])
+              raise AssertionError(f"missing top menu: {prompt}")
+          assert top_menu_items(oil,"油車助手｜請選功能")==[
+              "開始開車","導航","路況","停車 / 找車","加油 / eTag","音樂"
+          ]
+          assert top_menu_items(tesla,"特斯拉助手｜請選功能")==[
+              "準備出發","空調","車輛控制","充電","找車","導航","更多"
+          ]
+
           # User-facing shortcuts must be runnable by a plain tap with no
           # Shortcut Input / automation magic values. Those belong in separate
           # helper shortcuts, never in the main UI.
@@ -348,13 +368,13 @@ jobs:
       - name: Upload signed shortcuts
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-signed-shortcuts-v0.9
+          name: carkit-signed-shortcuts-v1.0
           path: carkit-sign/out/*.shortcut
           if-no-files-found: error
 
       - name: Upload workflow sources
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-shortcut-sources-v0.9
+          name: carkit-shortcut-sources-v1.0
           path: carkit-sign/generated/*.shortcut.xml
           if-no-files-found: error

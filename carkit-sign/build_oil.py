@@ -3,7 +3,7 @@ from pathlib import Path
 
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
-VERSION="0.9"
+VERSION="1.0"
 
 def uid(seed):
     return str(uuid.uuid5(uuid.NAMESPACE_URL, f"CarKitTW/OilDriver/v{VERSION}/"+seed)).upper()
@@ -13,15 +13,6 @@ def ao(u,n):
 
 def cond_action_output(u,n):
     return {"Type":"Variable","Variable":ao(u,n)}
-
-def cond_extension_input():
-    return {
-      "Type":"Variable",
-      "Variable":{
-        "Value":{"Type":"ExtensionInput"},
-        "WFSerializationType":"WFTextTokenAttachment"
-      }
-    }
 
 def act(i,p=None):
     return {"WFWorkflowActionIdentifier":i,"WFWorkflowActionParameters":p or {}}
@@ -160,17 +151,31 @@ def find_car(seed):
       act("is.workflow.actions.openurl",{"UUID":uid(seed+"-open"),"WFInput":ao(gl,"Maps URL")})
     ]
 
-items=["開始開車","導航","神盾","即時路況","找停車場","找加油站","eTag / 通行費","記錄停車位置","找我的車","音樂"]
+parking_center=menu("停車 / 找車",[
+ "附近停車場","記錄停車位置","找我的車","停車大聲公","uTagGo"
+],{
+ "附近停車場":url_open("https://maps.apple.com/?q=%E5%81%9C%E8%BB%8A%E5%A0%B4","menu-parking-nearby"),
+ "記錄停車位置":save_parking("menu-save-parking"),
+ "找我的車":find_car("menu-find-car"),
+ "停車大聲公":[app("com.alfred.parkinglot","menu-parking-app")],
+ "uTagGo":[app("fetci.eTagGO.PRD","menu-parking-utaggo")]
+},"parking-center")
+
+fuel_center=menu("加油 / eTag",[
+ "附近加油站","uTagGo 油價","eTag / 通行費"
+],{
+ "附近加油站":url_open("https://maps.apple.com/?q=%E5%8A%A0%E6%B2%B9%E7%AB%99","menu-fuel-nearby"),
+ "uTagGo 油價":[app("fetci.eTagGO.PRD","menu-fuel-utaggo")],
+ "eTag / 通行費":[app("fetci.eTagGO.PRD","menu-etag")]
+},"fuel-center")
+
+items=["開始開車","導航","路況","停車 / 找車","加油 / eTag","音樂"]
 branches={
  "開始開車":[app("tw.com.ainvest.outpack","menu-start-shield")],
  "導航":nav,
- "神盾":[app("tw.com.ainvest.outpack","menu-shield")],
- "即時路況":traffic,
- "找停車場":parking,
- "找加油站":fuel,
- "eTag / 通行費":[app("fetci.eTagGO.PRD","menu-etag")],
- "記錄停車位置":save_parking("menu-save-parking"),
- "找我的車":find_car("menu-find-car"),
+ "路況":traffic,
+ "停車 / 找車":parking_center,
+ "加油 / eTag":fuel_center,
  "音樂":music,
 }
 manual_menu=menu("油車助手｜請選功能",items,branches,"main-menu")
@@ -178,7 +183,7 @@ manual_menu=menu("油車助手｜請選功能",items,branches,"main-menu")
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Oil Driver v0.9｜油車助手\n- 與 Tesla Driver 完全分開\n- 點開捷徑直接顯示功能選單，不需要輸入文字或背口令\n- Siri 呼叫「油車助手」時使用同一套選單\n- 主線保留 CarPlay、神盾、導航、路況、停車、加油、eTag、找車與音樂"
+    "WFCommentActionText":"Oil Driver v1.0｜油車助手\n- 與 Tesla Driver 完全分開\n- 點開捷徑直接顯示功能選單，不需要輸入文字或背口令\n- Siri 呼叫「油車助手」時使用同一套選單\n- 主線保留 CarPlay、神盾、導航、路況、停車、加油、eTag、找車與音樂"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
