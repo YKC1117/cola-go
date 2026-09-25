@@ -6,134 +6,134 @@
     {
       "code": "Taipei",
       "name": "臺北市",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "NewTaipei",
       "name": "新北市",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "Taoyuan",
       "name": "桃園市",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "Taichung",
       "name": "臺中市",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "Tainan",
       "name": "臺南市",
-      "status": "local-live+tdx",
-      "note": "已接臺南市政府即時剩餘車位；TDX 作全台共同來源。"
+      "status": "local-live+maps",
+      "note": "臺南市政府即時剩餘車位；其他需求可直接使用地圖搜尋與導航。"
     },
     {
       "code": "Kaohsiung",
       "name": "高雄市",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "Keelung",
       "name": "基隆市",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "Hsinchu",
       "name": "新竹市",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "HsinchuCounty",
       "name": "新竹縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "MiaoliCounty",
       "name": "苗栗縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "ChanghuaCounty",
       "name": "彰化縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "NantouCounty",
       "name": "南投縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "YunlinCounty",
       "name": "雲林縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "Chiayi",
       "name": "嘉義市",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "ChiayiCounty",
       "name": "嘉義縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "PingtungCounty",
       "name": "屏東縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "YilanCounty",
       "name": "宜蘭縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "HualienCounty",
       "name": "花蓮縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "TaitungCounty",
       "name": "臺東縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "PenghuCounty",
       "name": "澎湖縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "KinmenCounty",
       "name": "金門縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     },
     {
       "code": "LienchiangCounty",
       "name": "連江縣",
-      "status": "tdx-on-demand",
-      "note": "全台正式服務範圍；優先讀取 TDX 官方停車場資料，失敗時保留地圖搜尋與導航。"
+      "status": "maps-ready",
+      "note": "免登入、免等待外部 API；提供 Google Maps／Apple 地圖停車搜尋與導航。"
     }
   ]
 }
