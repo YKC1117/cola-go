@@ -1,7 +1,7 @@
 name: Validate COLA GO V3
 on:
   push:
-    branches: ["main", "design/v3-product-ui", "feature/full-toolbox", "feature/market-db", "feature/owner-plus", "feature/community-locations", "feature/tainan-live-parking", "fix/mobile-home-quality"]
+    branches: ["main", "design/v3-product-ui", "feature/full-toolbox", "feature/market-db", "feature/owner-plus", "feature/community-locations", "feature/tainan-live-parking", "fix/mobile-home-quality", "feature/highway-cctv-live", "feature/charging-core", "feature/taiwan-parking"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,6 +22,7 @@ jobs:
           python3 -m json.tool data/tunnel.json >/dev/null
           python3 -m json.tool data/parking.json >/dev/null
           python3 -m json.tool data/parking-live-tainan.json >/dev/null
+          python3 -m json.tool data/cctv.json >/dev/null
           python3 -m json.tool data/tesla-models.json >/dev/null
           python3 -m json.tool data/marketplace.json >/dev/null
           python3 -m json.tool data/community.json >/dev/null
@@ -57,4 +58,6 @@ jobs:
           grep -q "data-view=\"community\"" index.html
           grep -q "data-view=\"locations\"" index.html
           grep -q "parkingLiveTime" index.html
-          python3 -m py_compile scripts/sync_tainan_parking.py
+          python3 -m py_compile scripts/sync_tainan_parking.py scripts/sync_traffic.py scripts/sync_cctv.py
+          ! grep -q 'if(view==="cctv")ensureCCTV' assets/app.js
+          ! grep -q 'ensureParkingCity(state.parkingCity)' assets/app.js
