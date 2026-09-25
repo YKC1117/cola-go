@@ -14,7 +14,7 @@ Durable Object 名稱固定使用 `global`，集中處理：
 - 最後成功 snapshot
 - fresh / stale / unavailable 狀態
 
-Cache API 只作區域性 edge cache，不當全域一致性資料庫。
+Cache API 只作區域性 edge cache，不當全域一致性資料庫。 靜態資料會沿用完整 fresh TTL，減少不必要的 Durable Object 請求；動態資料則以 5 分鐘為主，優先保護 TDX 免費額度。
 
 ## API
 
@@ -85,12 +85,12 @@ npx wrangler deploy --dry-run --outdir .wrangler-dry-run
 ## Cache / stale TTL
 
 - 停車基本：fresh 24h / stale 7d
-- 停車即時：fresh 60s / stale 10m
+- 停車即時：fresh 5m / stale 15m
 - 充電站／樁／槍：fresh 24h / stale 7d
-- 充電即時：fresh 60s / stale 5m
+- 充電即時：fresh 5m / stale 15m
 - 國道路段：fresh 24h / stale 7d
-- 國道即時：fresh 60s / stale 5m
-- CCTV metadata：fresh 6h / stale 7d
+- 國道即時：fresh 5m / stale 15m
+- CCTV metadata：fresh 24h / stale 7d
 
 動態資料超過 stale 上限後不再顯示成可用即時資料。
 
