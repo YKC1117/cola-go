@@ -1,10 +1,15 @@
-const rawBase = String(process.env.BASE_URL || "");\nconst base = rawBase.endsWith("/") ? rawBase.slice(0, -1) : rawBase;
+const rawBase = String(process.env.BASE_URL || "");
+const base = rawBase.endsWith("/") ? rawBase.slice(0, -1) : rawBase;
 const origin = process.env.ORIGIN || "https://ykc1117.github.io";
 const city = process.env.SMOKE_CITY || "Tainan";
 const evCity = process.env.SMOKE_EV_CITY || city;
 const delayMs = Number(process.env.SMOKE_DELAY_MS || 16000);
 
-if (!base || !/^https:\\/\\//.test(base)) { console.error("BASE_URL must be the deployed HTTPS staging Worker URL"); process.exit(2); }
+if (!base.startsWith("https://")) {
+  console.error("BASE_URL must be the deployed HTTPS staging Worker URL");
+  process.exit(2);
+}
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function request(path, options = {}) {
@@ -44,4 +49,7 @@ async function main() {
   console.log("PASS staging smoke: real Worker responses satisfy the public contract");
 }
 
-main().catch((error) => { console.error("FAIL staging smoke:", error.message); process.exit(1); });
+main().catch((error) => {
+  console.error("FAIL staging smoke:", error.message);
+  process.exit(1);
+});
