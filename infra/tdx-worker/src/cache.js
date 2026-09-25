@@ -12,7 +12,7 @@ export function classifySnapshot(row, now = Date.now()) {
 }
 
 export function publicCacheSeconds(route) {
-  return Math.max(5, Math.min(Number(route.ttl?.fresh || 30), 300));
+  return Math.max(5, Math.min(Number(route.ttl?.fresh || 30), 86400));
 }
 
 export function snapshotEnvelope(row, stale = false) {
