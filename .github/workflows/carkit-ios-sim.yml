@@ -113,6 +113,21 @@ jobs:
             return 1
           }
 
+          open_file_retry() {
+            local path="$1"
+            for attempt in 1 2 3; do
+              xcrun simctl launch "$UDID" com.apple.shortcuts || true
+              sleep 2
+              if xcrun simctl openurl "$UDID" "file://$path"; then
+                sleep 4
+                return 0
+              fi
+              echo "file open attempt $attempt failed: $path"
+              sleep 2
+            done
+            return 1
+          }
+
           tap_frame_label() {
             local json_file="$1"
             local label="$2"
@@ -155,8 +170,7 @@ jobs:
           # Oil: direct file must open a real Add Shortcut sheet.
           xcrun simctl launch "$UDID" com.apple.shortcuts || true
           sleep 2
-          xcrun simctl openurl "$UDID" "file://$OIL_PATH"
-          sleep 4
+          open_file_retry "$OIL_PATH"
           describe_retry /tmp/carkit-probe/oil-before.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/oil-before.png
           tap_frame_label /tmp/carkit-probe/oil-before.json "Add Shortcut"
@@ -174,8 +188,7 @@ jobs:
           xcrun simctl terminate "$UDID" com.apple.shortcuts || true
           xcrun simctl launch "$UDID" com.apple.shortcuts || true
           sleep 2
-          xcrun simctl openurl "$UDID" "file://$TESLA_PATH"
-          sleep 4
+          open_file_retry "$TESLA_PATH"
           describe_retry /tmp/carkit-probe/tesla-before.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-before.png
           tap_frame_label /tmp/carkit-probe/tesla-before.json "Add Shortcut"
