@@ -199,16 +199,18 @@ def charge_limit_action(pct,seed):
     return tesla("ChargeLimitIntent",seed,{"percent":str(pct)},vehicle_mode=False,show_when_run=False)
 
 def confirm_then(prompt,action_factory,seed):
-    q,qid=ask_text(prompt+" 請說「確認」。",seed+"-ask")
+    q,qid=ask_text(prompt+" 請說「確認」、「確定」或「是」。",seed+"-ask")
     out=[q]
-    # Sensitive vehicle controls accept one explicit confirmation phrase only.
-    # Anything else (including 確定/是/取消/空白/否定) cancels.
-    out += if_exact(
-        cond_action_output(qid,"Provided Input"),
-        "確認",
-        [action_factory(seed+"-confirmed"), exit_shortcut()],
-        seed+"-confirm"
-    )
+    # Sensitive vehicle controls require an explicit affirmative response.
+    # Only the three documented confirmation words are accepted. Anything
+    # else (including cancellation, blank, unknown, or negative input) stops.
+    for i,word in enumerate(["確認","確定","是"]):
+        out += if_exact(
+            cond_action_output(qid,"Provided Input"),
+            word,
+            [action_factory(f"{seed}-confirmed-{i}"), exit_shortcut()],
+            f"{seed}-confirm-{i}"
+        )
     out += [show("已取消",seed+"-cancel"),exit_shortcut()]
     return out
 
