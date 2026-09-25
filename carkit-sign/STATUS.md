@@ -1,6 +1,6 @@
 # CarKit TW Shortcut Status
 
-Updated: 2026-09-25
+Updated: 2026-09-26
 
 Branch: `temp/carkit-shortcut-sign`
 
@@ -149,6 +149,21 @@ Still missing native donor structures for:
 
 Do not invent their AppIntent identifiers.
 
+## Physical iPhone v1.2 evidence
+
+User real-device validation on iPhone for signed v1.2:
+
+- Third-party **Open App** actions no longer show the prior `未指定 App` failure for the tested flow: PASS.
+- The navigation flow asks for a destination and opens Maps with the entered destination carried into the route flow: PASS.
+- These two results specifically validate the v1.2 fixes:
+  - `WFSelectedApp { BundleIdentifier, Name }` on generated Open App actions.
+  - native `is.workflow.actions.getdirections` navigation with runtime `WFDestination`.
+- No private/default home or work destination is embedded.
+
+Scope note:
+- This is a real-device PASS for the tested app-opening and navigation flow.
+- It does not by itself validate Tesla Vehicle AppEntity selection, real Tesla vehicle controls, Siri voice behavior, Apple Watch runtime, or CarPlay/Bluetooth automation.
+
 ## Release acceptance
 
 PASS-able without hardware:
@@ -167,7 +182,7 @@ Simulator-verified:
 - this proves file/signing/import compatibility in the iOS Simulator, not real-device Tesla functionality
 
 Must remain NOT RUN without real Apple/Tesla environment:
-- physical iPhone import
+- physical iPhone import: PARTIAL PASS for the signed v1.2 Oil flow tested on-device; Tesla vehicle-binding import still NOT RUN
 - Tesla Vehicle AppEntity picker
 - single-car selection
 - multi-car selection consistency
@@ -197,6 +212,13 @@ Public-release consequence:
 
 
 ## iOS Simulator import evidence
+
+Latest v1.2 build evidence:
+- CarKit Shortcut Build Run #69 (commit b20294e): SUCCESS.
+- v1.2 Open App metadata guard: PASS.
+- v1.2 native Open Directions destination wiring guard: PASS.
+- plist / semantic / privacy / safety validation: PASS.
+- shortcut signing and AEA1 header checks: PASS.
 
 Latest candidate evidence:
 - CarKit Shortcut Build Run #57 (commit e143f3a): PASS.
