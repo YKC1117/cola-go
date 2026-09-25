@@ -22,6 +22,16 @@
 - 計費：免費
 - https://data.gov.tw/dataset/151729
 
+## 充電站／充電槍 TDX
+- 充電站基本資料：https://data.gov.tw/dataset/170220
+- 充電樁基本資料：https://data.gov.tw/dataset/170221
+- 充電槍基本資料：https://data.gov.tw/dataset/170222
+- 充電槍即時狀態：https://data.gov.tw/dataset/170224
+- 高速公路服務區充電槍即時狀態：https://data.gov.tw/dataset/170219
+- 基本資料更新約每 4 小時；即時槍況資料更新約每 1 分鐘
+- 授權：政府資料開放授權條款第 1 版
+- TDX 正式 API 介接需 API Key；未完成授權介接前，COLA GO 不將設備資料標示為即時空槍
+
 ## 停車
 - TDX 與各縣市政府開放資料
 - 臺南市即時剩餘車位：https://data.gov.tw/dataset/102772

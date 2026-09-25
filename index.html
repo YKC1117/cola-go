@@ -148,9 +148,34 @@
 
       <section class="view" data-view="charging">
         <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"/></svg></button><div><span class="mini-label">CHARGING</span><h1>充電</h1></div></div>
+
+        <div class="charging-actions">
+          <button id="nearbyGoogle"><span><b>找附近充電</b><small>Google Maps</small></span><svg><use href="#i-external"/></svg></button>
+          <button id="nearbyApple"><span><b>找附近充電</b><small>Apple 地圖</small></span><svg><use href="#i-external"/></svg></button>
+          <button data-url="https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan"><span><b>Tesla 超充</b><small>官方清單</small></span><svg><use href="#i-external"/></svg></button>
+        </div>
+
+        <div class="charging-source">
+          <div><span class="mini-label">DATA STATUS</span><b>國道服務區設備資料</b></div>
+          <span class="charging-source-chip">非即時空槍</span>
+        </div>
+
         <div class="filter-row" id="roadFilter"><button class="active" data-road="all">全部</button><button data-road="1">國 1</button><button data-road="3">國 3</button><button data-road="5">國 5</button><button data-road="6">國 6</button></div>
+
+        <div class="charging-filter-grid">
+          <label><span>方向</span><select id="chargingDirection"><option value="all">全部</option><option value="south">南下</option><option value="north">北上</option><option value="shared">雙向共用</option></select></label>
+          <label><span>接頭</span><select id="chargingConnector"><option value="all">全部</option><option value="CCS2">CCS2</option><option value="CCS1">CCS1</option></select></label>
+          <label><span>最低功率</span><select id="chargingPower"><option value="0">不限</option><option value="200">200 kW+</option><option value="300">300 kW+</option><option value="350">350 kW+</option></select></label>
+          <label><span>業者</span><select id="chargingOperator"><option value="all">全部</option><option value="iCharging">iCharging</option><option value="EVOASIS">EVOASIS</option></select></label>
+        </div>
+
+        <div class="charging-toggle-row">
+          <button id="chargingFavoritesOnly" aria-pressed="false"><span>只看收藏</span><b id="chargingFavoriteCount">0</b></button>
+          <button id="resetChargingFilters">清除篩選</button>
+        </div>
+
         <label class="inline-search"><svg><use href="#i-search"/></svg><input id="chargingSearch" type="search" placeholder="搜尋服務區、業者、接頭"></label>
-        <p class="notice">設備清單不等於即時空槍，沒有即時來源就不標即時。</p>
+        <p class="notice">TDX 有每 1 分鐘更新的充電槍即時狀態資料，但正式 API 需要金鑰；目前這裡只顯示可確認的設備資料，不用假綠燈冒充即時空槍。</p>
         <div class="list" id="chargingList"></div>
       </section>
 
