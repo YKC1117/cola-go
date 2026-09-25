@@ -71,6 +71,19 @@ jobs:
           assert data["error"]["code"] == "UPSTREAM_UNAVAILABLE"
           PY
 
+
+          # COLA GO simplified aliases must resolve through the same guarded runtime.
+          test "$(curl -sS -o /tmp/alias-parking.json -w '%{http_code}'             -H 'Origin: https://ykc1117.github.io' http://127.0.0.1:8787/api/parking/Tainan/lots)" = "503"
+          test "$(curl -sS -o /tmp/alias-ev.json -w '%{http_code}'             -H 'Origin: https://ykc1117.github.io' http://127.0.0.1:8787/api/ev/Kaohsiung/status)" = "503"
+          test "$(curl -sS -o /tmp/alias-highway.json -w '%{http_code}'             -H 'Origin: https://ykc1117.github.io' http://127.0.0.1:8787/api/highway/traffic)" = "503"
+          python3 - <<'PY'
+          import json
+          for path in ("/tmp/alias-parking.json", "/tmp/alias-ev.json", "/tmp/alias-highway.json"):
+              data=json.load(open(path))
+              assert data["status"] == "unavailable"
+              assert data["error"]["code"] == "UPSTREAM_UNAVAILABLE"
+          PY
+
           test "$(curl -sS -o /tmp/unsupported.json -w '%{http_code}'             http://127.0.0.1:8787/api/v1/parking/NewTaipei)" = "422"
           python3 - <<'PY'
           import json
