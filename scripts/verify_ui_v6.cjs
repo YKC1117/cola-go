@@ -43,10 +43,11 @@ let browser;
   const baseline=execFileSync('git',['show','9212eb9077a5576a56109fbe5a6e52ed866c0a29:index.html'],{cwd:root,encoding:'utf8'});
   const contracts=await page.evaluate(html=>{
     const old=new DOMParser().parseFromString(html,'text/html');
-    const attrs=['id','data-view','data-go','data-road','data-highway','data-direction','data-url'];
+    const attrs=['id','data-view','data-go','data-road','data-highway','data-direction'];
     return attrs.map(attr=>({attr,missing:[...new Set([...old.querySelectorAll(`[${attr}]`)].map(el=>el.getAttribute(attr)))].filter(value=>![...document.querySelectorAll(`[${attr}]`)].some(el=>el.getAttribute(attr)===value))}));
   },baseline);
-  check('Original DOM IDs, routes, filters and external links retained',contracts.every(x=>x.missing.length===0));
+  check('Original DOM IDs, routes and filters retained',contracts.every(x=>x.missing.length===0));
+  check('Public inquiry links do not expose GitHub issue forms',await page.evaluate(()=>![...document.querySelectorAll('[data-url]')].some(el=>/github\.com\/YKC1117\/cola-go\/issues\/new/.test(el.dataset.url||''))));
   check('No duplicate IDs',await page.evaluate(()=>{const ids=[...document.querySelectorAll('[id]')].map(x=>x.id);return new Set(ids).size===ids.length;}));
   check('No private route defaults or route-fill attributes',await page.evaluate(()=>!document.querySelector('[data-route],[data-fill-route]')&&!document.querySelector('#tripFrom').value&&!document.querySelector('#tripTo').value));
   const source=fs.readFileSync(path.join(root,'index.html'),'utf8')+fs.readFileSync(path.join(root,'assets/app.js'),'utf8');
