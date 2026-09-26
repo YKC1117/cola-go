@@ -49,10 +49,10 @@ function toast(message){
 }
 
 function show(view,push=true){
-  if(!$(".view").some(el=>el.dataset.view===view))view="home";
+  if(!$$(".view").some(el=>el.dataset.view===view))view="home";
   state.view=view;
-  $(".view").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
-  $(".bottom-nav button").forEach(el=>{
+  $$(".view").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
+  $$(".bottom-nav button").forEach(el=>{
     const active=el.dataset.go===view;
     el.classList.toggle("active",active);
     if(active)el.setAttribute("aria-current","page"); else el.removeAttribute("aria-current");
