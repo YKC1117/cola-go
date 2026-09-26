@@ -459,7 +459,7 @@ function renderParking(){
     const rows=parkingSelectedRows().filter(x=>!query||[x.name,x.town,x.address].join(" ").toLowerCase().includes(query)).sort((a,b)=>(b.available??-1)-(a.available??-1));
     $("#parkingLiveTime").textContent=state.parkingLive?.status==="live"?(state.parkingLive.updatedAt||"官方即時"):"官方即時暫不可用";
     $("#parkingScopeStatus").textContent=state.parkingLive?.status==="live"?"已接臺南市官方即時剩餘車位":"仍可使用全台地圖搜尋";
-    root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>'+(query?"找不到符合的臺南停車場":"臺南官方即時資料暫時無法取得")+'</b><p>不顯示假空位；仍可使用 Google Maps 或 Apple 地圖找停車場。</p></div>';
+    root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>'+(query?"找不到符合的臺南停車場":"臺南官方即時資料暫時無法取得")+'</b><p>即時車位資料暫時無法取得，仍可使用 Google Maps 或 Apple 地圖找停車場。</p></div>';
   }else if(state.parkingRemote.status==="loading"&&state.parkingRemote.city===city){
     $("#parkingLiveTime").textContent="讀取官方資料中";
     $("#parkingScopeStatus").textContent="正在讀取 "+cityName+" 官方停車資料";
@@ -929,7 +929,7 @@ function renderMarket(){
       usedRoot.innerHTML=
         '<div class="market-empty">'+
           '<b>目前尚無公開車輛</b>'+
-          '<p>不放假車、不複製別人的庫存。第一批刊登開放中，車主與車商都可免費送件。</p>'+
+          '<p>車主與車商皆可申請刊登，經基本資料確認後公開。</p>'+
           '<button class="primary" data-url="https://lin.ee/Tu89Qyk">成為第一批刊登</button>'+
         '</div>';
     }
@@ -960,7 +960,7 @@ function renderMarket(){
     }else{
       serviceRoot.innerHTML=
         '<div class="market-empty">'+
-          '<b>合作服務招募中</b>'+
+          '<b>加入 COLA GO 合作夥伴</b>'+
           '<p>汽車相關店家與服務歡迎加入 COLA GO 合作夥伴。</p>'+
           '<button class="primary" data-url="https://lin.ee/Tu89Qyk">聯絡 COLA GO・洽談合作</button>'+
         '</div>';
