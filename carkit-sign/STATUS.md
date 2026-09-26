@@ -51,12 +51,14 @@ Never:
 
 Tesla actions whose donors contain a Vehicle AppEntity currently use Apple `Ask` as a runtime vehicle candidate.
 
-Known donor exceptions:
-- `ChargeLimitIntent`: donor has no `vehicle` parameter.
-- `FlashLightIntent`: donor has no `vehicle` parameter.
-- `HVACSeatHeaterIntent`: donor has no `vehicle` parameter.
+Known donor exceptions that omit `vehicle`:
+- `ChargeLimitIntent`
+- `FlashLightIntent`
+- `HVACSeatHeaterIntent`
+- `ChargePortIntent` (public open + close donors)
+- `HonkIntent`
 
-These exceptions must remain unchanged until a newer native donor proves otherwise.
+These donor-backed omissions reduce the current public Tesla setup to 12 vehicle Import Questions.
 
 ### Import Question research
 
@@ -94,7 +96,7 @@ Sensitive Tesla commands:
 
 must require independent explicit confirmation.
 
-Horn remains unsupported because no accepted native donor structure has been verified.
+Horn is now donor-backed via native Tesla `HonkIntent` and is exposed under Find Car.
 
 Real Siri voice-dialog behavior remains NOT RUN without an iPhone Siri runtime.
 
@@ -123,6 +125,7 @@ Current donor-backed identifiers:
 - FlashLightIntent
 - ChargePortIntent
 - HVACSeatHeaterIntent
+- HonkIntent
 - FartIntent (not exposed in CarKit main UI)
 
 Known parameter evidence:
@@ -133,15 +136,14 @@ Known parameter evidence:
 - HVACSetTempIntent: `temperature` is a `WFQuantityFieldValue`; a 2026 public native donor proves its °C `Magnitude` can reference a named `Temp` variable, allowing one canonical vehicle-backed temperature action for multiple presets
 - RearTrunkIntent: public native donors prove `rearTrunkAction = open | close`; CarKit currently exposes one confirmed `open` action to avoid adding another vehicle setup question
 - DefrostIntent: public native donors prove `defrostAction = enable | disable`
-- ChargePortIntent: public native donor proves `chargePortAction = open`
+- ChargePortIntent: public native donors prove `chargePortAction = open | close`; those donors omit `vehicle`
+- HonkIntent: public native owner-menu donor proves the action and omits `vehicle`
 - HVACSeatHeaterIntent: public native donors prove driver `seat = frontLeft`, `level = high | off`; donors omit `vehicle`
 - SentryModeIntent: donor uses Ask for `vehicleModeAction`
 
 Do not guess fixed enum values for donor-Ask fields.
 
-Still missing native donor structures for:
-- Honk Horn
-- Close Charge Port
+Still missing accepted native donor structures for:
 - Start/Stop Charging
 - Dog Mode
 - Camp Mode
@@ -264,6 +266,15 @@ Public-release consequence:
 
 
 ## iOS Simulator import evidence
+
+Latest Tesla donor expansion evidence:
+- CarKit Shortcut Build Run #77 (commit eddd573): SUCCESS.
+- Native `HonkIntent`: donor-backed and added to Find Car.
+- Native `ChargePortIntent(close)`: donor-backed and added to Charging.
+- Charge-port open/close donors omit `vehicle`; current vehicle Import Questions reduced from 13 to 12.
+- Broad donor inspection confirms public “Start Charging / Stop Charging” candidates use a third-party Auth App for Tesla/token flow, not native Tesla AppIntent; they remain excluded.
+- TFF shortcut labelled “Laden beenden” contains `ChargePortIntent(open)` + `FrontTrunkIntent`, not a native Stop Charging action.
+- Start/Stop Charging, Dog Mode, Camp Mode, and Bioweapon Defense Mode remain unimplemented until an accepted native donor is obtained.
 
 Latest v1.2 build evidence:
 - CarKit Shortcut Build Run #75 (commit 8404224a): SUCCESS.
