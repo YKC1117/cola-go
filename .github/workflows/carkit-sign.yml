@@ -450,13 +450,13 @@ jobs:
       - name: Upload signed shortcuts
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-signed-shortcuts-v1.5
+          name: carkit-signed-shortcuts
           path: carkit-sign/out/*.shortcut
           if-no-files-found: error
 
       - name: Upload workflow sources
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-shortcut-sources-v1.5
+          name: carkit-shortcut-sources
           path: carkit-sign/generated/*.shortcut.xml
           if-no-files-found: error
