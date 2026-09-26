@@ -78,7 +78,24 @@ jobs:
           echo "Using simulator: $UDID"
           xcrun simctl boot "$UDID" || true
           open -a Simulator --args -CurrentDeviceUDID "$UDID" || true
-          xcrun simctl bootstatus "$UDID" -b
+          if ! python3 - "$UDID" <<'PY'
+          import subprocess,sys
+          try:
+              subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"],check=True,timeout=120)
+          except (subprocess.TimeoutExpired,subprocess.CalledProcessError):
+              raise SystemExit(1)
+          PY
+          then
+            echo "Initial simulator boot stalled; reset and retry once"
+            xcrun simctl shutdown "$UDID" || true
+            xcrun simctl erase "$UDID" || true
+            xcrun simctl boot "$UDID" || true
+            open -a Simulator --args -CurrentDeviceUDID "$UDID" || true
+            python3 - "$UDID" <<'PY'
+          import subprocess,sys
+          subprocess.run(["xcrun","simctl","bootstatus",sys.argv[1],"-b"],check=True,timeout=180)
+          PY
+          fi
 
           xcrun simctl listapps "$UDID" > /tmp/listapps.txt
           grep -q "com.apple.shortcuts" /tmp/listapps.txt
