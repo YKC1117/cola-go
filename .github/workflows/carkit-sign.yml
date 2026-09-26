@@ -90,7 +90,7 @@ jobs:
           assert len(questions)==len(vehicle_action_indexes), (
               len(questions), len(vehicle_action_indexes)
           )
-          assert len(questions) == 13, f"Tesla requires exactly 13 vehicle setup questions after donor-backed temperature consolidation: {len(questions)}"
+          assert len(questions) == 12, f"Tesla requires exactly 12 vehicle setup questions after donor-backed temperature and charge-port consolidation: {len(questions)}"
           for q in questions:
               assert q.get("Category")=="Parameter", q
               assert q.get("ParameterKey")=="vehicle", q
@@ -120,7 +120,7 @@ jobs:
               "LockUnlockIntent","RearTrunkIntent","FrontTrunkIntent",
               "DefrostIntent","VentIntent","CloseWindowIntent",
               "SentryModeIntent","FlashLightIntent","ChargePortIntent",
-              "HVACSeatHeaterIntent"
+              "HVACSeatHeaterIntent","HonkIntent"
           }
           ask={"Value":{"Type":"Ask"},"WFSerializationType":"WFTextTokenAttachment"}
 
@@ -131,8 +131,9 @@ jobs:
               "FrontTrunkIntent":1,
               "RearTrunkIntent":1,
               "ChargeLimitIntent":2,
-              "ChargePortIntent":1,
+              "ChargePortIntent":2,
               "FlashLightIntent":1,
+              "HonkIntent":1,
               "DefrostIntent":2,
               "HVACSeatHeaterIntent":2,
               "VentIntent":1,
@@ -140,7 +141,7 @@ jobs:
               "SentryModeIntent":1,
           }
           actual_intent_counts={k:0 for k in expected_intent_counts}
-          vehicle_required=evidenced-{"ChargeLimitIntent","FlashLightIntent","HVACSeatHeaterIntent"}
+          vehicle_required=evidenced-{"ChargeLimitIntent","FlashLightIntent","HVACSeatHeaterIntent","ChargePortIntent","HonkIntent"}
           for a in actions:
               ident=a.get("WFWorkflowActionIdentifier","")
               p=a.get("WFWorkflowActionParameters",{})
@@ -154,14 +155,14 @@ jobs:
                   assert descriptor.get("BundleIdentifier")==bundle, f"{intent}: donor BundleIdentifier mismatch"
                   assert descriptor.get("AppIntentIdentifier")==intent, f"{intent}: descriptor/outer intent mismatch"
                   assert ident==f"{bundle}.{descriptor['AppIntentIdentifier']}", f"{intent}: outer identifier mismatch"
-                  if intent in {"ChargeLimitIntent","FlashLightIntent","HVACSeatHeaterIntent"}:
+                  if intent in {"ChargeLimitIntent","FlashLightIntent","HVACSeatHeaterIntent","ChargePortIntent","HonkIntent"}:
                       assert "vehicle" not in p, f"{intent}: invented vehicle parameter"
                   else:
                       assert "vehicle" in p, f"{intent}: required donor vehicle parameter missing"
                       assert p["vehicle"] == ask, f"{intent}: vehicle is not runtime Ask candidate"
           assert actual_intent_counts==expected_intent_counts, (actual_intent_counts,expected_intent_counts)
-          assert sum(actual_intent_counts.values())==18, actual_intent_counts
-          assert len(vehicle_action_indexes)==13, vehicle_action_indexes
+          assert sum(actual_intent_counts.values())==20, actual_intent_counts
+          assert len(vehicle_action_indexes)==12, vehicle_action_indexes
 
           # 2026 public Tesla donor proves a single HVACSetTempIntent can take
           # a named Temp variable as its °C quantity magnitude. Keep this
@@ -289,8 +290,10 @@ jobs:
               if ident.endswith(".SentryModeIntent"):
                   assert p.get("vehicleModeAction")==ask
               if ident.endswith(".ChargePortIntent"):
-                  assert p.get("chargePortAction")=="open"
-                  assert p.get("vehicle")==ask
+                  assert p.get("chargePortAction") in {"open","close"}
+                  assert "vehicle" not in p
+              if ident.endswith(".HonkIntent"):
+                  assert "vehicle" not in p
               if ident.endswith(".HVACSeatHeaterIntent"):
                   assert p.get("seat")=="frontLeft"
                   assert p.get("level") in {"high","off"}

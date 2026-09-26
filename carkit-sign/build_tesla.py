@@ -199,7 +199,16 @@ def seat_heater_off_action(seed):
     },vehicle_mode=False,show_when_run=False)
 
 def open_charge_port_action(seed):
-    return tesla("ChargePortIntent",seed,{"chargePortAction":"open"})
+    # Public native Tesla donors prove ChargePortIntent(open) omits vehicle.
+    return tesla("ChargePortIntent",seed,{"chargePortAction":"open"},vehicle_mode=False)
+
+def close_charge_port_action(seed):
+    # Public owner-menu donor proves chargePortAction="close" and omits vehicle.
+    return tesla("ChargePortIntent",seed,{"chargePortAction":"close"},vehicle_mode=False)
+
+def honk_action(seed):
+    # Public owner-menu donor proves HonkIntent and omits vehicle.
+    return tesla("HonkIntent",seed,vehicle_mode=False)
 
 def vent_action(seed):
     return tesla("VentIntent",seed)
@@ -351,9 +360,10 @@ charge_station_menu=menu("找充電站",["Apple 地圖","AmpGO（App Store）","
 },"charge-stations-menu")
 
 charge_menu=menu("充電中心",[
-    "開啟充電孔","充電上限 80%","充電上限 90%","Tesla App 充電","找充電站"
+    "開啟充電孔","關閉充電孔","充電上限 80%","充電上限 90%","Tesla App 充電","找充電站"
 ],{
     "開啟充電孔":set_command("CHARGE_PORT_OPEN","menu-charge-port-open"),
+    "關閉充電孔":set_command("CHARGE_PORT_CLOSE","menu-charge-port-close"),
     "充電上限 80%":set_command("CHARGE_80","menu-charge80"),
     "充電上限 90%":set_command("CHARGE_90","menu-charge90"),
     "Tesla App 充電":[app(BUNDLE,"menu-tesla-app-charge"),exit_shortcut()],
@@ -376,9 +386,10 @@ vehicle_menu=menu("車輛控制",[
     "關閉車窗":set_command("WINDOW_CLOSE","menu-vehicle-close-window"),
 },"vehicle-menu")
 
-find_menu=menu("找車",["Apple 地圖找車","閃燈尋車"],{
+find_menu=menu("找車",["Apple 地圖找車","閃燈尋車","鳴喇叭"],{
     "Apple 地圖找車":[*find_parked_car("menu-find-parked-car"),exit_shortcut()],
     "閃燈尋車":set_command("FLASH","menu-flash-find"),
+    "鳴喇叭":set_command("HONK","menu-honk-find"),
 },"find-menu")
 
 nav_menu=menu("導航",["Apple 地圖","Google Maps","Waze"],{
@@ -417,7 +428,7 @@ auto_start=[
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v1.2｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- 點開捷徑直接顯示 7 個主要功能，不需要背口令\n- 導航使用 Apple 原生 Open Directions，直接帶入每次輸入的目的地；不保存預設地址\n- Siri 呼叫「特斯拉助手」時使用同一套選單\n- 解鎖、前行李廂、後車廂改用按鈕再次確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- vehicle-backed Tesla AppIntent 仍使用原生安裝綁定；未設定時保留 Ask Each Time 安全 fallback\n- Tesla 藍牙自動化只使用 Connect；不偽造 Bluetooth Disconnect\n- 找我的車使用 Apple Maps 系統停車位置；閃燈尋車才呼叫 Tesla FlashLightIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
+    "WFCommentActionText":"Tesla Driver v1.2｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- 點開捷徑直接顯示 7 個主要功能，不需要背口令\n- 導航使用 Apple 原生 Open Directions，直接帶入每次輸入的目的地；不保存預設地址\n- Siri 呼叫「特斯拉助手」時使用同一套選單\n- 解鎖、前行李廂、後車廂改用按鈕再次確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- vehicle-backed Tesla AppIntent 仍使用原生安裝綁定；未設定時保留 Ask Each Time 安全 fallback\n- Tesla 藍牙自動化只使用 Connect；不偽造 Bluetooth Disconnect\n- 找我的車使用 Apple Maps 系統停車位置；閃燈與鳴喇叭使用 donor-backed Tesla AppIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
@@ -459,8 +470,10 @@ actions += if_exact(cmd,"FRUNK",confirm_then("確定要開啟前行李廂？",fr
 actions += if_exact(cmd,"REAR",confirm_then("確定要開啟後車廂？",rear_action,"canonical-rear"),"run-rear")
 actions += if_exact(cmd,"CHARGE_80",[charge_limit_action(80,"canonical-charge80"),exit_shortcut()],"run-charge80")
 actions += if_exact(cmd,"CHARGE_90",[charge_limit_action(90,"canonical-charge90"),exit_shortcut()],"run-charge90")
-actions += if_exact(cmd,"CHARGE_PORT_OPEN",[open_charge_port_action("canonical-charge-port"),exit_shortcut()],"run-charge-port")
+actions += if_exact(cmd,"CHARGE_PORT_OPEN",[open_charge_port_action("canonical-charge-port-open"),exit_shortcut()],"run-charge-port-open")
+actions += if_exact(cmd,"CHARGE_PORT_CLOSE",[close_charge_port_action("canonical-charge-port-close"),exit_shortcut()],"run-charge-port-close")
 actions += if_exact(cmd,"FLASH",[flash_action("canonical-flash"),exit_shortcut()],"run-flash")
+actions += if_exact(cmd,"HONK",[honk_action("canonical-honk"),exit_shortcut()],"run-honk")
 actions += if_exact(cmd,"DEFROST_ON",[defrost_action("canonical-defrost-on"),exit_shortcut()],"run-defrost-on")
 actions += if_exact(cmd,"DEFROST_OFF",[defrost_stop_action("canonical-defrost-off"),exit_shortcut()],"run-defrost-off")
 actions += if_exact(cmd,"SEAT_HIGH",[seat_heater_high_action("canonical-seat-high"),exit_shortcut()],"run-seat-high")
