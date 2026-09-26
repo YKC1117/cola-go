@@ -1,0 +1,98 @@
+name: CarKit Tesla Donor Probe
+
+on:
+  push:
+    branches:
+      - temp/carkit-shortcut-sign
+    paths:
+      - .github/workflows/carkit-tesla-donor-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fetch and decode public Tesla shortcut donors
+        run: |
+          python3 - <<'PY'
+          import json, plistlib, urllib.request, pathlib, copy
+
+          donors = {
+              "open_rear_trunk": "5f0d4cb581934a1e98c9799b37f10f63",
+              "close_rear_trunk": "bf6e57155d1843b68609d0fcadda0b9a",
+              "open_frunk": "2ad16b77df624310b7cb649cfb82ea06",
+              "open_charge_port": "4f7686cd6b184861b92cd44deb96e8a0",
+          }
+
+          def get_json(url):
+              req=urllib.request.Request(url, headers={"User-Agent":"CarKitTW-donor-probe/1.0"})
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return json.load(r)
+
+          def get_bytes(url):
+              req=urllib.request.Request(url, headers={"User-Agent":"CarKitTW-donor-probe/1.0"})
+              with urllib.request.urlopen(req, timeout=30) as r:
+                  return r.read()
+
+          def record_from(meta):
+              if isinstance(meta, dict) and isinstance(meta.get("records"), list):
+                  return meta["records"][0]
+              return meta
+
+          def scrub(v, key=""):
+              lk=key.lower()
+              if any(x in lk for x in ("vehicle","vin","image","photo","account","token")):
+                  return "<REDACTED>"
+              if isinstance(v, dict):
+                  return {k:scrub(x,k) for k,x in v.items()}
+              if isinstance(v, list):
+                  return [scrub(x,key) for x in v]
+              if isinstance(v, (bytes,bytearray)):
+                  return f"<BYTES:{len(v)}>"
+              return v
+
+          out={}
+          for name, sid in donors.items():
+              meta=get_json(f"https://www.icloud.com/shortcuts/api/records/{sid}")
+              rec=record_from(meta)
+              fields=rec["fields"]
+              asset=fields.get("shortcut") or fields.get("signedShortcut")
+              url=asset["value"]["downloadURL"]
+              # Some CloudKit asset URLs expose a literal placeholder.
+              url=url.replace("${f}", "shortcut")
+              raw=get_bytes(url)
+              wf=plistlib.loads(raw)
+              actions=[]
+              for idx,a in enumerate(wf.get("WFWorkflowActions",[])):
+                  ident=a.get("WFWorkflowActionIdentifier","")
+                  p=a.get("WFWorkflowActionParameters",{})
+                  desc=p.get("AppIntentDescriptor",{})
+                  if (
+                      ident.startswith("com.teslamotors.TeslaApp.")
+                      or desc.get("BundleIdentifier")=="com.teslamotors.TeslaApp"
+                  ):
+                      actions.append({
+                          "index":idx,
+                          "identifier":ident,
+                          "parameters":scrub(p)
+                      })
+              out[name]={
+                  "share_id":sid,
+                  "workflow_name":fields.get("name",{}).get("value"),
+                  "tesla_actions":actions,
+              }
+
+          pathlib.Path("/tmp/tesla-donors.json").write_text(
+              json.dumps(out,ensure_ascii=False,indent=2),encoding="utf-8"
+          )
+          print(json.dumps(out,ensure_ascii=False,indent=2))
+          PY
+
+      - name: Upload sanitized donor evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: carkit-tesla-donor-evidence
+          path: /tmp/tesla-donors.json
