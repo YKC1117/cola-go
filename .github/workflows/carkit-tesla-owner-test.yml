@@ -24,18 +24,18 @@ jobs:
           set -euxo pipefail
           rm -rf carkit-test/tesla-owner/generated carkit-test/tesla-owner/out
           python3 carkit-test/tesla-owner/build.py
-          plutil -lint "carkit-test/tesla-owner/generated/Tesla測試.shortcut.xml"
+          plutil -lint "carkit-test/tesla-owner/generated/Tesla快速出發測試.shortcut.xml"
 
       - name: Validate Tesla owner test
         run: |
           set -euxo pipefail
           git clone --depth 1 https://github.com/viticci/shortcuts-playground-plugin.git /tmp/shortcuts-playground
           VALIDATOR=/tmp/shortcuts-playground/codex/skills/shortcuts-playground/scripts/validate_shortcut.py
-          python3 "$VALIDATOR" "carkit-test/tesla-owner/generated/Tesla測試.shortcut.xml" --target-platform ios --target-macos 27
+          python3 "$VALIDATOR" "carkit-test/tesla-owner/generated/Tesla快速出發測試.shortcut.xml" --target-platform ios --target-macos 27
           python3 - <<'PY'
           import plistlib
           from pathlib import Path
-          p=Path("carkit-test/tesla-owner/generated/Tesla測試.shortcut.xml")
+          p=Path("carkit-test/tesla-owner/generated/Tesla快速出發測試.shortcut.xml")
           wf=plistlib.loads(p.read_bytes())
           actions=wf["WFWorkflowActions"]
           tesla=[
@@ -44,9 +44,9 @@ jobs:
           ]
           assert len(tesla)==1, tesla
           i,a=tesla[0]
-          assert a["WFWorkflowActionIdentifier"]=="com.teslamotors.TeslaApp.LockUnlockIntent"
+          assert a["WFWorkflowActionIdentifier"]=="com.teslamotors.TeslaApp.PreconditionIntent"
           params=a["WFWorkflowActionParameters"]
-          assert params["vehicleControlType"]=="lock"
+          assert params["preconditionAction"]=="start"
           assert params["vehicle"]=={
               "Value":{"Type":"Ask"},
               "WFSerializationType":"WFTextTokenAttachment",
@@ -56,7 +56,7 @@ jobs:
               "TeamIdentifier":"PS9EBAM2PU",
               "BundleIdentifier":"com.teslamotors.TeslaApp",
               "Name":"Tesla",
-              "AppIntentIdentifier":"LockUnlockIntent",
+              "AppIntentIdentifier":"PreconditionIntent",
           }
           qs=wf.get("WFWorkflowImportQuestions",[])
           assert len(qs)==1, qs
@@ -71,7 +71,7 @@ jobs:
           ]:
               assert forbidden not in blob, forbidden
           assert "DefaultValue" not in qs[0]
-          print("Tesla owner test structure: PASS")
+          print("Tesla quick-start owner test structure: PASS")
           PY
 
       - name: Sign Tesla owner test
@@ -82,9 +82,9 @@ jobs:
           import json
           from pathlib import Path
           from urllib.request import Request, urlopen
-          src=Path("carkit-test/tesla-owner/generated/Tesla測試.shortcut.xml")
+          src=Path("carkit-test/tesla-owner/generated/Tesla快速出發測試.shortcut.xml")
           payload=json.dumps({
-              "shortcutName":"Tesla測試",
+              "shortcutName":"Tesla快速出發測試",
               "shortcut":src.read_text(encoding="utf-8"),
           }).encode()
           req=Request(
@@ -97,16 +97,16 @@ jobs:
               signed=resp.read()
           if signed[:4] != b"AEA1":
               raise SystemExit(f"invalid signed header: {signed[:16]!r}")
-          out=Path("carkit-test/tesla-owner/out/Tesla測試.shortcut")
+          out=Path("carkit-test/tesla-owner/out/Tesla快速出發測試.shortcut")
           out.write_bytes(signed)
           print(out,len(signed),signed[:4])
           PY
-          test "$(xxd -p -l 4 "carkit-test/tesla-owner/out/Tesla測試.shortcut")" = "41454131"
-          shasum -a 256 "carkit-test/tesla-owner/out/Tesla測試.shortcut"
+          test "$(xxd -p -l 4 "carkit-test/tesla-owner/out/Tesla快速出發測試.shortcut")" = "41454131"
+          shasum -a 256 "carkit-test/tesla-owner/out/Tesla快速出發測試.shortcut"
 
       - name: Upload Tesla owner test
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-tesla-owner-test
-          path: carkit-test/tesla-owner/out/Tesla測試.shortcut
+          name: carkit-tesla-quick-start-owner-test
+          path: carkit-test/tesla-owner/out/Tesla快速出發測試.shortcut
           if-no-files-found: error
