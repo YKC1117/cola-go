@@ -38,6 +38,9 @@ jobs:
               # Set Temperature actions; useful for studying vehicle binding.
               "candidate_multi_temp_2026": "3c461b592b644b3cb158a9f98db225c9",
               "candidate_action_button_menu": "0d17a1d0a40f450fb1fcbdba3d4644f5",
+              # Tesla owner shared this native Shortcuts menu publicly; thread
+              # explicitly discusses honk, charge-port and precondition actions.
+              "candidate_owner_menu_honk": "e6261c11a8964d68b58406b79772f917",
           }
 
           def get_json(url):
