@@ -492,7 +492,7 @@ driving_tools_menu=menu("行車工具",["神盾測速照相","高速公路1968",
 },"driving-tools-menu")
 
 main_items=[
-    "快速出發","導航","車外遙控","找充電站","停車 / 找車","行車工具","語音控制","Tesla App"
+    "快速出發","車外遙控","導航","找充電站","停車 / 找車","行車工具","語音控制","Tesla App"
 ]
 main_branches={
     "快速出發":set_prepare("menu-quick-start"),
