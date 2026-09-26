@@ -214,10 +214,16 @@ def flash_action(seed):
     # Public donor omits vehicle for FlashLightIntent.
     return tesla("FlashLightIntent",seed,vehicle_mode=False)
 
-def temp_action(c,seed):
+def temp_action(seed):
+    # A 2026 public native Tesla donor proves HVACSetTempIntent accepts a
+    # named variable as the quantity Magnitude. This lets CarKit keep one
+    # vehicle-backed temperature action instead of one action per preset.
     return tesla("HVACSetTempIntent",seed,{
       "temperature":{
-        "Value":{"Unit":"°C","Magnitude":float(c)},
+        "Value":{
+          "Unit":"°C",
+          "Magnitude":{"VariableName":"Temp","Type":"Variable"}
+        },
         "WFSerializationType":"WFQuantityFieldValue"
       }
     },show_when_run=False)
@@ -257,8 +263,28 @@ def set_variable(name,value,seed):
       })
     ]
 
+def set_number_variable(name,value,seed):
+    number_uuid=uid(seed+"-number")
+    return [
+      act("is.workflow.actions.number",{
+        "UUID":number_uuid,
+        "WFNumberActionNumber":str(value)
+      }),
+      act("is.workflow.actions.setvariable",{
+        "UUID":uid(seed+"-set"),
+        "WFVariableName":name,
+        "WFInput":ao(number_uuid,"Number")
+      })
+    ]
+
 def set_command(value,seed):
     return set_variable("Command",value,seed)
+
+def set_temp_command(value,seed):
+    return [
+      *set_number_variable("Temp",value,seed+"-value"),
+      *set_command("TEMP",seed+"-command")
+    ]
 
 def set_prepare(seed):
     return [
@@ -288,9 +314,9 @@ def find_parked_car(seed):
 
 # ---- touch menus: Tesla controls set one canonical command instead of duplicating AppIntents ----
 temp_menu=menu("車室溫度",["22°C","23°C","24°C"],{
-    "22°C":set_command("TEMP_22","menu-temp22"),
-    "23°C":set_command("TEMP_23","menu-temp23"),
-    "24°C":set_command("TEMP_24","menu-temp24"),
+    "22°C":set_temp_command(22,"menu-temp22"),
+    "23°C":set_temp_command(23,"menu-temp23"),
+    "24°C":set_temp_command(24,"menu-temp24"),
 },"temp-menu")
 
 climate_menu=menu("空調 / 車室",[
@@ -426,9 +452,7 @@ pre_start_flow=[
 ]
 actions += if_exact(cmd,"PRE_START",pre_start_flow,"run-pre-start")
 actions += if_exact(cmd,"PRE_STOP",[pre_stop_action("canonical-pre-stop"),exit_shortcut()],"run-pre-stop")
-actions += if_exact(cmd,"TEMP_22",[temp_action(22,"canonical-temp22"),exit_shortcut()],"run-temp22")
-actions += if_exact(cmd,"TEMP_23",[temp_action(23,"canonical-temp23"),exit_shortcut()],"run-temp23")
-actions += if_exact(cmd,"TEMP_24",[temp_action(24,"canonical-temp24"),exit_shortcut()],"run-temp24")
+actions += if_exact(cmd,"TEMP",[temp_action("canonical-temp"),exit_shortcut()],"run-temp")
 actions += if_exact(cmd,"LOCK",[lock_action("canonical-lock"),exit_shortcut()],"run-lock")
 actions += if_exact(cmd,"UNLOCK",confirm_then("確定要解鎖 Tesla？",unlock_action,"canonical-unlock"),"run-unlock")
 actions += if_exact(cmd,"FRUNK",confirm_then("確定要開啟前行李廂？",frunk_action,"canonical-frunk"),"run-frunk")

@@ -90,7 +90,7 @@ jobs:
           assert len(questions)==len(vehicle_action_indexes), (
               len(questions), len(vehicle_action_indexes)
           )
-          assert len(questions) == 15, f"Tesla v1.2 requires exactly 15 vehicle setup questions: {len(questions)}"
+          assert len(questions) == 13, f"Tesla requires exactly 13 vehicle setup questions after donor-backed temperature consolidation: {len(questions)}"
           for q in questions:
               assert q.get("Category")=="Parameter", q
               assert q.get("ParameterKey")=="vehicle", q
@@ -126,7 +126,7 @@ jobs:
 
           expected_intent_counts={
               "PreconditionIntent":2,
-              "HVACSetTempIntent":3,
+              "HVACSetTempIntent":1,
               "LockUnlockIntent":2,
               "FrontTrunkIntent":1,
               "RearTrunkIntent":1,
@@ -160,8 +160,26 @@ jobs:
                       assert "vehicle" in p, f"{intent}: required donor vehicle parameter missing"
                       assert p["vehicle"] == ask, f"{intent}: vehicle is not runtime Ask candidate"
           assert actual_intent_counts==expected_intent_counts, (actual_intent_counts,expected_intent_counts)
-          assert sum(actual_intent_counts.values())==20, actual_intent_counts
-          assert len(vehicle_action_indexes)==15, vehicle_action_indexes
+          assert sum(actual_intent_counts.values())==18, actual_intent_counts
+          assert len(vehicle_action_indexes)==13, vehicle_action_indexes
+
+          # 2026 public Tesla donor proves a single HVACSetTempIntent can take
+          # a named Temp variable as its °C quantity magnitude. Keep this
+          # consolidation so 22/23/24 presets do not create 3 vehicle questions.
+          hvac_temp=[a for a in actions if a.get("WFWorkflowActionIdentifier","").endswith(".HVACSetTempIntent")]
+          assert len(hvac_temp)==1, hvac_temp
+          temp_value=hvac_temp[0]["WFWorkflowActionParameters"]["temperature"]
+          assert temp_value.get("WFSerializationType")=="WFQuantityFieldValue", temp_value
+          assert temp_value.get("Value",{}).get("Unit")=="°C", temp_value
+          assert temp_value.get("Value",{}).get("Magnitude")=={
+              "VariableName":"Temp","Type":"Variable"
+          }, temp_value
+          temp_numbers=[
+              a.get("WFWorkflowActionParameters",{}).get("WFNumberActionNumber")
+              for a in actions
+              if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.number"
+          ]
+          assert all(str(x) in temp_numbers for x in (22,23,24)), temp_numbers
 
           # Tesla iOS automation must not pretend Bluetooth Disconnect exists.
           # iOS 27 exposes Bluetooth connect only; parked-car location is supplied
