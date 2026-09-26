@@ -130,8 +130,8 @@ Known parameter evidence:
 - LockUnlockIntent: `vehicleControlType = lock | unlock`
 - PreconditionIntent: `preconditionAction = start | stop`
 - ChargeLimitIntent: `percent` is a numeric string
-- HVACSetTempIntent: `temperature` is a `WFQuantityFieldValue`
-- RearTrunkIntent: donor uses Ask for `rearTrunkAction`
+- HVACSetTempIntent: `temperature` is a `WFQuantityFieldValue`; a 2026 public native donor proves its °C `Magnitude` can reference a named `Temp` variable, allowing one canonical vehicle-backed temperature action for multiple presets
+- RearTrunkIntent: public native donors prove `rearTrunkAction = open | close`; CarKit currently exposes one confirmed `open` action to avoid adding another vehicle setup question
 - DefrostIntent: public native donors prove `defrostAction = enable | disable`
 - ChargePortIntent: public native donor proves `chargePortAction = open`
 - HVACSeatHeaterIntent: public native donors prove driver `seat = frontLeft`, `level = high | off`; donors omit `vehicle`
@@ -148,6 +148,28 @@ Still missing native donor structures for:
 - Bioweapon Defense Mode
 
 Do not invent their AppIntent identifiers.
+
+## Current Tesla RC improvements
+
+Latest program-side Tesla candidate:
+- CarKit Shortcut Build Run #75 (commit 8404224a): SUCCESS.
+- Native Tesla AppIntent count: 18.
+- Vehicle-backed Tesla AppIntent count: 13.
+- Vehicle Import Questions: exactly 13 (reduced from 15 by consolidating 22/23/24°C into one donor-proven variable-temperature action).
+- Rear trunk: fixed native `RearTrunkIntent + rearTrunkAction=open`, independently confirmed by multiple public native Tesla shortcut donors.
+- Charging-station tools: Apple Maps, AmpGO App Store entry, U-POWER, EVALUE, PlugShare.
+- Build / semantic / privacy / safety / signing / AEA1: PASS.
+
+Public donor research:
+- 2025 native Tesla donors prove rear trunk `open` and `close`, frunk, and charge-port `open`.
+- A 2026 Tesla-owner native shortcut proves dynamic `HVACSetTempIntent` temperature variables.
+- Public API/token-based Honk / Close Charge Port / Start Charging / Stop Charging shortcuts were probed and rejected because they contained no native `com.teslamotors.TeslaApp.*` actions.
+- Public multi-action Tesla shortcuts can contain donor-specific Vehicle AppEntity values. Do not copy those entities into CarKit; retain public install-time vehicle binding.
+
+Hardware boundary:
+- 13 repeated vehicle selections are still the safe public-share structure currently supported by evidence.
+- One global vehicle choice has still not been proven to propagate safely to every Tesla AppIntent.
+- Real Tesla vehicle-control execution remains NOT RUN.
 
 ## Physical iPhone v1.2 evidence
 
@@ -244,7 +266,11 @@ Public-release consequence:
 ## iOS Simulator import evidence
 
 Latest v1.2 build evidence:
-- CarKit Shortcut Build Run #69 (commit b20294e): SUCCESS.
+- CarKit Shortcut Build Run #75 (commit 8404224a): SUCCESS.
+- Tesla generated structure: 18 native Tesla AppIntent instances, exactly 13 vehicle-backed actions, exactly 13 Vehicle Import Questions: PASS.
+- Temperature preset consolidation (22/23/24°C -> one variable HVACSetTempIntent): PASS.
+- Rear trunk fixed `open` donor validation: PASS.
+- Earlier baseline CarKit Shortcut Build Run #69 (commit b20294e): SUCCESS.
 - v1.2 Open App metadata guard: PASS.
 - v1.2 native Open Directions destination wiring guard: PASS.
 - plist / semantic / privacy / safety validation: PASS.
@@ -252,7 +278,7 @@ Latest v1.2 build evidence:
 
 Latest candidate evidence:
 - CarKit Shortcut Build Run #57 (commit e143f3a): PASS.
-- Tesla generated structure: 20 native Tesla AppIntent instances, including exactly 15 vehicle-backed actions and exactly 15 Vehicle Import Questions: PASS.
+- Historical baseline at Run #57: 20 native Tesla AppIntent instances / 15 vehicle-backed / 15 Vehicle Import Questions. Current Run #75 improves this to 18 / 13 / 13.
 - plist / semantic / privacy / safety validation: PASS.
 - shortcut signing and AEA1 header checks: PASS.
 - CarKit iOS Simulator Probe Run #16 (commit c97ab5e): SUCCESS.
