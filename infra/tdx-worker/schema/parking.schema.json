@@ -1,0 +1,24 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://cola-go.example/schema/parking.schema.json",
+  "$defs":{
+    "basic":{
+      "type":"object",
+      "required":["id","sourceId","city","name","hasLiveAvailability"],
+      "properties":{
+        "id":{"type":"string"},"sourceId":{"type":"string"},"city":{"type":"string"},"name":{"type":"string"},
+        "address":{"type":["string","null"]},"lat":{"type":["number","null"]},"lon":{"type":["number","null"]},
+        "totalSpaces":{"type":["number","null"]},"feeText":{"type":["string","null"]},"hasLiveAvailability":{"type":"boolean"}
+      }
+    },
+    "availability":{
+      "type":"object",
+      "required":["id","sourceId","city"],
+      "properties":{
+        "id":{"type":"string"},"sourceId":{"type":"string"},"city":{"type":"string"},
+        "availableSpaces":{"type":["number","null"]},"totalSpaces":{"type":["number","null"]},
+        "serviceStatus":{},"fullStatus":{},"sourceUpdatedAt":{"type":["string","null"]}
+      }
+    }
+  }
+}
