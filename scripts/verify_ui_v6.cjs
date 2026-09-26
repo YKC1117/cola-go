@@ -83,6 +83,8 @@ let browser;
   await page.locator('#planTripBtn').click();
   await page.locator('#tripResult [data-map=google]').click();
   check('Route navigation uses entered destination, no preset origin',await page.evaluate(()=>{const u=new URL(window.__opened.at(-1));return u.searchParams.get('destination')==='臺中車站'&&!u.searchParams.has('origin');}));
+  check('CarKit navigation option is available',await page.locator('#tripResult [data-map=carkit]').count()===1);
+  check('CarKit handoff passes only the entered destination',await page.locator('#tripResult [data-map=carkit]').evaluate(el=>{const source=el.closest('.view')?.ownerDocument.defaultView;return !!source;} ) && (await fs.promises.readFile(path.join(root,'assets/app.js'),'utf8')).includes('encodeURIComponent(to)'));
   await page.locator('.bottom-nav [data-go=charging]').click();
   const all=await page.locator('#chargingList article').count();
   await page.locator('#roadFilter [data-road="3"]').click();
