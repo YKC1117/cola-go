@@ -402,6 +402,33 @@ jobs:
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-play-menu.png
           assert_menu /tmp/carkit-probe/tesla-play-menu.json tesla
 
+          # Tesla voice helper: run it from the editor and prove it reaches
+          # the first command prompt before any Tesla AppIntent executes.
+          open_shortcut_retry "%E7%89%B9%E6%96%AF%E6%8B%89%E8%AA%9E%E9%9F%B3%E6%8E%A7%E5%88%B6"
+          run_idb idb ui tap "play" --udid "$UDID"
+          sleep 3
+          describe_retry /tmp/carkit-probe/voice-play-prompt.json
+          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/voice-play-prompt.png
+          python3 - <<'PY'
+          import json
+          data=json.load(open("/tmp/carkit-probe/voice-play-prompt.json"))
+          values=[]
+          def walk(v):
+              if isinstance(v,dict):
+                  for key in ("AXLabel","AXValue"):
+                      x=v.get(key)
+                      if isinstance(x,str):
+                          values.append(x)
+                  for x in v.values():
+                      walk(x)
+              elif isinstance(v,list):
+                  for x in v:
+                      walk(x)
+          walk(data)
+          assert any("要控制 Tesla 什麼功能" in x for x in values), values[:180]
+          print("TESLA_VOICE_HELPER_PROMPT=PASS")
+          PY
+
           # Oil: independently prove the same menu-first interaction.
           open_shortcut_retry "%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"
           run_idb idb ui tap "play" --udid "$UDID"
@@ -411,6 +438,7 @@ jobs:
           assert_menu /tmp/carkit-probe/oil-play-menu.json oil
 
           echo "TESLA_EDITOR_RUN_MENU=PASS"
+          echo "TESLA_VOICE_HELPER_PROMPT=PASS"
           echo "OIL_EDITOR_RUN_MENU=PASS"
           echo "SIRI_VOICE_DIALOG=NOT_RUN"
 
