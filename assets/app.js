@@ -1227,21 +1227,18 @@ function bindTrip(){
       '<div class="list-item">'+
         '<h3>'+esc(from)+' → '+esc(to)+'</h3>'+
         '<div class="meta">先看路況與充電，再直接交給你慣用的導航工具。</div>'+
-        '<div class="item-actions"><button class="go" data-map="carkit">CarKit 導航</button><button data-map="google">Google Maps</button><button data-map="apple">Apple 地圖</button></div>'+
+        '<div class="item-actions"><button class="go" data-map="google">Google Maps</button><button data-map="apple">Apple 地圖</button><button data-map="waze">Waze</button></div>'+
         '<div class="item-actions"><button data-next="highway">國道路況</button><button data-next="charging">沿途充電</button><button data-next="parking">停車</button></div>'+
       '</div>';
 
     $$("[data-next]",$("#tripResult")).forEach(b=>b.onclick=()=>show(b.dataset.next));
     $$("[data-map]",$("#tripResult")).forEach(b=>b.onclick=()=>{
       let url;
-      if(b.dataset.map==="carkit"){
-        const url="shortcuts://run-shortcut?name="+encodeURIComponent("CarKit 導航")+"&input=text&text="+encodeURIComponent(to);
-        window.location.href=url;
-        return;
-      }
       if(b.dataset.map==="apple"){
         const start=from==="目前位置"?"":"&saddr="+encodeURIComponent(from);
         url="https://maps.apple.com/?daddr="+encodeURIComponent(to)+"&dirflg=d"+start;
+      }else if(b.dataset.map==="waze"){
+        url="https://www.waze.com/ul?q="+encodeURIComponent(to)+"&navigate=yes";
       }else{
         const origin=from==="目前位置"?"":"&origin="+encodeURIComponent(from);
         url="https://www.google.com/maps/dir/?api=1&destination="+encodeURIComponent(to)+"&travelmode=driving"+origin;
