@@ -170,7 +170,9 @@ def frunk_action(seed):
     return tesla("FrontTrunkIntent",seed)
 
 def rear_action(seed):
-    return tesla("RearTrunkIntent",seed,{"rearTrunkAction":ask_token()})
+    # Public 2025 Tesla donor proves rearTrunkAction="open".
+    # Keep one canonical action so install-time vehicle questions do not increase.
+    return tesla("RearTrunkIntent",seed,{"rearTrunkAction":"open"},show_when_run=False)
 
 def pre_start_action(seed):
     return tesla("PreconditionIntent",seed,{"preconditionAction":"start"},show_when_run=False)
@@ -338,12 +340,12 @@ window_menu=menu("車窗",["通風","關閉車窗"],{
 },"window-menu")
 
 vehicle_menu=menu("車輛控制",[
-    "鎖車","解鎖","前行李廂","後車廂","車窗通風","關閉車窗"
+    "鎖車","解鎖","前行李廂","開啟後車廂","車窗通風","關閉車窗"
 ],{
     "鎖車":set_command("LOCK","menu-vehicle-lock"),
     "解鎖":set_command("UNLOCK","menu-vehicle-unlock"),
     "前行李廂":set_command("FRUNK","menu-vehicle-frunk"),
-    "後車廂":set_command("REAR","menu-vehicle-rear"),
+    "開啟後車廂":set_command("REAR","menu-vehicle-rear"),
     "車窗通風":set_command("VENT","menu-vehicle-vent"),
     "關閉車窗":set_command("WINDOW_CLOSE","menu-vehicle-close-window"),
 },"vehicle-menu")
@@ -430,7 +432,7 @@ actions += if_exact(cmd,"TEMP_24",[temp_action(24,"canonical-temp24"),exit_short
 actions += if_exact(cmd,"LOCK",[lock_action("canonical-lock"),exit_shortcut()],"run-lock")
 actions += if_exact(cmd,"UNLOCK",confirm_then("確定要解鎖 Tesla？",unlock_action,"canonical-unlock"),"run-unlock")
 actions += if_exact(cmd,"FRUNK",confirm_then("確定要開啟前行李廂？",frunk_action,"canonical-frunk"),"run-frunk")
-actions += if_exact(cmd,"REAR",confirm_then("確定要操作後車廂？",rear_action,"canonical-rear"),"run-rear")
+actions += if_exact(cmd,"REAR",confirm_then("確定要開啟後車廂？",rear_action,"canonical-rear"),"run-rear")
 actions += if_exact(cmd,"CHARGE_80",[charge_limit_action(80,"canonical-charge80"),exit_shortcut()],"run-charge80")
 actions += if_exact(cmd,"CHARGE_90",[charge_limit_action(90,"canonical-charge90"),exit_shortcut()],"run-charge90")
 actions += if_exact(cmd,"CHARGE_PORT_OPEN",[open_charge_port_action("canonical-charge-port"),exit_shortcut()],"run-charge-port")
