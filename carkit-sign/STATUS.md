@@ -2,9 +2,25 @@
 
 Updated: 2026-09-26
 
-Latest Tesla candidate: v1.4 remote-control + workflow hybrid (clean main menu; full outside-the-car controls restored behind 車外遙控).
+Latest Tesla candidate: v1.5 single-shortcut hybrid (touch + integrated voice control in one 特斯拉助手).
 
 Branch: `temp/carkit-shortcut-sign`
+
+## Tesla v1.5 verified candidate
+
+This section supersedes older v1.4 / RC counts later in this historical status file.
+
+- Public Tesla download is **one shortcut only**: `特斯拉助手`.
+- The former standalone `特斯拉語音控制` helper has been removed.
+- Top menu: `快速出發 / 車外遙控 / 語音控制 / 導航 / 找充電站 / 停車 / 找車 / 行車工具 / Tesla App`.
+- Touch and voice paths share the same canonical 20 Tesla AppIntent actions.
+- Vehicle Import Questions remain **12**, not 24.
+- Sensitive commands (unlock / front trunk / rear trunk) retain independent confirmation; integrated voice requires the exact spoken confirmation word.
+- Build #98: **SUCCESS** — plist, semantic validation, privacy/safety, signing and AEA1 all passed.
+- Signed `特斯拉助手.shortcut`: 64,761 bytes; SHA-256 `f51c1ab19147c94438ec0d10fbd216a098dc4dd33068dcc37b0e237a560cc48a`.
+- Simulator #69: **SUCCESS** — signed import, Tesla main menu, integrated voice prompt, Oil navigation diagnostic and Tesla entry diagnostics passed.
+- `TESLA_INTEGRATED_VOICE_PROMPT=PASS` proves the same `特斯拉助手` reaches `要控制 Tesla 什麼功能？` from its integrated voice menu.
+- Real Siri invocation, Tesla Vehicle AppEntity picker, and actual vehicle execution still require a physical iPhone with Tesla App / Tesla owner testing.
 
 ## Current architecture
 
@@ -84,11 +100,13 @@ Both main shortcuts use short names:
 - 特斯拉助手
 - 油車助手
 
+Tesla voice control is now integrated inside 特斯拉助手; there is no separate public voice-helper shortcut.
+
 Current interaction:
 - Tapping either shortcut opens a compact native menu immediately.
 - Siri can run the shortcut by name and reaches the same menu-first interaction.
 - Oil top-level menu is limited to 6 grouped entries.
-- Tesla top-level menu is limited to 7 grouped entries.
+- Tesla top-level menu is limited to 8 grouped entries, including integrated 語音控制.
 - Sensitive Tesla actions still require an independent confirmation menu.
 
 Sensitive Tesla commands:
