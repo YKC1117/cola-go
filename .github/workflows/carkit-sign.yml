@@ -90,7 +90,7 @@ jobs:
           assert len(questions)==len(vehicle_action_indexes), (
               len(questions), len(vehicle_action_indexes)
           )
-          assert len(questions) == 12, f"Tesla requires exactly 12 vehicle setup questions after donor-backed temperature and charge-port consolidation: {len(questions)}"
+          assert len(questions) == 1, f"Tesla v1.3 should require exactly one vehicle setup question: {len(questions)}"
           for q in questions:
               assert q.get("Category")=="Parameter", q
               assert q.get("ParameterKey")=="vehicle", q
@@ -125,62 +125,41 @@ jobs:
           ask={"Value":{"Type":"Ask"},"WFSerializationType":"WFTextTokenAttachment"}
 
           expected_intent_counts={
-              "PreconditionIntent":2,
-              "HVACSetTempIntent":1,
-              "LockUnlockIntent":2,
-              "FrontTrunkIntent":1,
-              "RearTrunkIntent":1,
-              "ChargeLimitIntent":2,
-              "ChargePortIntent":2,
+              "PreconditionIntent":1,
               "FlashLightIntent":1,
               "HonkIntent":1,
-              "DefrostIntent":2,
-              "HVACSeatHeaterIntent":2,
-              "VentIntent":1,
-              "CloseWindowIntent":1,
-              "SentryModeIntent":1,
           }
           actual_intent_counts={k:0 for k in expected_intent_counts}
-          vehicle_required=evidenced-{"ChargeLimitIntent","FlashLightIntent","HVACSeatHeaterIntent","ChargePortIntent","HonkIntent"}
           for a in actions:
               ident=a.get("WFWorkflowActionIdentifier","")
               p=a.get("WFWorkflowActionParameters",{})
               if ident.startswith(bundle+"."):
                   intent=ident.split(".")[-1]
-                  assert intent in evidenced, f"unsupported/unproven Tesla intent: {intent}"
-                  actual_intent_counts[intent]=actual_intent_counts.get(intent,0)+1
+                  assert intent in expected_intent_counts, f"Tesla v1.3 leaked duplicate/native-control intent: {intent}"
+                  actual_intent_counts[intent]+=1
                   descriptor=p.get("AppIntentDescriptor")
                   assert isinstance(descriptor,dict), f"{intent}: missing AppIntentDescriptor"
                   assert descriptor.get("TeamIdentifier")=="PS9EBAM2PU", f"{intent}: donor TeamIdentifier mismatch"
                   assert descriptor.get("BundleIdentifier")==bundle, f"{intent}: donor BundleIdentifier mismatch"
                   assert descriptor.get("AppIntentIdentifier")==intent, f"{intent}: descriptor/outer intent mismatch"
                   assert ident==f"{bundle}.{descriptor['AppIntentIdentifier']}", f"{intent}: outer identifier mismatch"
-                  if intent in {"ChargeLimitIntent","FlashLightIntent","HVACSeatHeaterIntent","ChargePortIntent","HonkIntent"}:
-                      assert "vehicle" not in p, f"{intent}: invented vehicle parameter"
+                  if intent=="PreconditionIntent":
+                      assert p.get("preconditionAction")=="start", p
+                      assert p.get("vehicle")==ask, "quick-start precondition must use public vehicle Ask/import binding"
                   else:
-                      assert "vehicle" in p, f"{intent}: required donor vehicle parameter missing"
-                      assert p["vehicle"] == ask, f"{intent}: vehicle is not runtime Ask candidate"
+                      assert "vehicle" not in p, f"{intent}: donor-backed find-car action must not invent vehicle"
           assert actual_intent_counts==expected_intent_counts, (actual_intent_counts,expected_intent_counts)
-          assert sum(actual_intent_counts.values())==20, actual_intent_counts
-          assert len(vehicle_action_indexes)==12, vehicle_action_indexes
+          assert sum(actual_intent_counts.values())==3, actual_intent_counts
+          assert len(vehicle_action_indexes)==1, vehicle_action_indexes
 
-          # 2026 public Tesla donor proves a single HVACSetTempIntent can take
-          # a named Temp variable as its °C quantity magnitude. Keep this
-          # consolidation so 22/23/24 presets do not create 3 vehicle questions.
-          hvac_temp=[a for a in actions if a.get("WFWorkflowActionIdentifier","").endswith(".HVACSetTempIntent")]
-          assert len(hvac_temp)==1, hvac_temp
-          temp_value=hvac_temp[0]["WFWorkflowActionParameters"]["temperature"]
-          assert temp_value.get("WFSerializationType")=="WFQuantityFieldValue", temp_value
-          assert temp_value.get("Value",{}).get("Unit")=="°C", temp_value
-          assert temp_value.get("Value",{}).get("Magnitude")=={
-              "VariableName":"Temp","Type":"Variable"
-          }, temp_value
-          temp_numbers=[
-              a.get("WFWorkflowActionParameters",{}).get("WFNumberActionNumber")
-              for a in actions
-              if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.number"
-          ]
-          assert all(str(x) in temp_numbers for x in (22,23,24)), temp_numbers
+          # Product direction guardrail: Tesla App remains the primary vehicle-control surface.
+          # CarKit v1.3 keeps only workflow-oriented native actions.
+          for removed in [
+              "HVACSetTempIntent","LockUnlockIntent","RearTrunkIntent","FrontTrunkIntent",
+              "DefrostIntent","VentIntent","CloseWindowIntent","SentryModeIntent",
+              "ChargeLimitIntent","ChargePortIntent","HVACSeatHeaterIntent"
+          ]:
+              assert removed not in tblob, f"Tesla v1.3 should not duplicate Tesla App control: {removed}"
 
           # Tesla iOS automation must not pretend Bluetooth Disconnect exists.
           # iOS 27 exposes Bluetooth connect only; parked-car location is supplied
@@ -209,70 +188,14 @@ jobs:
                   if "WFConditionalActionString" in p:
                       assert p.get("WFCondition")==4, f"non-exact text condition: {p}"
 
-          # Every sensitive physical action must be inside the explicit
-          # touch-first confirmation menu's "確認執行" branch. This keeps
-          # unlock / front trunk / rear trunk protected without requiring the
-          # user to type or speak a magic confirmation phrase.
-          sensitive=[]
-          for i,a in enumerate(actions):
-              ident=a.get("WFWorkflowActionIdentifier","")
-              p=a.get("WFWorkflowActionParameters",{})
-              if ident.endswith(".FrontTrunkIntent") or ident.endswith(".RearTrunkIntent"):
-                  sensitive.append((i,ident))
-              elif ident.endswith(".LockUnlockIntent") and p.get("vehicleControlType")=="unlock":
-                  sensitive.append((i,ident))
-          assert sensitive, "no sensitive actions found"
-          assert len(sensitive)==3, f"sensitive Tesla actions duplicated: {sensitive}"
-
-          for i,ident in sensitive:
-              prev_case=None
-              for j in range(i-1,-1,-1):
-                  x=actions[j]
-                  p=x.get("WFWorkflowActionParameters",{})
-                  if x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.choosefrommenu" and p.get("WFControlFlowMode")==1:
-                      prev_case=(j,p.get("GroupingIdentifier"),p.get("WFMenuItemTitle"))
-                      break
-              assert prev_case is not None, f"{ident} at {i}: missing confirmation menu branch"
-              case_index,group,title=prev_case
-              assert title=="確認執行", f"{ident} at {i}: wrong confirmation branch {title!r}"
-
-              start=None
-              for j in range(case_index-1,-1,-1):
-                  x=actions[j]
-                  p=x.get("WFWorkflowActionParameters",{})
-                  if (x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.choosefrommenu"
-                      and p.get("GroupingIdentifier")==group
-                      and p.get("WFControlFlowMode")==0):
-                      start=(j,p.get("WFMenuPrompt",""))
-                      break
-              assert start is not None and "確定要" in start[1], f"{ident}: missing explicit confirmation prompt"
-
-              boundary=None
-              for j in range(i+1,len(actions)):
-                  x=actions[j]
-                  p=x.get("WFWorkflowActionParameters",{})
-                  if (x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.choosefrommenu"
-                      and p.get("GroupingIdentifier")==group
-                      and p.get("WFControlFlowMode") in {1,2}):
-                      boundary=j
-                      break
-              assert boundary is not None, f"{ident}: confirmation branch has no boundary"
-              assert any(
-                  x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.exit"
-                  for x in actions[i+1:boundary]
-              ), f"{ident}: confirmed sensitive action must exit immediately"
-
-              cancel_ok=False
-              for j in range(boundary,len(actions)):
-                  x=actions[j]
-                  p=x.get("WFWorkflowActionParameters",{})
-                  if (x.get("WFWorkflowActionIdentifier")=="is.workflow.actions.choosefrommenu"
-                      and p.get("GroupingIdentifier")==group):
-                      if p.get("WFControlFlowMode")==1 and p.get("WFMenuItemTitle")=="取消":
-                          cancel_ok=True
-                      if p.get("WFControlFlowMode")==2:
-                          break
-              assert cancel_ok, f"{ident}: confirmation menu missing cancel branch"
+          # High-risk controls were intentionally removed from the public v1.3 shortcut.
+          # Unlock and trunk opening stay in Tesla's own UI/voice surface.
+          assert not any(
+              a.get("WFWorkflowActionIdentifier","").endswith((
+                  ".LockUnlockIntent",".FrontTrunkIntent",".RearTrunkIntent"
+              ))
+              for a in actions
+          ), "Tesla v1.3 must not expose unlock/trunk control"
 
           # Donor-proven enum handling. Keep unresolved enums on Ask; only promote
           # a fixed value when a public native donor proves it.
@@ -319,7 +242,7 @@ jobs:
               "神盾","導航","路況","停車 / 找車","加油 / eTag","音樂"
           ]
           assert top_menu_items(tesla,"特斯拉助手｜請選功能")==[
-              "準備出發","空調","車輛控制","充電","找車","導航","更多"
+              "快速出發","導航","找充電站","停車 / 找車","行車工具","Tesla App"
           ]
 
           oblob=(g/"油車助手.shortcut.xml").read_text(encoding="utf-8")
@@ -358,8 +281,13 @@ jobs:
                   a for a in aa
                   if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.getdirections"
               ]
-              assert len(asks)==3, f"{name}: expected 3 navigation Ask actions, got {len(asks)}"
-              assert len(directions)==3, f"{name}: expected 3 Open Directions actions, got {len(directions)}"
+              expected_nav_count=6 if name=="Tesla" else 3
+              assert len(asks)==expected_nav_count, (
+                  f"{name}: expected {expected_nav_count} navigation Ask actions, got {len(asks)}"
+              )
+              assert len(directions)==expected_nav_count, (
+                  f"{name}: expected {expected_nav_count} Open Directions actions, got {len(directions)}"
+              )
               assert {
                   a.get("WFWorkflowActionParameters",{}).get("WFGetDirectionsActionApp")
                   for a in directions
@@ -459,13 +387,13 @@ jobs:
       - name: Upload signed shortcuts
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-signed-shortcuts-v1.2
+          name: carkit-signed-shortcuts-v1.3
           path: carkit-sign/out/*.shortcut
           if-no-files-found: error
 
       - name: Upload workflow sources
         uses: actions/upload-artifact@v4
         with:
-          name: carkit-shortcut-sources-v1.2
+          name: carkit-shortcut-sources-v1.3
           path: carkit-sign/generated/*.shortcut.xml
           if-no-files-found: error
