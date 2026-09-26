@@ -25,7 +25,6 @@ jobs:
           rm -rf carkit-sign/generated carkit-sign/out
           python3 carkit-sign/build_oil.py
           python3 carkit-sign/build_tesla.py
-          python3 carkit-sign/build_tesla_voice.py
           mkdir -p carkit-sign/out
           python3 - <<'PY'
           import json
@@ -184,7 +183,6 @@ jobs:
 
           OIL_PATH="$SHORTCUTS_DATA/Documents/CarKitTW/油車助手.shortcut"
           TESLA_PATH="$SHORTCUTS_DATA/Documents/CarKitTW/特斯拉助手.shortcut"
-          VOICE_PATH="$SHORTCUTS_DATA/Documents/CarKitTW/特斯拉語音控制.shortcut"
 
           # Oil: direct file must open a real Add Shortcut sheet.
           xcrun simctl launch "$UDID" com.apple.shortcuts || true
@@ -222,23 +220,6 @@ jobs:
           describe_retry /tmp/carkit-probe/tesla-opened.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-opened.png
 
-          # Tesla voice helper: prove the separately signed Siri helper also imports.
-          xcrun simctl terminate "$UDID" com.apple.shortcuts || true
-          xcrun simctl launch "$UDID" com.apple.shortcuts || true
-          sleep 2
-          open_file_retry "$VOICE_PATH"
-          describe_retry /tmp/carkit-probe/voice-before.json
-          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/voice-before.png
-          tap_frame_label /tmp/carkit-probe/voice-before.json "Add Shortcut"
-          sleep 6
-          describe_retry /tmp/carkit-probe/voice-after-add.json
-          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/voice-after-add.png
-
-          xcrun simctl openurl "$UDID" "shortcuts://open-shortcut?name=%E7%89%B9%E6%96%AF%E6%8B%89%E8%AA%9E%E9%9F%B3%E6%8E%A7%E5%88%B6"
-          sleep 5
-          describe_retry /tmp/carkit-probe/voice-opened.json
-          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/voice-opened.png
-
           echo "=== OIL BEFORE LABELS ==="
           cat /tmp/carkit-probe/oil-before.json || true
           echo "=== OIL AFTER LABELS ==="
@@ -258,12 +239,10 @@ jobs:
           required_json=[
               "oil-before.json","oil-after-add.json","oil-opened.json",
               "tesla-before.json","tesla-after-add.json","tesla-opened.json",
-              "voice-before.json","voice-after-add.json","voice-opened.json",
           ]
           required_png=[
               "oil-before.png","oil-after-add.png","oil-opened.png",
               "tesla-before.png","tesla-after-add.png","tesla-opened.png",
-              "voice-before.png","voice-after-add.png","voice-opened.png",
           ]
           def labels(name):
               p=root/name
@@ -287,9 +266,6 @@ jobs:
           tesla_before=labels("tesla-before.json")
           tesla_after=labels("tesla-after-add.json")
           tesla_opened=labels("tesla-opened.json")
-          voice_before=labels("voice-before.json")
-          voice_after=labels("voice-after-add.json")
-          voice_opened=labels("voice-opened.json")
           assert "Add Shortcut" in oil_before, oil_before
           assert "油車助手" in oil_before, oil_before
           # iOS 26.x does not always expose the "Search Actions" field in
@@ -312,10 +288,6 @@ jobs:
           # reopening it by name, pressing Play, and observing its main menu.
           assert isinstance(tesla_after,list), tesla_after
           assert isinstance(tesla_opened,list), tesla_opened
-          assert "Add Shortcut" in voice_before, voice_before
-          assert "特斯拉語音控制" in voice_before, voice_before
-          assert isinstance(voice_after,list), voice_after
-          assert isinstance(voice_opened,list), voice_opened
           for name in required_json:
               json.loads((root/name).read_text())
           PY
@@ -324,7 +296,6 @@ jobs:
           test -s /tmp/carkit-probe/app-inventory-status.txt
           echo "OIL_SIMULATOR_IMPORT=PASS"
           echo "TESLA_SIMULATOR_IMPORT=PASS"
-          echo "TESLA_VOICE_HELPER_IMPORT=PASS"
           echo "TESLA_APPINTENT_RUNTIME=NOT_RUN"
           echo "TESLA_VEHICLE_ENTITY_PICKER=NOT_RUN"
           echo "REQUIRES_PHYSICAL_IPHONE_AND_TESLA_APP=1"
@@ -384,7 +355,7 @@ jobs:
                       walk(x)
           walk(data)
           if kind=="tesla":
-              required_any=["特斯拉助手","快速出發","車外遙控","找充電站","停車 / 找車"]
+              required_any=["特斯拉助手","快速出發","車外遙控","語音控制","找充電站","停車 / 找車"]
           else:
               required_any=["油車助手","神盾","導航","路況"]
           if not any(any(token in x for token in required_any) for x in labels):
@@ -402,16 +373,15 @@ jobs:
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-play-menu.png
           assert_menu /tmp/carkit-probe/tesla-play-menu.json tesla
 
-          # Tesla voice helper: run it from the editor and prove it reaches
-          # the first command prompt before any Tesla AppIntent executes.
-          open_shortcut_retry "%E7%89%B9%E6%96%AF%E6%8B%89%E8%AA%9E%E9%9F%B3%E6%8E%A7%E5%88%B6"
-          run_idb idb ui tap "play" --udid "$UDID"
+          # Integrated voice control: enter it from the same 特斯拉助手 menu
+          # and prove the command prompt appears before any Tesla AppIntent runs.
+          run_idb idb ui tap "語音控制" --udid "$UDID"
           sleep 3
-          describe_retry /tmp/carkit-probe/voice-play-prompt.json
-          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/voice-play-prompt.png
+          describe_retry /tmp/carkit-probe/tesla-voice-prompt.json
+          xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-voice-prompt.png
           python3 - <<'PY'
           import json
-          data=json.load(open("/tmp/carkit-probe/voice-play-prompt.json"))
+          data=json.load(open("/tmp/carkit-probe/tesla-voice-prompt.json"))
           values=[]
           def walk(v):
               if isinstance(v,dict):
@@ -426,7 +396,7 @@ jobs:
                       walk(x)
           walk(data)
           assert any("要控制 Tesla 什麼功能" in x for x in values), values[:180]
-          print("TESLA_VOICE_HELPER_PROMPT=PASS")
+          print("TESLA_INTEGRATED_VOICE_PROMPT=PASS")
           PY
 
           # Oil: independently prove the same menu-first interaction.
@@ -438,7 +408,7 @@ jobs:
           assert_menu /tmp/carkit-probe/oil-play-menu.json oil
 
           echo "TESLA_EDITOR_RUN_MENU=PASS"
-          echo "TESLA_VOICE_HELPER_PROMPT=PASS"
+          echo "TESLA_INTEGRATED_VOICE_PROMPT=PASS"
           echo "OIL_EDITOR_RUN_MENU=PASS"
           echo "SIRI_VOICE_DIALOG=NOT_RUN"
 
