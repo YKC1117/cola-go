@@ -434,7 +434,7 @@ auto_start=[
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"CarKit TW｜特斯拉助手 v1.4\n- 使用 iPhone 內建「捷徑」整理給 Tesla 車友免費使用\n- 主畫面保持簡潔，但保留「車外遙控」：人在車外也能從 iPhone / Siri 使用 Tesla App 既有遠端控制\n- 快速出發：先做出發前預先調節，再選 Apple 地圖、Google Maps 或 Waze 導航\n- 車外遙控包含空調、鎖解鎖、前後行李廂、車窗、哨兵、充電、閃燈與鳴喇叭\n- 解鎖、前行李廂、後車廂會再次要求確認，避免誤觸\n- 導航目的地每次自行輸入，不會預設住家或公司\n- 第一次加入時，iPhone 會依序請你替需要車輛的遠端控制指定 Tesla；單車車主都選同一台即可"
+    "WFCommentActionText":"CarKit TW｜特斯拉助手 v1.4\n- 使用 iPhone 內建「捷徑」整理給 Tesla 車友免費使用\n- 主畫面保持簡潔，但保留「車外遙控」：人在車外也能從 iPhone / Siri 使用 Tesla App 既有遠端控制\n- 快速出發：先做出發前預先調節，再選 Apple 地圖、Google Maps 或 Waze 導航\n- 車外遙控包含空調、鎖解鎖、前後行李廂、車窗、哨兵、充電、閃燈與鳴喇叭\n- 解鎖、前行李廂、後車廂會再次要求確認，避免誤觸\n- 導航目的地每次自行輸入，不會預設住家或公司\n- 第一次加入時，iPhone 會依序請你替需要車輛的遠端控制指定 Tesla；單車車主都選同一台即可\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla 溫度控制直接使用攝氏數值，不進行單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
