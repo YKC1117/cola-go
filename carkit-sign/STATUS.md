@@ -2,6 +2,8 @@
 
 Updated: 2026-09-26
 
+Latest Tesla candidate: v1.3 workflow-first (1 vehicle selection; Tesla App remains primary for ordinary vehicle controls).
+
 Branch: `temp/carkit-shortcut-sign`
 
 ## Current architecture
