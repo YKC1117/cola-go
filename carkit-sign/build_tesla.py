@@ -4,7 +4,7 @@ from pathlib import Path
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
 
-VERSION="1.2"
+VERSION="1.3"
 APP_NAMES={
  "tw.com.ainvest.outpack":"神盾測速照相",
  "com.teslamotors.TeslaApp":"Tesla",
@@ -321,36 +321,7 @@ def find_parked_car(seed):
       act("is.workflow.actions.openurl",{"UUID":uid(seed+"-open"),"WFInput":ao(maps,"Maps URL")})
     ]
 
-# ---- touch menus: Tesla controls set one canonical command instead of duplicating AppIntents ----
-temp_menu=menu("車室溫度",["22°C","23°C","24°C"],{
-    "22°C":set_temp_command(22,"menu-temp22"),
-    "23°C":set_temp_command(23,"menu-temp23"),
-    "24°C":set_temp_command(24,"menu-temp24"),
-},"temp-menu")
-
-climate_menu=menu("空調 / 車室",[
-    "開始預冷 / 預熱","停止預冷 / 預熱","設定溫度",
-    "除霜","停止除霜","駕駛座加熱","關閉座椅加熱"
-],{
-    "開始預冷 / 預熱":set_command("PRE_START","menu-pre-start"),
-    "停止預冷 / 預熱":set_command("PRE_STOP","menu-pre-stop"),
-    "設定溫度":temp_menu,
-    "除霜":set_command("DEFROST_ON","menu-defrost"),
-    "停止除霜":set_command("DEFROST_OFF","menu-defrost-stop"),
-    "駕駛座加熱":set_command("SEAT_HIGH","menu-seat-high"),
-    "關閉座椅加熱":set_command("SEAT_OFF","menu-seat-off"),
-},"climate-menu")
-
-door_menu=menu("車門控制",["鎖車","解鎖"],{
-    "鎖車":set_command("LOCK","menu-lock"),
-    "解鎖":set_command("UNLOCK","menu-unlock"),
-},"door-menu")
-
-trunk_menu=menu("行李廂",["前行李廂","後車廂"],{
-    "前行李廂":set_command("FRUNK","menu-frunk"),
-    "後車廂":set_command("REAR","menu-rear"),
-},"trunk-menu")
-
+# ---- touch menus: CarKit complements Tesla instead of duplicating the Tesla App ----
 charge_station_menu=menu("找充電站",["Apple 地圖","AmpGO（App Store）","U-POWER","EVALUE","PlugShare"],{
     "Apple 地圖":[*url_open("https://maps.apple.com/?q=%E9%9B%BB%E5%8B%95%E8%BB%8A%E5%85%85%E9%9B%BB%E7%AB%99","menu-charge-maps"),exit_shortcut()],
     "AmpGO（App Store）":[*url_open("https://apps.apple.com/tw/app/id6470348628","menu-ampgo-store"),exit_shortcut()],
@@ -359,37 +330,10 @@ charge_station_menu=menu("找充電站",["Apple 地圖","AmpGO（App Store）","
     "PlugShare":[app("com.xatori.plugshare","menu-plugshare"),exit_shortcut()],
 },"charge-stations-menu")
 
-charge_menu=menu("充電中心",[
-    "開啟充電孔","關閉充電孔","充電上限 80%","充電上限 90%","Tesla App 充電","找充電站"
-],{
-    "開啟充電孔":set_command("CHARGE_PORT_OPEN","menu-charge-port-open"),
-    "關閉充電孔":set_command("CHARGE_PORT_CLOSE","menu-charge-port-close"),
-    "充電上限 80%":set_command("CHARGE_80","menu-charge80"),
-    "充電上限 90%":set_command("CHARGE_90","menu-charge90"),
-    "Tesla App 充電":[app(BUNDLE,"menu-tesla-app-charge"),exit_shortcut()],
-    "找充電站":charge_station_menu,
-},"charge-menu")
-
-window_menu=menu("車窗",["通風","關閉車窗"],{
-    "通風":set_command("VENT","menu-vent"),
-    "關閉車窗":set_command("WINDOW_CLOSE","menu-close-window"),
-},"window-menu")
-
-vehicle_menu=menu("車輛控制",[
-    "鎖車","解鎖","前行李廂","開啟後車廂","車窗通風","關閉車窗"
-],{
-    "鎖車":set_command("LOCK","menu-vehicle-lock"),
-    "解鎖":set_command("UNLOCK","menu-vehicle-unlock"),
-    "前行李廂":set_command("FRUNK","menu-vehicle-frunk"),
-    "開啟後車廂":set_command("REAR","menu-vehicle-rear"),
-    "車窗通風":set_command("VENT","menu-vehicle-vent"),
-    "關閉車窗":set_command("WINDOW_CLOSE","menu-vehicle-close-window"),
-},"vehicle-menu")
-
-find_menu=menu("找車",["Apple 地圖找車","閃燈尋車","鳴喇叭"],{
+find_menu=menu("停車 / 找車",["Apple 地圖找車","Tesla 閃燈","Tesla 鳴喇叭"],{
     "Apple 地圖找車":[*find_parked_car("menu-find-parked-car"),exit_shortcut()],
-    "閃燈尋車":set_command("FLASH","menu-flash-find"),
-    "鳴喇叭":set_command("HONK","menu-honk-find"),
+    "Tesla 閃燈":set_command("FLASH","menu-flash-find"),
+    "Tesla 鳴喇叭":set_command("HONK","menu-honk-find"),
 },"find-menu")
 
 nav_menu=menu("導航",["Apple 地圖","Google Maps","Waze"],{
@@ -398,24 +342,28 @@ nav_menu=menu("導航",["Apple 地圖","Google Maps","Waze"],{
     "Waze":navigate_to("Waze","menu-nav-waze"),
 },"nav-menu")
 
-more_menu=menu("更多功能",["神盾","Tesla App","高速公路1968","哨兵模式"],{
-    "神盾":[app("tw.com.ainvest.outpack","menu-shield"),exit_shortcut()],
-    "Tesla App":[app(BUNDLE,"menu-tesla-app"),exit_shortcut()],
+quick_nav_menu=menu("快速出發｜選擇導航",["Apple 地圖","Google Maps","Waze"],{
+    "Apple 地圖":navigate_to("Maps","quick-nav-apple"),
+    "Google Maps":navigate_to("Google Maps","quick-nav-google"),
+    "Waze":navigate_to("Waze","quick-nav-waze"),
+},"quick-nav-menu")
+
+driving_tools_menu=menu("行車工具",["神盾測速照相","高速公路1968","Tesla App"],{
+    "神盾測速照相":[app("tw.com.ainvest.outpack","menu-shield"),exit_shortcut()],
     "高速公路1968":[app("tw.gov.freeway1968Ver2.Freeway1968HD","menu-1968"),exit_shortcut()],
-    "哨兵模式":set_command("SENTRY","menu-sentry"),
-},"more-menu")
+    "Tesla App":[app(BUNDLE,"menu-tesla-app-tools"),exit_shortcut()],
+},"driving-tools-menu")
 
 main_items=[
-    "準備出發","空調","車輛控制","充電","找車","導航","更多"
+    "快速出發","導航","找充電站","停車 / 找車","行車工具","Tesla App"
 ]
 main_branches={
-    "準備出發":set_prepare("menu-prepare"),
-    "空調":climate_menu,
-    "車輛控制":vehicle_menu,
-    "充電":charge_menu,
-    "找車":find_menu,
+    "快速出發":set_command("QUICK_START","menu-quick-start"),
     "導航":nav_menu,
-    "更多":more_menu,
+    "找充電站":charge_station_menu,
+    "停車 / 找車":find_menu,
+    "行車工具":driving_tools_menu,
+    "Tesla App":[app(BUNDLE,"menu-tesla-app"),exit_shortcut()],
 }
 manual_menu=menu("特斯拉助手｜請選功能",main_items,main_branches,"main-menu")
 
@@ -428,15 +376,15 @@ auto_start=[
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Tesla Driver v1.2｜特斯拉助手\n- Tesla / Oil Driver 維持兩個獨立捷徑\n- 點開捷徑直接顯示 7 個主要功能，不需要背口令\n- 導航使用 Apple 原生 Open Directions，直接帶入每次輸入的目的地；不保存預設地址\n- Siri 呼叫「特斯拉助手」時使用同一套選單\n- 解鎖、前行李廂、後車廂改用按鈕再次確認\n- 公開版不包含 donor VIN、車名、圖片或私人檔案引用\n- vehicle-backed Tesla AppIntent 仍使用原生安裝綁定；未設定時保留 Ask Each Time 安全 fallback\n- Tesla 藍牙自動化只使用 Connect；不偽造 Bluetooth Disconnect\n- 找我的車使用 Apple Maps 系統停車位置；閃燈與鳴喇叭使用 donor-backed Tesla AppIntent\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla HVAC 直接使用攝氏溫度數值，未進行任何單位換算"
+    "WFCommentActionText":"CarKit TW Tesla v1.3｜特斯拉助手\n- 定位改為補足 Tesla 原廠，而不是複製 Tesla App 車控\n- 主畫面聚焦：快速出發、導航、找充電站、停車找車、台灣行車工具\n- 快速出發只保留一個有整合價值的 Tesla 原生動作：預先調節，完成後接續選擇導航\n- 一般空調、解鎖、行李廂、車窗、哨兵、充電上限等交回 Tesla 原廠 App / 車內語音\n- 公開版只需要 1 次 vehicle 安裝綁定，不再要求重複選車 12 次\n- 找車保留 Apple Maps 停車位置，以及 donor-backed Tesla 閃燈 / 鳴喇叭\n- 導航每次詢問目的地，不保存住家、公司或任何預設地址\n- 公開版不包含 donor VIN、車名、圖片、Token、Fleet API 或私人檔案引用"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
-    "WFCommentActionText":"Shortcuts generated by Shortcuts Playground. May contain mistakes. Always check the shortcut's actions first.\n\nThis shortcut was created via the following user prompt:\n\n> CarKit TW Tesla Driver：Tesla 原生 AppIntent、Siri 短口令、安全確認、多車安裝綁定與台灣車用工具。"
+    "WFCommentActionText":"Shortcuts generated by Shortcuts Playground. May contain mistakes. Always check the shortcut's actions first.\n\nThis shortcut was created via the following user prompt:\n\n> CarKit TW Tesla：用 Apple 捷徑把台灣駕駛流程串起來，Tesla 原廠負責車控，CarKit 負責出發、導航、充電站、找車與行車工具。"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("vehicle-status"),
-    "WFCommentActionText":"Tesla 選車策略：\n- 不使用手填車名、VIN 或 donor 車輛資料。\n- 每個需要 vehicle 的唯一 Tesla AppIntent 建立 Parameter Import Question。\n- 使用者安裝時應對所有問題選同一台 Tesla；多車帳號不假設自動繼承。\n- 若 Import Question 未完成，action 仍是 Ask Each Time，不會自動猜車。"
+    "WFCommentActionText":"Tesla 選車策略：\n- 只有「快速出發」的預先調節需要 vehicle。\n- 安裝時只建立 1 個 Parameter Import Question。\n- 不使用手填車名、VIN 或 donor 車輛資料。\n- 若匯入時未完成選車，該 Tesla action 仍保留 Ask Each Time，不會自動猜車。"
   })
 ]
 
@@ -444,43 +392,20 @@ actions=[
 
 # Always initialize canonical command to empty text.
 actions += set_command("NONE","command-init")
-actions += set_variable("PrepareMode","NO","prepare-init")
 
 # Main interactive entry: one tap / Siri invocation goes straight to the menu.
 actions += manual_menu
 
-# ---- one canonical Tesla AppIntent per actual function ----
+# ---- minimal Tesla AppIntent surface: only workflow value that Tesla App alone does not provide ----
 cmd=cond_named_var("Command")
-pre_start_flow=[
-    pre_start_action("canonical-pre-start"),
-    *if_exact(
-        cond_named_var("PrepareMode"),
-        "YES",
-        [app("tw.com.ainvest.outpack","canonical-pre-start-shield")],
-        "canonical-pre-start-prepare"
-    ),
+quick_start_flow=[
+    pre_start_action("canonical-quick-start-precondition"),
+    *quick_nav_menu,
     exit_shortcut()
 ]
-actions += if_exact(cmd,"PRE_START",pre_start_flow,"run-pre-start")
-actions += if_exact(cmd,"PRE_STOP",[pre_stop_action("canonical-pre-stop"),exit_shortcut()],"run-pre-stop")
-actions += if_exact(cmd,"TEMP",[temp_action("canonical-temp"),exit_shortcut()],"run-temp")
-actions += if_exact(cmd,"LOCK",[lock_action("canonical-lock"),exit_shortcut()],"run-lock")
-actions += if_exact(cmd,"UNLOCK",confirm_then("確定要解鎖 Tesla？",unlock_action,"canonical-unlock"),"run-unlock")
-actions += if_exact(cmd,"FRUNK",confirm_then("確定要開啟前行李廂？",frunk_action,"canonical-frunk"),"run-frunk")
-actions += if_exact(cmd,"REAR",confirm_then("確定要開啟後車廂？",rear_action,"canonical-rear"),"run-rear")
-actions += if_exact(cmd,"CHARGE_80",[charge_limit_action(80,"canonical-charge80"),exit_shortcut()],"run-charge80")
-actions += if_exact(cmd,"CHARGE_90",[charge_limit_action(90,"canonical-charge90"),exit_shortcut()],"run-charge90")
-actions += if_exact(cmd,"CHARGE_PORT_OPEN",[open_charge_port_action("canonical-charge-port-open"),exit_shortcut()],"run-charge-port-open")
-actions += if_exact(cmd,"CHARGE_PORT_CLOSE",[close_charge_port_action("canonical-charge-port-close"),exit_shortcut()],"run-charge-port-close")
+actions += if_exact(cmd,"QUICK_START",quick_start_flow,"run-quick-start")
 actions += if_exact(cmd,"FLASH",[flash_action("canonical-flash"),exit_shortcut()],"run-flash")
 actions += if_exact(cmd,"HONK",[honk_action("canonical-honk"),exit_shortcut()],"run-honk")
-actions += if_exact(cmd,"DEFROST_ON",[defrost_action("canonical-defrost-on"),exit_shortcut()],"run-defrost-on")
-actions += if_exact(cmd,"DEFROST_OFF",[defrost_stop_action("canonical-defrost-off"),exit_shortcut()],"run-defrost-off")
-actions += if_exact(cmd,"SEAT_HIGH",[seat_heater_high_action("canonical-seat-high"),exit_shortcut()],"run-seat-high")
-actions += if_exact(cmd,"SEAT_OFF",[seat_heater_off_action("canonical-seat-off"),exit_shortcut()],"run-seat-off")
-actions += if_exact(cmd,"VENT",[vent_action("canonical-vent"),exit_shortcut()],"run-vent")
-actions += if_exact(cmd,"WINDOW_CLOSE",[close_window_action("canonical-window-close"),exit_shortcut()],"run-window-close")
-actions += if_exact(cmd,"SENTRY",[sentry_action("canonical-sentry"),exit_shortcut()],"run-sentry")
 
 actions.append(exit_shortcut())
 
