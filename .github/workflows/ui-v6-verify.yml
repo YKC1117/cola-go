@@ -1,0 +1,42 @@
+name: Verify COLA GO UI V6
+on:
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "index.html"
+      - "assets/**"
+      - "sw.js"
+      - "scripts/verify_ui_v6.cjs"
+      - ".github/workflows/ui-v6-verify.yml"
+permissions:
+  contents: read
+jobs:
+  ui-v6:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+      - name: Syntax checks
+        run: |
+          node --check assets/app.js
+          node --check sw.js
+          node --check scripts/verify_ui_v6.cjs
+          git diff --check origin/main...HEAD
+      - name: V6 browser verification
+        run: node scripts/verify_ui_v6.cjs
+      - name: Upload V6 verification screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cola-go-v6-verification-screenshots
+          path: docs/ui-v6/screenshots
+          if-no-files-found: error
+          retention-days: 7
