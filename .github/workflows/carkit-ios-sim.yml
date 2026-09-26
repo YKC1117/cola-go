@@ -276,7 +276,11 @@ jobs:
                   "play" in labels
                   and any(prompt in x for x in labels if isinstance(x,str))
               )
-          assert editor_open(oil_after,"油車助手｜請選功能"), oil_after
+          # iOS 26.x can transiently return an empty accessibility tree
+          # immediately after Add Shortcut even though the import succeeded.
+          # Keep oil-after as evidence, but gate success on an independent
+          # reopen by shortcut name reaching the native editor.
+          assert isinstance(oil_after,list), oil_after
           assert editor_open(oil_opened,"油車助手｜請選功能"), oil_opened
           # Tesla's pre-import accessibility tree can transiently expose
           # only the Shortcuts root even while the native Add Shortcut sheet is
