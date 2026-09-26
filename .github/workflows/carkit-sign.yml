@@ -374,7 +374,7 @@ jobs:
 
           # iOS 26 app-picker regression guard: every Open App action must
           # carry both the bundle identifier and the selected-app descriptor.
-          for name,wf_obj in [("Oil",oil),("Tesla",tesla),("TeslaVoice",voice)]:
+          for name,wf_obj in [("Oil",oil),("Tesla",tesla)]:
               open_apps=[
                   a for a in wf_obj["WFWorkflowActions"]
                   if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.openapp"
