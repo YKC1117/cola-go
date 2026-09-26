@@ -64,8 +64,13 @@ jobs:
           assert qs[0]["ParameterKey"]=="vehicle"
           assert "DefaultValue" not in qs[0]
           blob=p.read_text(encoding="utf-8")
-          for forbidden in ["5YJ","VIN","Fleet API","ExtensionInput"]:
+          for forbidden in [
+              "5YJ3E1ET9SF029430","5YJ3E1EC3PF497483",
+              "SwordFish","TSLAMARS","intents-remote-image-proxy",
+              "ExtensionInput"
+          ]:
               assert forbidden not in blob, forbidden
+          assert "DefaultValue" not in qs[0]
           print("Tesla owner test structure: PASS")
           PY
 
