@@ -213,7 +213,7 @@ def voice_confirm(prompt,action_factory,seed):
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header"),
-    "WFCommentActionText":"CarKit TW｜特斯拉語音控制 v1.4\n- 給人在車外時用 iPhone / AirPods / Apple Watch 的 Siri 操作\n- 對 Siri 說「特斯拉語音控制」，再回答要做的功能\n- 支援空調、溫度、門鎖、前後行李廂、車窗、充電、哨兵、閃燈與鳴喇叭\n- 解鎖、前行李廂、後車廂一定會再問一次確認\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla 溫度控制直接使用攝氏數值，不進行單位換算"
+    "WFCommentActionText":"CarKit TW｜特斯拉語音控制 v1.4\n- 給人在車外時用 iPhone / AirPods 的 Siri 操作\n- 對 Siri 說「特斯拉語音控制」，再回答要做的功能\n- 支援空調、溫度、門鎖、前後行李廂、車窗、充電、哨兵、閃燈與鳴喇叭\n- 解鎖、前行李廂、後車廂一定會再問一次確認\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla 溫度控制直接使用攝氏數值，不進行單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("provenance"),
@@ -312,7 +312,7 @@ wf={
  "WFWorkflowClientVersion":"3400.0",
  "WFWorkflowMinimumClientVersion":900,
  "WFWorkflowMinimumClientVersionString":"900",
- "WFWorkflowTypes":["NCWidget","WatchKit"],
+ "WFWorkflowTypes":["NCWidget"],
  "WFWorkflowOutputContentItemClasses":[],
  "WFWorkflowName":"特斯拉語音控制",
  "WFWorkflowIcon":{"WFWorkflowIconGlyphNumber":61447,"WFWorkflowIconStartColor":4274264319},
