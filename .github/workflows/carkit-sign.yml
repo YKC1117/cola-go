@@ -261,7 +261,11 @@ jobs:
               ident=a.get("WFWorkflowActionIdentifier","")
               p=a.get("WFWorkflowActionParameters",{})
               if ident.endswith(".RearTrunkIntent"):
-                  assert p.get("rearTrunkAction")==ask
+                  # Public 2025 native Tesla donors prove both "open" and "close".
+                  # CarKit intentionally keeps one canonical rear-trunk action
+                  # using "open" so vehicle import questions do not increase.
+                  assert p.get("rearTrunkAction")=="open"
+                  assert p.get("vehicle")==ask
               if ident.endswith(".DefrostIntent"):
                   assert p.get("defrostAction") in {"enable","disable"}
               if ident.endswith(".SentryModeIntent"):
