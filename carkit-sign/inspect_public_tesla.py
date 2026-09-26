@@ -12,6 +12,15 @@ DONORS={
     "21f9b131bb4646bfbdad345895738062":"tff-winter-mode-stop",
     "0d55771306e748c683687fc9024a5d9a":"tff-stop-charge-open-frunk",
     "c6c3662778294cb6a5a948114faca6df":"tff-charge-port-open-unlock",
+    # Current public owner-menu donor already proved HonkIntent and
+    # ChargePortIntent(close); include it here so the broader TFF inspection
+    # and the focused donor probe share one evidence set.
+    "e6261c11a8964d68b58406b79772f917":"owner-menu-honk-charge-port",
+    # Keep the public start/stop candidates in the broad inspector too. If
+    # they are wrappers rather than native Tesla AppIntents, that absence is
+    # useful evidence and must not be promoted into generated shortcuts.
+    "43a879a90e344d258c54535e3b6506d6":"candidate-start-charging",
+    "da72905a7a404d2cb69bb5b13424be24":"candidate-stop-charging",
 }
 OUT=Path("carkit-sign/inspect")
 OUT.mkdir(parents=True,exist_ok=True)
@@ -59,6 +68,9 @@ for sid,label in DONORS.items():
         "action_count":len(actions),
         "import_questions":imports,
         "tesla_actions":tesla,
+        "all_action_identifiers":[
+            row["identifier"] for row in actions
+        ],
     }
     print("\nDONOR",sid,label,"NAME",name,"ACTIONS",len(actions),"TESLA",len(tesla))
     for row in tesla:
