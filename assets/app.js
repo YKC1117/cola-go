@@ -454,7 +454,7 @@ function renderParking(){
   if(city==="all"){
     $("#parkingLiveTime").textContent="全台 22 縣市";
     $("#parkingScopeStatus").textContent="22 縣市皆可搜尋與導航";
-    root.innerHTML='<div class="parking-national-intro"><b>全台停車快速入口</b><p>不用等待外部 API；直接選縣市或使用 Google Maps／Apple 地圖找附近停車。臺南另提供市府即時剩餘車位。</p><div class="item-actions"><button class="go" data-national-map="google">Google Maps 找附近</button><button data-national-map="apple">Apple 地圖找附近</button></div></div>';
+    root.innerHTML='<div class="parking-national-intro"><b>全台停車快速入口</b><p>選擇縣市後，可使用 Google Maps／Apple 地圖快速尋找附近停車場；有官方即時資料時會同步顯示。</p><div class="item-actions"><button class="go" data-national-map="google">Google Maps 找附近</button><button data-national-map="apple">Apple 地圖找附近</button></div></div>';
   }else if(city==="Tainan"){
     const rows=parkingSelectedRows().filter(x=>!query||[x.name,x.town,x.address].join(" ").toLowerCase().includes(query)).sort((a,b)=>(b.available??-1)-(a.available??-1));
     $("#parkingLiveTime").textContent=state.parkingLive?.status==="live"?(state.parkingLive.updatedAt||"官方即時"):"官方即時暫不可用";
@@ -463,11 +463,11 @@ function renderParking(){
   }else if(state.parkingRemote.status==="loading"&&state.parkingRemote.city===city){
     $("#parkingLiveTime").textContent="讀取官方資料中";
     $("#parkingScopeStatus").textContent="正在讀取 "+cityName+" 官方停車資料";
-    root.innerHTML='<div class="empty"><b>正在讀取 '+esc(cityName)+' 停車資料</b><p>若 TDX 訪客服務暫時無法使用，會保留地圖搜尋，不會顯示假資料。</p></div>';
+    root.innerHTML='<div class="empty"><b>正在讀取 '+esc(cityName)+' 停車資料</b><p>官方停車資料暫時無法取得時，仍可使用地圖搜尋附近停車場。</p></div>';
   }else if(state.parkingRemote.status==="ready"&&state.parkingRemote.city===city){
     const rows=parkingSelectedRows().filter(x=>!query||[x.name,x.town,x.address,x.fare].join(" ").toLowerCase().includes(query));
     $("#parkingLiveTime").textContent=state.parkingRemote.updatedAt||"官方資料";
-    $("#parkingScopeStatus").textContent="TDX 官方停車場資料 · "+state.parkingRemote.items.length+" 筆";
+    $("#parkingScopeStatus").textContent="官方停車場資料 · "+state.parkingRemote.items.length+" 筆";
     root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>找不到符合的停車場</b><p>換個停車場名稱、行政區或地址試試。</p></div>';
   }else{
     $("#parkingLiveTime").textContent="地圖搜尋";
@@ -668,7 +668,7 @@ function renderCCTV(){
   }
   if(state.cctv.status!=="ready"){
     status.textContent="官方清單暫時無法讀取";
-    root.innerHTML='<div class="empty"><b>目前無法載入站內攝影機清單</b><p>沒有顯示假影像；請使用下方官方入口直接查看。</p></div>';
+    root.innerHTML='<div class="empty"><b>目前無法載入站內攝影機清單</b><p>攝影機資料暫時無法取得，請使用下方官方入口查看。</p></div>';
     return;
   }
 
@@ -928,9 +928,9 @@ function renderMarket(){
     }else{
       usedRoot.innerHTML=
         '<div class="market-empty">'+
-          '<b>目前 0 筆公開車輛</b>'+
+          '<b>目前尚無公開車輛</b>'+
           '<p>不放假車、不複製別人的庫存。第一批刊登開放中，車主與車商都可免費送件。</p>'+
-          '<button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=sell-vehicle.yml">成為第一批刊登</button>'+
+          '<button class="primary" data-url="https://lin.ee/Tu89Qyk">成為第一批刊登</button>'+
         '</div>';
     }
   }
@@ -944,9 +944,9 @@ function renderMarket(){
     }else{
       accessoryRoot.innerHTML=
         '<div class="market-empty">'+
-          '<b>目前 0 筆二手配件</b>'+
+          '<b>目前尚無二手配件</b>'+
           '<p>免費刊登已開放，不收刊登費、不收成交佣金。</p>'+
-          '<button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=accessory.yml">刊登第一件配件</button>'+
+          '<button class="primary" data-url="https://lin.ee/Tu89Qyk">刊登第一件配件</button>'+
         '</div>';
     }
   }
