@@ -57,7 +57,13 @@ jobs:
 
           def scrub(v, key=""):
               lk=key.lower()
-              if any(x in lk for x in ("vehicle","vin","image","photo","account","token")):
+              # Redact donor-specific/private payloads, but keep harmless
+              # functional enum keys such as vehicleControlType and
+              # vehicleModeAction so they can serve as donor evidence.
+              if (
+                  lk in {"vehicle","vin","vehicleid","vehicle_id","account","token"}
+                  or any(x in lk for x in ("image","photo"))
+              ):
                   return "<REDACTED>"
               if isinstance(v, dict):
                   return {k:scrub(x,k) for k,x in v.items()}
