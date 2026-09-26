@@ -1,0 +1,115 @@
+import plistlib, uuid
+from pathlib import Path
+
+OUT=Path("carkit-test/tesla-owner/generated")
+OUT.mkdir(parents=True, exist_ok=True)
+
+TEAM="PS9EBAM2PU"
+BUNDLE="com.teslamotors.TeslaApp"
+
+def uid(seed):
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, "CarKitTW/TeslaOwnerTest/v1/"+seed)).upper()
+
+def act(identifier, params=None):
+    return {
+        "WFWorkflowActionIdentifier": identifier,
+        "WFWorkflowActionParameters": params or {},
+    }
+
+def ask_token():
+    return {
+        "Value":{"Type":"Ask"},
+        "WFSerializationType":"WFTextTokenAttachment",
+    }
+
+def menu(prompt, items, branches, seed):
+    group=uid(seed+"-group")
+    out=[
+        act("is.workflow.actions.choosefrommenu",{
+            "UUID":uid(seed+"-start"),
+            "GroupingIdentifier":group,
+            "WFControlFlowMode":0,
+            "WFMenuPrompt":prompt,
+            "WFMenuItems":items,
+        })
+    ]
+    for i,item in enumerate(items):
+        out.append(act("is.workflow.actions.choosefrommenu",{
+            "UUID":uid(f"{seed}-case-{i}"),
+            "GroupingIdentifier":group,
+            "WFControlFlowMode":1,
+            "WFMenuItemTitle":item,
+        }))
+        out.extend(branches[item])
+    out.append(act("is.workflow.actions.choosefrommenu",{
+        "UUID":uid(seed+"-end"),
+        "GroupingIdentifier":group,
+        "WFControlFlowMode":2,
+    }))
+    return out
+
+def exit_shortcut():
+    return act("is.workflow.actions.exit",{})
+
+def lock_action():
+    return act(f"{BUNDLE}.LockUnlockIntent",{
+        "UUID":uid("tesla-lock"),
+        "AppIntentDescriptor":{
+            "TeamIdentifier":TEAM,
+            "BundleIdentifier":BUNDLE,
+            "Name":"Tesla",
+            "AppIntentIdentifier":"LockUnlockIntent",
+        },
+        "vehicle":ask_token(),
+        "vehicleControlType":"lock",
+    })
+
+lock=lock_action()
+actions=[
+    act("is.workflow.actions.comment",{
+        "UUID":uid("header"),
+        "WFCommentActionText":"CarKit TW｜Tesla 實車驗證工具\n- 只測試 Tesla 原生 LockUnlockIntent 的 vehicle 綁定與鎖車\n- 不使用 Tesla Token / Fleet API\n- 不包含 VIN、車名或 donor 車輛資料\n- 僅供願意協助 CarKit TW 實車驗證的 Tesla 車主使用"
+    }),
+    *menu("Tesla 實車測試｜確定要測試鎖車嗎？",["確認鎖車","取消"],{
+        "確認鎖車":[
+            lock,
+            act("is.workflow.actions.notification",{
+                "UUID":uid("notify"),
+                "WFNotificationActionTitle":"Tesla 測試",
+                "WFNotificationActionBody":"鎖車指令已送出，請確認車輛是否真的上鎖。"
+            }),
+            exit_shortcut(),
+        ],
+        "取消":[exit_shortcut()],
+    },"confirm"),
+    exit_shortcut(),
+]
+
+vehicle_index=next(
+    i for i,a in enumerate(actions)
+    if a.get("WFWorkflowActionIdentifier")==f"{BUNDLE}.LockUnlockIntent"
+)
+
+wf={
+    "WFWorkflowClientVersion":"3400.0",
+    "WFWorkflowMinimumClientVersion":900,
+    "WFWorkflowMinimumClientVersionString":"900",
+    "WFWorkflowTypes":[],
+    "WFWorkflowOutputContentItemClasses":[],
+    "WFWorkflowName":"Tesla測試",
+    "WFWorkflowIcon":{
+        "WFWorkflowIconGlyphNumber":61447,
+        "WFWorkflowIconStartColor":4274264319,
+    },
+    "WFWorkflowActions":actions,
+    "WFWorkflowImportQuestions":[{
+        "Category":"Parameter",
+        "ParameterKey":"vehicle",
+        "ActionIndex":vehicle_index,
+        "Text":"請選擇要測試的 Tesla（只會測試鎖車）",
+    }],
+}
+
+p=OUT/"Tesla測試.shortcut.xml"
+p.write_bytes(plistlib.dumps(wf,fmt=plistlib.FMT_XML,sort_keys=False))
+print(p,"actions",len(actions),"vehicle_question_index",vehicle_index)

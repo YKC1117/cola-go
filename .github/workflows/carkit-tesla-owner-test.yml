@@ -1,0 +1,107 @@
+name: CarKit Tesla Owner Test
+
+concurrency:
+  group: carkit-tesla-owner-test-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - temp/carkit-shortcut-sign
+    paths:
+      - "carkit-test/tesla-owner/**"
+      - ".github/workflows/carkit-tesla-owner-test.yml"
+  workflow_dispatch:
+
+jobs:
+  build-sign:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Tesla owner test
+        run: |
+          set -euxo pipefail
+          rm -rf carkit-test/tesla-owner/generated carkit-test/tesla-owner/out
+          python3 carkit-test/tesla-owner/build.py
+          plutil -lint "carkit-test/tesla-owner/generated/Tesla測試.shortcut.xml"
+
+      - name: Validate Tesla owner test
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 https://github.com/viticci/shortcuts-playground-plugin.git /tmp/shortcuts-playground
+          VALIDATOR=/tmp/shortcuts-playground/codex/skills/shortcuts-playground/scripts/validate_shortcut.py
+          python3 "$VALIDATOR" "carkit-test/tesla-owner/generated/Tesla測試.shortcut.xml" --target-platform ios --target-macos 27
+          python3 - <<'PY'
+          import plistlib
+          from pathlib import Path
+          p=Path("carkit-test/tesla-owner/generated/Tesla測試.shortcut.xml")
+          wf=plistlib.loads(p.read_bytes())
+          actions=wf["WFWorkflowActions"]
+          tesla=[
+              (i,a) for i,a in enumerate(actions)
+              if a.get("WFWorkflowActionIdentifier","").startswith("com.teslamotors.TeslaApp.")
+          ]
+          assert len(tesla)==1, tesla
+          i,a=tesla[0]
+          assert a["WFWorkflowActionIdentifier"]=="com.teslamotors.TeslaApp.LockUnlockIntent"
+          params=a["WFWorkflowActionParameters"]
+          assert params["vehicleControlType"]=="lock"
+          assert params["vehicle"]=={
+              "Value":{"Type":"Ask"},
+              "WFSerializationType":"WFTextTokenAttachment",
+          }
+          desc=params["AppIntentDescriptor"]
+          assert desc=={
+              "TeamIdentifier":"PS9EBAM2PU",
+              "BundleIdentifier":"com.teslamotors.TeslaApp",
+              "Name":"Tesla",
+              "AppIntentIdentifier":"LockUnlockIntent",
+          }
+          qs=wf.get("WFWorkflowImportQuestions",[])
+          assert len(qs)==1, qs
+          assert qs[0]["ActionIndex"]==i, (qs[0],i)
+          assert qs[0]["ParameterKey"]=="vehicle"
+          assert "DefaultValue" not in qs[0]
+          blob=p.read_text(encoding="utf-8")
+          for forbidden in ["5YJ","VIN","Fleet API","ExtensionInput"]:
+              assert forbidden not in blob, forbidden
+          print("Tesla owner test structure: PASS")
+          PY
+
+      - name: Sign Tesla owner test
+        run: |
+          set -euxo pipefail
+          mkdir -p carkit-test/tesla-owner/out
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          src=Path("carkit-test/tesla-owner/generated/Tesla測試.shortcut.xml")
+          payload=json.dumps({
+              "shortcutName":"Tesla測試",
+              "shortcut":src.read_text(encoding="utf-8"),
+          }).encode()
+          req=Request(
+              "https://hubsign.routinehub.services/sign",
+              data=payload,
+              headers={"Content-Type":"application/json","User-Agent":"cherri/1.3.0"},
+              method="POST",
+          )
+          with urlopen(req,timeout=60) as resp:
+              signed=resp.read()
+          if signed[:4] != b"AEA1":
+              raise SystemExit(f"invalid signed header: {signed[:16]!r}")
+          out=Path("carkit-test/tesla-owner/out/Tesla測試.shortcut")
+          out.write_bytes(signed)
+          print(out,len(signed),signed[:4])
+          PY
+          test "$(xxd -p -l 4 "carkit-test/tesla-owner/out/Tesla測試.shortcut")" = "41454131"
+          shasum -a 256 "carkit-test/tesla-owner/out/Tesla測試.shortcut"
+
+      - name: Upload Tesla owner test
+        uses: actions/upload-artifact@v4
+        with:
+          name: carkit-tesla-owner-test
+          path: carkit-test/tesla-owner/out/Tesla測試.shortcut
+          if-no-files-found: error
