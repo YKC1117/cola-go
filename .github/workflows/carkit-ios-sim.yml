@@ -338,7 +338,7 @@ jobs:
                       walk(x)
           walk(data)
           if kind=="tesla":
-              required_any=["特斯拉助手","準備出發","空調 / 車室","充電"]
+              required_any=["特斯拉助手","快速出發","找充電站","停車 / 找車"]
           else:
               required_any=["油車助手","神盾","導航","路況"]
           if not any(any(token in x for token in required_any) for x in labels):
@@ -466,7 +466,7 @@ jobs:
           run_idb idb ui describe-all --key AXLabel --key AXValue --key AXUniqueId --key frame --udid "$UDID" > /tmp/carkit-probe/tesla-runtime-prompt.json || true
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-runtime-prompt.png || true
           xcrun simctl spawn "$UDID" log show --last 4m --style compact --predicate 'process == "Shortcuts" OR subsystem CONTAINS[c] "workflow"' > /tmp/carkit-probe/shortcuts.log || true
-          if grep -Eq '特斯拉助手|準備出發|空調 / 車室|充電' /tmp/carkit-probe/tesla-runtime-prompt.json 2>/dev/null; then
+          if grep -Eq '特斯拉助手|快速出發|找充電站|停車 / 找車' /tmp/carkit-probe/tesla-runtime-prompt.json 2>/dev/null; then
             echo "TESLA_ENTRY_MENU_OBSERVED=1"
           else
             echo "TESLA_ENTRY_MENU_OBSERVED=0"
