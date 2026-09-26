@@ -472,7 +472,7 @@ function renderParking(){
   }else{
     $("#parkingLiveTime").textContent="地圖搜尋";
     $("#parkingScopeStatus").textContent=cityName+" 可直接搜尋與導航";
-    root.innerHTML='<div class="market-empty"><b>'+esc(cityName)+' 停車快速搜尋</b><p>目前不要求註冊 TDX 帳號，也不讓你等失敗的 API；直接開地圖搜尋 '+esc(cityName)+' 停車場。</p><div class="item-actions"><button class="go" data-city-map="google">Google Maps</button><button data-city-map="apple">Apple 地圖</button></div></div>';
+    root.innerHTML='<div class="market-empty"><b>'+esc(cityName)+' 停車快速搜尋</b><p>可直接開啟地圖搜尋 '+esc(cityName)+' 停車場並開始導航。</p><div class="item-actions"><button class="go" data-city-map="google">Google Maps</button><button data-city-map="apple">Apple 地圖</button></div></div>';
   }
 
   $$("[data-parking-map]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.parkingMap,"_blank","noopener"));
@@ -870,7 +870,7 @@ function renderTraffic(){
       '<div><b>'+esc(x.name)+'</b><small>'+esc(x.direction||"")+(x.level?" · "+esc(x.level):"")+'</small></div>'+
       '<div class="metric '+metricClass(Number(x.speed))+'">'+Math.round(Number(x.speed))+'<em>km/h</em></div>'+
     '</article>'
-  ).join(""):'<div class="empty"><b>國 '+state.highway+' 自動同步目前沒有資料</b><p>不顯示假數字；可直接開高公局 1968 查看官方即時路況。</p></div>';
+  ).join(""):'<div class="empty"><b>國 '+state.highway+' 自動同步目前沒有資料</b><p>即時路況資料暫時無法取得，可直接開啟高公局 1968 查看。</p></div>';
 
   root.innerHTML=list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
@@ -961,8 +961,8 @@ function renderMarket(){
       serviceRoot.innerHTML=
         '<div class="market-empty">'+
           '<b>合作服務招募中</b>'+
-          '<p>先審核合作內容與對車主的實用性，再公開上架。</p>'+
-          '<button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=service.yml">申請合作服務</button>'+
+          '<p>汽車相關店家與服務歡迎加入 COLA GO 合作夥伴。</p>'+
+          '<button class="primary" data-url="https://lin.ee/Tu89Qyk">聯絡 COLA GO・洽談合作</button>'+
         '</div>';
     }
   }
@@ -1078,14 +1078,14 @@ function renderCommunity(){
     const rows=communities.filter(x=>state.communityFilter==="all"||x.category===state.communityFilter);
     root.innerHTML=rows.length?rows.map(x=>
       '<article class="community-card"><h3>'+esc(x.name)+'</h3><div class="badges"><span>'+esc(x.platform||"")+'</span><span>'+esc(x.region||"全台")+'</span></div><p>'+esc(x.description||"")+'</p><button class="external-btn" data-url="'+esc(x.url)+'">加入／查看<svg><use href="#i-external"/></svg></button></article>'
-    ).join(""):'<div class="market-empty"><b>目前 0 個通過審核的公開社群</b><p>不冒用別人的 LINE 群或社團。主理人可以免費登錄，審核後才公開。</p><button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=community.yml">登錄第一個社群</button></div>';
+    ).join(""):'<div class="market-empty"><b>目前 0 個通過審核的公開社群</b><p>歡迎車友社群加入 COLA GO，審核後即可公開讓更多車友找到。</p><button class="primary" data-url="https://lin.ee/Tu89Qyk">登錄第一個社群</button></div>';
   }
 
   const eventRoot=$("#eventList");
   if(eventRoot){
     eventRoot.innerHTML=events.length?events.map(x=>
       '<article class="community-card"><h3>'+esc(x.name)+'</h3><div class="badges"><span>'+esc(x.date||"")+'</span><span>'+esc(x.area||"")+'</span></div><p>'+esc(x.description||"")+'</p><button class="external-btn" data-url="'+esc(x.url)+'">活動詳情<svg><use href="#i-external"/></svg></button></article>'
-    ).join(""):'<div class="market-empty"><b>目前 0 個公開車主活動</b><p>車聚、露營、講座、交車活動都能免費提交；日期過期後不繼續冒充「近期活動」。</p><button class="primary" data-url="https://github.com/YKC1117/cola-go/issues/new?template=event.yml">提交第一個活動</button></div>';
+    ).join(""):'<div class="market-empty"><b>目前 0 個公開車主活動</b><p>歡迎提供車聚、露營、講座與其他車友活動資訊。</p><button class="primary" data-url="https://lin.ee/Tu89Qyk">提交第一個活動</button></div>';
   }
   bindExternal(document);
 }
