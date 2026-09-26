@@ -46,6 +46,10 @@ def ask_text(prompt,seed):
 def if_exact(input_ref,value,yes_actions,seed):
     g=uid(seed+"-group")
     return [
+      act("is.workflow.actions.comment",{
+        "UUID":uid(seed+"-comment"),
+        "WFCommentActionText":f"語音精確比對「{value}」\\n- 符合：執行對應 Tesla 功能\\n- 不符合：繼續比對下一個指令"
+      }),
       act("is.workflow.actions.conditional",{
         "UUID":uid(seed+"-start"),
         "GroupingIdentifier":g,
