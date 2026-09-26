@@ -219,6 +219,7 @@ function renderCharging(){
       '<div class="item-actions">'+
         '<button class="go" data-charge-google="'+query+'">Google</button>'+
         '<button data-charge-apple="'+query+'">Apple 地圖</button>'+
+        '<button data-charge-waze="'+query+'">Waze</button>'+
         '<button data-camera-road="'+esc(x.road)+'">CCTV</button>'+
       '</div>'+
     '</article>';
@@ -232,8 +233,9 @@ function renderCharging(){
     renderCharging();
   });
   $$("[data-charge-google]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.chargeGoogle,"_blank","noopener"));
-  $$("[data-charge-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?q="+b.dataset.chargeApple,"_blank","noopener"));
-  $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
+  $("[data-charge-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?q="+b.dataset.chargeApple,"_blank","noopener"));
+  $("[data-charge-waze]",root).forEach(b=>b.onclick=()=>window.open("https://www.waze.com/ul?q="+b.dataset.chargeWaze+"&navigate=yes","_blank","noopener"));
+  $("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
 }
 
 
@@ -454,7 +456,7 @@ function renderParking(){
   if(city==="all"){
     $("#parkingLiveTime").textContent="全台 22 縣市";
     $("#parkingScopeStatus").textContent="22 縣市皆可搜尋與導航";
-    root.innerHTML='<div class="parking-national-intro"><b>全台停車快速入口</b><p>選擇縣市後，可使用 Google Maps／Apple 地圖快速尋找附近停車場；有官方即時資料時會同步顯示。</p><div class="item-actions"><button class="go" data-national-map="google">Google Maps 找附近</button><button data-national-map="apple">Apple 地圖找附近</button></div></div>';
+    root.innerHTML='<div class="parking-national-intro"><b>全台停車快速入口</b><p>選擇縣市後，可直接使用地圖尋找附近停車場；有官方即時資料時會同步顯示。</p><div class="item-actions"><button class="go" data-national-map="google">Google Maps</button><button data-national-map="apple">Apple 地圖</button><button data-national-map="waze">Waze</button></div></div>';
   }else if(city==="Tainan"){
     const rows=parkingSelectedRows().filter(x=>!query||[x.name,x.town,x.address].join(" ").toLowerCase().includes(query)).sort((a,b)=>(b.available??-1)-(a.available??-1));
     $("#parkingLiveTime").textContent=state.parkingLive?.status==="live"?(state.parkingLive.updatedAt||"官方即時"):"官方即時暫不可用";
@@ -472,7 +474,7 @@ function renderParking(){
   }else{
     $("#parkingLiveTime").textContent="地圖搜尋";
     $("#parkingScopeStatus").textContent=cityName+" 可直接搜尋與導航";
-    root.innerHTML='<div class="market-empty"><b>'+esc(cityName)+' 停車快速搜尋</b><p>可直接開啟地圖搜尋 '+esc(cityName)+' 停車場並開始導航。</p><div class="item-actions"><button class="go" data-city-map="google">Google Maps</button><button data-city-map="apple">Apple 地圖</button></div></div>';
+    root.innerHTML='<div class="market-empty"><b>'+esc(cityName)+' 停車快速搜尋</b><p>可直接開啟地圖搜尋 '+esc(cityName)+' 停車場並開始導航。</p><div class="item-actions"><button class="go" data-city-map="google">Google Maps</button><button data-city-map="apple">Apple 地圖</button><button data-city-map="waze">Waze</button></div></div>';
   }
 
   $$("[data-parking-map]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.parkingMap,"_blank","noopener"));
@@ -483,7 +485,7 @@ function renderParking(){
 
 function openParkingMap(provider,query){
   const q=encodeURIComponent(query||"停車場");
-  const url=provider==="apple"?"https://maps.apple.com/?q="+q:"https://www.google.com/maps/search/?api=1&query="+q;
+  const url=provider==="apple"?"https://maps.apple.com/?q="+q:provider==="waze"?"https://www.waze.com/ul?q="+q+"&navigate=yes":"https://www.google.com/maps/search/?api=1&query="+q;
   window.open(url,"_blank","noopener");
 }
 
