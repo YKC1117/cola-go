@@ -1,5 +1,10 @@
 name: CarKit Navigation Helper Build
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "carkit-sign/build_navigation.py"
+      - ".github/workflows/carkit-navigation-helper.yml"
   push:
     branches: [feature/carkit-navigation-helper]
     paths:
