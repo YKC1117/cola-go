@@ -930,7 +930,7 @@ function renderMarket(){
         '<div class="market-empty">'+
           '<b>目前尚無公開車輛</b>'+
           '<p>車主與車商皆可申請刊登，經基本資料確認後公開。</p>'+
-          '<button class="primary" data-url="https://lin.ee/Tu89Qyk">成為第一批刊登</button>'+
+          '<button class="primary" data-url="https://lin.ee/Tu89Qyk">聯絡 COLA GO・申請刊登</button>'+
         '</div>';
     }
   }
@@ -1078,14 +1078,14 @@ function renderCommunity(){
     const rows=communities.filter(x=>state.communityFilter==="all"||x.category===state.communityFilter);
     root.innerHTML=rows.length?rows.map(x=>
       '<article class="community-card"><h3>'+esc(x.name)+'</h3><div class="badges"><span>'+esc(x.platform||"")+'</span><span>'+esc(x.region||"全台")+'</span></div><p>'+esc(x.description||"")+'</p><button class="external-btn" data-url="'+esc(x.url)+'">加入／查看<svg><use href="#i-external"/></svg></button></article>'
-    ).join(""):'<div class="market-empty"><b>目前 0 個通過審核的公開社群</b><p>歡迎車友社群加入 COLA GO，審核後即可公開讓更多車友找到。</p><button class="primary" data-url="https://lin.ee/Tu89Qyk">登錄第一個社群</button></div>';
+    ).join(""):'<div class="market-empty"><b>目前尚無公開社群</b><p>歡迎車友社群加入 COLA GO，審核後即可公開讓更多車友找到。</p><button class="primary" data-url="https://lin.ee/Tu89Qyk">聯絡 COLA GO・加入社群</button></div>';
   }
 
   const eventRoot=$("#eventList");
   if(eventRoot){
     eventRoot.innerHTML=events.length?events.map(x=>
       '<article class="community-card"><h3>'+esc(x.name)+'</h3><div class="badges"><span>'+esc(x.date||"")+'</span><span>'+esc(x.area||"")+'</span></div><p>'+esc(x.description||"")+'</p><button class="external-btn" data-url="'+esc(x.url)+'">活動詳情<svg><use href="#i-external"/></svg></button></article>'
-    ).join(""):'<div class="market-empty"><b>目前 0 個公開車主活動</b><p>歡迎提供車聚、露營、講座與其他車友活動資訊。</p><button class="primary" data-url="https://lin.ee/Tu89Qyk">提交第一個活動</button></div>';
+    ).join(""):'<div class="market-empty"><b>目前尚無公開車主活動</b><p>歡迎提供車聚、露營、講座與其他車友活動資訊。</p><button class="primary" data-url="https://lin.ee/Tu89Qyk">聯絡 COLA GO・提供活動</button></div>';
   }
   bindExternal(document);
 }
