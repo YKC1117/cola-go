@@ -531,7 +531,8 @@ actions=[
 
 # Always initialize canonical command to empty text.
 actions += set_command("NONE","command-init")
-actions += set_variable("PrepareMode","NO","prepare-init")\nactions += set_variable("VoiceMode","NO","voice-mode-init")
+actions += set_variable("PrepareMode","NO","prepare-init")
+actions += set_variable("VoiceMode","NO","voice-mode-init")
 
 # Main interactive entry: one tap / Siri invocation goes straight to the menu.
 actions += manual_menu
