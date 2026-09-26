@@ -25,6 +25,14 @@ jobs:
               "close_rear_trunk": "bf6e57155d1843b68609d0fcadda0b9a",
               "open_frunk": "2ad16b77df624310b7cb649cfb82ea06",
               "open_charge_port": "4f7686cd6b184861b92cd44deb96e8a0",
+              # These public links are probed only to determine whether they
+              # contain native Tesla AppIntents. API/token-based shortcuts are
+              # rejected by construction because only Tesla AppIntent actions
+              # are emitted below.
+              "candidate_honk": "8e23c21e0f6a4bdb981aa4f6f7dd099e",
+              "candidate_close_charge_port": "4f628891dd32422fb0e831e9afb1ba29",
+              "candidate_start_charging": "43a879a90e344d258c54535e3b6506d6",
+              "candidate_stop_charging": "da72905a7a404d2cb69bb5b13424be24",
           }
 
           def get_json(url):
