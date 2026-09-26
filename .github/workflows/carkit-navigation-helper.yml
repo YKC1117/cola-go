@@ -1,0 +1,50 @@
+name: CarKit Navigation Helper Build
+on:
+  push:
+    branches: [feature/carkit-navigation-helper]
+    paths:
+      - "carkit-sign/build_navigation.py"
+      - ".github/workflows/carkit-navigation-helper.yml"
+  workflow_dispatch:
+jobs:
+  build-sign:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and validate helper
+        run: |
+          set -euxo pipefail
+          rm -rf carkit-sign/generated carkit-sign/out
+          python3 carkit-sign/build_navigation.py
+          plutil -lint "carkit-sign/generated/CarKit 導航.shortcut.xml"
+          python3 - <<'PY'
+          import plistlib
+          from pathlib import Path
+          p=Path("carkit-sign/generated/CarKit 導航.shortcut.xml")
+          w=plistlib.loads(p.read_bytes())
+          assert w["WFWorkflowName"]=="CarKit 導航"
+          a=w["WFWorkflowActions"]
+          assert sum(x["WFWorkflowActionIdentifier"]=="is.workflow.actions.getdirections" for x in a)==3
+          blob=p.read_text()
+          assert "ExtensionInput" in blob
+          for private in ["東山","永康","台南","嘉義","住家","公司"]:
+              assert private not in blob
+          PY
+      - name: Sign helper
+        run: |
+          set -euxo pipefail
+          mkdir -p carkit-sign/out
+          python3 - <<'PY'
+          from pathlib import Path
+          from urllib import request
+          src=Path("carkit-sign/generated/CarKit 導航.shortcut.xml")
+          req=request.Request("https://hubsign.routinehub.services/sign",data=src.read_bytes(),method="POST",headers={"Content-Type":"application/octet-stream"})
+          with request.urlopen(req,timeout=60) as resp:
+              signed=resp.read()
+          assert signed[:4]==b"AEA1", signed[:16]
+          Path("carkit-sign/out/CarKit 導航.shortcut").write_bytes(signed)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: carkit-navigation-helper
+          path: carkit-sign/out/CarKit 導航.shortcut
