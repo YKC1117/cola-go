@@ -1,0 +1,22 @@
+name: Preview COLA GO V6
+on:
+  workflow_dispatch:
+  push:
+    branches: ["refactor/cola-ui-v6"]
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build preview artifact
+        run: |
+          mkdir -p preview
+          tar --exclude='.git' --exclude='preview' -cf - . | tar -xf - -C preview
+      - name: Upload V6 preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: cola-go-v6-preview
+          path: preview
+          retention-days: 7
