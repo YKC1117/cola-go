@@ -62,6 +62,7 @@ let browser;
       await page.locator(`.view.active[data-view=${view}]`).waitFor();
       await page.evaluate(()=>document.fonts.ready);
       check(`${view} ${width}px: no horizontal overflow`,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+      await page.locator('.view.active img').evaluateAll(async imgs=>{await Promise.all(imgs.map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});})));});
       check(`${view} ${width}px: images decoded`,await page.evaluate(()=>[...document.querySelectorAll('.view.active img')].every(x=>x.complete&&x.naturalWidth>0)));
       const nav=await page.locator('.bottom-nav').boundingBox();
       check(`${view} ${width}px: bottom nav fixed`,Math.abs(nav.y+nav.height-(width===1440?1000:844))<2);
