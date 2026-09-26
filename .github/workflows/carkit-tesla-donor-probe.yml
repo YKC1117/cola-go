@@ -33,6 +33,7 @@ jobs:
               "candidate_close_charge_port": "4f628891dd32422fb0e831e9afb1ba29",
               "candidate_start_charging": "43a879a90e344d258c54535e3b6506d6",
               "candidate_stop_charging": "da72905a7a404d2cb69bb5b13424be24",
+              "candidate_native_tesla_menu": "d54424f0770449909293833439d86b6c",
           }
 
           def get_json(url):
