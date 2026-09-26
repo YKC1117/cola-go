@@ -2,7 +2,7 @@
 
 Updated: 2026-09-26
 
-Latest Tesla candidate: v1.3 workflow-first (1 vehicle selection; Tesla App remains primary for ordinary vehicle controls).
+Latest Tesla candidate: v1.4 remote-control + workflow hybrid (clean main menu; full outside-the-car controls restored behind 車外遙控).
 
 Branch: `temp/carkit-shortcut-sign`
 
