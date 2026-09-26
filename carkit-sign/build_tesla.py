@@ -4,7 +4,7 @@ from pathlib import Path
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
 
-VERSION="1.4"
+VERSION="1.5"
 APP_NAMES={
  "tw.com.ainvest.outpack":"神盾測速照相",
  "com.teslamotors.TeslaApp":"Tesla",
@@ -312,6 +312,86 @@ def normalize_aliases(input_uuid,aliases,command,seed):
         )
     return out
 
+def normalize_temp_aliases(input_uuid,aliases,value,seed):
+    out=[]
+    for i,word in enumerate(aliases):
+        out += if_exact(
+            cond_action_output(input_uuid,"Provided Input"),
+            word,
+            set_temp_command(value,f"{seed}-set-{i}"),
+            f"{seed}-alias-{i}"
+        )
+    return out
+
+def voice_command_flow(seed):
+    ask,ask_uuid=ask_text("要控制 Tesla 什麼功能？",seed+"-ask")
+    out=[
+      *set_variable("VoiceMode","YES",seed+"-voice-mode"),
+      ask,
+    ]
+    specs=[
+      (["預冷","預熱","開始預冷","開始預熱","開冷氣"],"PRE_START","pre-start"),
+      (["停止預冷","停止預熱","關冷氣"],"PRE_STOP","pre-stop"),
+      (["除霜","開除霜"],"DEFROST_ON","defrost-on"),
+      (["停止除霜","關除霜"],"DEFROST_OFF","defrost-off"),
+      (["座椅加熱","駕駛座加熱"],"SEAT_HIGH","seat-high"),
+      (["關閉座椅加熱","關座椅加熱"],"SEAT_OFF","seat-off"),
+      (["鎖車","上鎖"],"LOCK","lock"),
+      (["解鎖"],"UNLOCK","unlock"),
+      (["前行李廂","開前行李廂"],"FRUNK","frunk"),
+      (["後車廂","開後車廂","後行李廂"],"REAR","rear"),
+      (["車窗通風","通風"],"VENT","vent"),
+      (["關閉車窗","關窗"],"WINDOW_CLOSE","window-close"),
+      (["開充電孔","打開充電孔"],"CHARGE_PORT_OPEN","charge-open"),
+      (["關充電孔","關閉充電孔"],"CHARGE_PORT_CLOSE","charge-close"),
+      (["充電80","充電 80","充電80%","充電上限80"],"CHARGE_80","charge80"),
+      (["充電90","充電 90","充電90%","充電上限90"],"CHARGE_90","charge90"),
+      (["哨兵","哨兵模式"],"SENTRY","sentry"),
+      (["閃燈"],"FLASH","flash"),
+      (["鳴喇叭","喇叭","按喇叭"],"HONK","honk"),
+    ]
+    for words,command,name in specs:
+        out += normalize_aliases(ask_uuid,words,command,f"{seed}-{name}")
+    out += normalize_temp_aliases(ask_uuid,["22度","22 度","22°C"],22,seed+"-temp22")
+    out += normalize_temp_aliases(ask_uuid,["23度","23 度","23°C"],23,seed+"-temp23")
+    out += normalize_temp_aliases(ask_uuid,["24度","24 度","24°C"],24,seed+"-temp24")
+    out += if_exact(
+        cond_named_var("Command"),
+        "NONE",
+        [show("沒有辨識到這個指令，請再試一次。",seed+"-unknown"),exit_shortcut()],
+        seed+"-unknown-gate"
+    )
+    return out
+
+def confirm_command_action(prompt,action_factory,seed):
+    # One canonical Tesla AppIntent is shared by touch and voice.
+    # Voice asks for the exact word 「確認」; touch uses the normal confirm menu.
+    out=[*set_variable("Confirmed","NO",seed+"-confirmed-init")]
+    ask,ask_uuid=ask_text(prompt+" 請說「確認」或「取消」。",seed+"-voice-ask")
+    voice_confirm=[
+      ask,
+      *if_exact(
+          cond_action_output(ask_uuid,"Provided Input"),
+          "確認",
+          set_variable("Confirmed","YES",seed+"-voice-confirmed"),
+          seed+"-voice-confirm"
+      )
+    ]
+    out += if_exact(cond_named_var("VoiceMode"),"YES",voice_confirm,seed+"-voice-gate")
+    touch_confirm=menu(prompt,["確認執行","取消"],{
+      "確認執行":set_variable("Confirmed","YES",seed+"-touch-confirmed"),
+      "取消":[show("已取消",seed+"-touch-cancel"),exit_shortcut()]
+    },seed+"-touch-menu")
+    out += if_exact(cond_named_var("VoiceMode"),"NO",touch_confirm,seed+"-touch-gate")
+    out += if_exact(
+        cond_named_var("Confirmed"),
+        "YES",
+        [action_factory(seed+"-action"),exit_shortcut()],
+        seed+"-execute"
+    )
+    out += [show("已取消",seed+"-cancel"),exit_shortcut()]
+    return out
+
 def find_parked_car(seed):
     parked=uid(seed+"-parked")
     maps=uid(seed+"-maps")
@@ -412,11 +492,12 @@ driving_tools_menu=menu("行車工具",["神盾測速照相","高速公路1968",
 },"driving-tools-menu")
 
 main_items=[
-    "快速出發","車外遙控","導航","找充電站","停車 / 找車","行車工具","Tesla App"
+    "快速出發","車外遙控","語音控制","導航","找充電站","停車 / 找車","行車工具","Tesla App"
 ]
 main_branches={
     "快速出發":set_prepare("menu-quick-start"),
     "車外遙控":remote_menu,
+    "語音控制":voice_command_flow("menu-voice"),
     "導航":nav_menu,
     "找充電站":charge_station_menu,
     "停車 / 找車":find_menu,
@@ -434,11 +515,11 @@ auto_start=[
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"CarKit TW｜特斯拉助手 v1.4\n- 使用 iPhone 內建「捷徑」整理給 Tesla 車友免費使用\n- 主畫面保持簡潔，但保留「車外遙控」：人在車外也能從 iPhone / Siri 使用 Tesla App 既有遠端控制\n- 快速出發：先做出發前預先調節，再選 Apple 地圖、Google Maps 或 Waze 導航\n- 車外遙控包含空調、鎖解鎖、前後行李廂、車窗、哨兵、充電、閃燈與鳴喇叭\n- 解鎖、前行李廂、後車廂會再次要求確認，避免誤觸\n- 導航目的地每次自行輸入，不會預設住家或公司\n- 第一次加入時，iPhone 會依序請你替需要車輛的遠端控制指定 Tesla；單車車主都選同一台即可\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla 溫度控制直接使用攝氏數值，不進行單位換算"
+    "WFCommentActionText":"CarKit TW｜特斯拉助手 v1.5\n- 使用 iPhone 內建「捷徑」整理給 Tesla 車友免費使用\n- 一支捷徑整合觸控與語音，不需要另外安裝語音 Helper\n- 主畫面保留「車外遙控」與「語音控制」：人在車外可從 iPhone / AirPods / Siri 使用 Tesla App 既有遠端控制\n- 快速出發：先做出發前預先調節，再選 Apple 地圖、Google Maps 或 Waze 導航\n- 車外遙控包含空調、鎖解鎖、前後行李廂、車窗、哨兵、充電、閃燈與鳴喇叭\n- 解鎖、前行李廂、後車廂會再次要求確認，避免誤觸\n- 導航目的地每次自行輸入，不會預設住家或公司\n- 第一次加入時，iPhone 會依序請你替需要車輛的遠端控制指定 Tesla；單車車主都選同一台即可\n- ALLOW_MANUAL_UNIT_CONVERSION：Tesla 溫度控制直接使用攝氏數值，不進行單位換算"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
-    "WFCommentActionText":"Shortcuts generated by Shortcuts Playground. May contain mistakes. Always check the shortcut's actions first.\n\nThis shortcut was created via the following user prompt:\n\n> CarKit TW｜Tesla 車友免費捷徑：快速出發、車外遙控、導航、找充電站、停車找車與台灣行車工具。"
+    "WFCommentActionText":"Shortcuts generated by Shortcuts Playground. May contain mistakes. Always check the shortcut's actions first.\n\nThis shortcut was created via the following user prompt:\n\n> CarKit TW｜Tesla 車友免費捷徑：單一特斯拉助手整合快速出發、車外遙控、語音控制、導航、找充電站、停車找車與台灣行車工具。"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("vehicle-status"),
@@ -450,7 +531,7 @@ actions=[
 
 # Always initialize canonical command to empty text.
 actions += set_command("NONE","command-init")
-actions += set_variable("PrepareMode","NO","prepare-init")
+actions += set_variable("PrepareMode","NO","prepare-init")\nactions += set_variable("VoiceMode","NO","voice-mode-init")
 
 # Main interactive entry: one tap / Siri invocation goes straight to the menu.
 actions += manual_menu
@@ -471,9 +552,9 @@ actions += if_exact(cmd,"PRE_START",pre_start_flow,"run-pre-start")
 actions += if_exact(cmd,"PRE_STOP",[pre_stop_action("canonical-pre-stop"),exit_shortcut()],"run-pre-stop")
 actions += if_exact(cmd,"TEMP",[temp_action("canonical-temp"),exit_shortcut()],"run-temp")
 actions += if_exact(cmd,"LOCK",[lock_action("canonical-lock"),exit_shortcut()],"run-lock")
-actions += if_exact(cmd,"UNLOCK",confirm_then("確定要解鎖 Tesla？",unlock_action,"canonical-unlock"),"run-unlock")
-actions += if_exact(cmd,"FRUNK",confirm_then("確定要開啟前行李廂？",frunk_action,"canonical-frunk"),"run-frunk")
-actions += if_exact(cmd,"REAR",confirm_then("確定要開啟後車廂？",rear_action,"canonical-rear"),"run-rear")
+actions += if_exact(cmd,"UNLOCK",confirm_command_action("確定要解鎖 Tesla？",unlock_action,"canonical-unlock"),"run-unlock")
+actions += if_exact(cmd,"FRUNK",confirm_command_action("確定要開啟前行李廂？",frunk_action,"canonical-frunk"),"run-frunk")
+actions += if_exact(cmd,"REAR",confirm_command_action("確定要開啟後車廂？",rear_action,"canonical-rear"),"run-rear")
 actions += if_exact(cmd,"CHARGE_80",[charge_limit_action(80,"canonical-charge80"),exit_shortcut()],"run-charge80")
 actions += if_exact(cmd,"CHARGE_90",[charge_limit_action(90,"canonical-charge90"),exit_shortcut()],"run-charge90")
 actions += if_exact(cmd,"CHARGE_PORT_OPEN",[open_charge_port_action("canonical-charge-port-open"),exit_shortcut()],"run-charge-port-open")
