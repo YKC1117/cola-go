@@ -25,6 +25,7 @@ jobs:
           rm -rf carkit-sign/generated carkit-sign/out
           python3 carkit-sign/build_oil.py
           python3 carkit-sign/build_tesla.py
+          python3 carkit-sign/build_tesla_voice.py
           mkdir -p carkit-sign/out
           python3 - <<'PY'
           import json
