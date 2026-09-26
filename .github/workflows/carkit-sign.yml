@@ -24,6 +24,7 @@ jobs:
           rm -rf carkit-sign/generated carkit-sign/out
           python3 carkit-sign/build_oil.py
           python3 carkit-sign/build_tesla.py
+          python3 carkit-sign/build_tesla_voice.py
           for f in carkit-sign/generated/*.shortcut.xml; do
             plutil -lint "$f"
           done
@@ -46,7 +47,7 @@ jobs:
           from pathlib import Path
 
           g=Path("carkit-sign/generated")
-          expected={"特斯拉助手.shortcut.xml","油車助手.shortcut.xml"}
+          expected={"特斯拉助手.shortcut.xml","特斯拉語音控制.shortcut.xml","油車助手.shortcut.xml"}
           actual={p.name for p in g.glob("*.shortcut.xml")}
           assert actual == expected, (actual, expected)
 
@@ -62,13 +63,16 @@ jobs:
               assert not dup, f"{label}: duplicate UUIDs: {sorted(dup)[:5]}"
 
           tesla=load("特斯拉助手.shortcut.xml")
+          voice=load("特斯拉語音控制.shortcut.xml")
           oil=load("油車助手.shortcut.xml")
           # Product polish: stable public names/icons.
           assert oil.get("WFWorkflowName")=="油車助手"
           assert tesla.get("WFWorkflowName")=="特斯拉助手"
+          assert voice.get("WFWorkflowName")=="特斯拉語音控制"
           assert oil.get("WFWorkflowIcon",{}).get("WFWorkflowIconGlyphNumber")==59452
           assert tesla.get("WFWorkflowIcon",{}).get("WFWorkflowIconGlyphNumber")==61447
           assert_unique_uuids(tesla,"Tesla")
+          assert_unique_uuids(voice,"TeslaVoice")
           assert_unique_uuids(oil,"Oil")
 
           tblob=(g/"特斯拉助手.shortcut.xml").read_text(encoding="utf-8")
@@ -316,11 +320,61 @@ jobs:
               "快速出發","車外遙控","導航","找充電站","停車 / 找車","行車工具","Tesla App"
           ]
 
+          vblob=(g/"特斯拉語音控制.shortcut.xml").read_text(encoding="utf-8")
+          for private in [
+              "5YJ3E1ET9SF029430","5YJ3E1EC3PF497483",
+              "SwordFish","TSLAMARS","intents-remote-image-proxy","ExtensionInput"
+          ]:
+              assert private not in vblob, f"Tesla voice helper leaked private value: {private}"
+
+          vactions=voice["WFWorkflowActions"]
+          vquestions=voice.get("WFWorkflowImportQuestions",[])
+          vvehicle_indexes=[
+              i for i,a in enumerate(vactions)
+              if a.get("WFWorkflowActionIdentifier","").startswith("com.teslamotors.TeslaApp.")
+              and "vehicle" in a.get("WFWorkflowActionParameters",{})
+          ]
+          assert len(vquestions)==12, f"Tesla voice helper vehicle setup count changed: {len(vquestions)}"
+          assert len(vvehicle_indexes)==12, vvehicle_indexes
+          assert sorted(q["ActionIndex"] for q in vquestions)==sorted(vvehicle_indexes)
+          for q in vquestions:
+              assert q.get("Category")=="Parameter", q
+              assert q.get("ParameterKey")=="vehicle", q
+              assert "DefaultValue" not in q, q
+
+          vtesla=[
+              a for a in vactions
+              if a.get("WFWorkflowActionIdentifier","").startswith("com.teslamotors.TeslaApp.")
+          ]
+          assert len(vtesla)==20, f"Tesla voice helper intent count changed: {len(vtesla)}"
+          for a in vactions:
+              if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.conditional":
+                  p=a.get("WFWorkflowActionParameters",{})
+                  if "WFConditionalActionString" in p:
+                      assert p.get("WFCondition")==4, f"voice helper non-exact condition: {p}"
+
+          voice_asks=[
+              a.get("WFWorkflowActionParameters",{}).get("WFAskActionPrompt","")
+              for a in vactions
+              if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.ask"
+          ]
+          assert "要控制 Tesla 什麼功能？" in voice_asks, voice_asks
+          sensitive_prompts=[x for x in voice_asks if x.startswith("確定要")]
+          assert len(sensitive_prompts)==3, sensitive_prompts
+          confirm_conditions=[
+              a for a in vactions
+              if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.conditional"
+              and a.get("WFWorkflowActionParameters",{}).get("WFConditionalActionString")=="確認"
+              and a.get("WFWorkflowActionParameters",{}).get("WFCondition")==4
+          ]
+          assert len(confirm_conditions)==3, confirm_conditions
+          assert "沒有辨識到這個指令" in vblob
+
           oblob=(g/"油車助手.shortcut.xml").read_text(encoding="utf-8")
 
           # iOS 26 app-picker regression guard: every Open App action must
           # carry both the bundle identifier and the selected-app descriptor.
-          for name,wf_obj in [("Oil",oil),("Tesla",tesla)]:
+          for name,wf_obj in [("Oil",oil),("Tesla",tesla),("TeslaVoice",voice)]:
               open_apps=[
                   a for a in wf_obj["WFWorkflowActions"]
                   if a.get("WFWorkflowActionIdentifier")=="is.workflow.actions.openapp"
