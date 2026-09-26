@@ -292,7 +292,7 @@ jobs:
               "神盾","導航","路況","停車 / 找車","加油 / eTag","音樂"
           ]
           assert top_menu_items(tesla,"特斯拉助手｜請選功能")==[
-              "快速出發","車外遙控","語音控制","導航","找充電站","停車 / 找車","行車工具","Tesla App"
+              "快速出發","導航","車外遙控","找充電站","停車 / 找車","行車工具","語音控制","Tesla App"
           ]
 
           # Voice control is embedded in 特斯拉助手; no second shortcut is required.
