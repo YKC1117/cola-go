@@ -375,7 +375,10 @@ jobs:
 
           # Integrated voice control: enter it from the same 特斯拉助手 menu
           # and prove the command prompt appears before any Tesla AppIntent runs.
-          run_idb idb ui tap "語音控制" --udid "$UDID"
+          # iOS 26.x renders the runtime menu correctly but does not expose
+          # its row labels through the accessibility tree. The selected runner
+          # is an iPhone Pro Max; tap the visible third menu row directly.
+          run_idb idb ui tap 220 280 --udid "$UDID"
           sleep 3
           describe_retry /tmp/carkit-probe/tesla-voice-prompt.json
           xcrun simctl io "$UDID" screenshot /tmp/carkit-probe/tesla-voice-prompt.png
