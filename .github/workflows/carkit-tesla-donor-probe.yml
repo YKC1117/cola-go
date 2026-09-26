@@ -91,6 +91,22 @@ jobs:
                           "identifier":ident,
                           "parameters":scrub(p)
                       })
+              # For the 2026 multi-temperature donor, also capture only
+              # the sanitized actions that create/update the Temp variable so
+              # we can preserve the donor's value type without exposing any
+              # vehicle entity.
+              temp_source_actions=[]
+              if name=="candidate_multi_temp_2026":
+                  for idx,a in enumerate(wf.get("WFWorkflowActions",[])):
+                      p=a.get("WFWorkflowActionParameters",{})
+                      if p.get("WFVariableName")=="Temp":
+                          start=max(0,idx-1)
+                          temp_source_actions=[
+                              {"index":j,"identifier":wf["WFWorkflowActions"][j].get("WFWorkflowActionIdentifier",""),
+                               "parameters":scrub(wf["WFWorkflowActions"][j].get("WFWorkflowActionParameters",{}))}
+                              for j in range(start,idx+1)
+                          ]
+
               import_questions=[]
               for q in wf.get("WFWorkflowImportQuestions",[]):
                   qq=copy.deepcopy(q)
@@ -106,6 +122,7 @@ jobs:
                   "tesla_action_count":len(actions),
                   "import_question_count":len(import_questions),
                   "import_questions":import_questions,
+                  "temp_source_actions":temp_source_actions,
               }
 
           pathlib.Path("/tmp/tesla-donors.json").write_text(
