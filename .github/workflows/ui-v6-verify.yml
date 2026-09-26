@@ -32,3 +32,11 @@ jobs:
           git diff --check origin/main...HEAD
       - name: V6 browser verification
         run: node scripts/verify_ui_v6.cjs
+      - name: Upload V6 verification screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cola-go-v6-verification-screenshots
+          path: docs/ui-v6/screenshots
+          if-no-files-found: error
+          retention-days: 7
