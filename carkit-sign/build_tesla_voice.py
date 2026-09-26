@@ -48,7 +48,7 @@ def if_exact(input_ref,value,yes_actions,seed):
     return [
       act("is.workflow.actions.comment",{
         "UUID":uid(seed+"-comment"),
-        "WFCommentActionText":f"語音精確比對「{value}」\\n- 符合：執行對應 Tesla 功能\\n- 不符合：繼續比對下一個指令"
+        "WFCommentActionText":f"語音精確比對「{value}」\n- 輸入：Siri / 使用者回答\n- 符合：執行對應 Tesla 功能\n- 否則：繼續比對下一個指令"
       }),
       act("is.workflow.actions.conditional",{
         "UUID":uid(seed+"-start"),
