@@ -34,6 +34,9 @@ jobs:
               "candidate_start_charging": "43a879a90e344d258c54535e3b6506d6",
               "candidate_stop_charging": "da72905a7a404d2cb69bb5b13424be24",
               "candidate_native_tesla_menu": "d54424f0770449909293833439d86b6c",
+              # 2026 public Tesla-owner shortcut with multiple native
+              # Set Temperature actions; useful for studying vehicle binding.
+              "candidate_multi_temp_2026": "3c461b592b644b3cb158a9f98db225c9",
           }
 
           def get_json(url):
@@ -88,10 +91,21 @@ jobs:
                           "identifier":ident,
                           "parameters":scrub(p)
                       })
+              import_questions=[]
+              for q in wf.get("WFWorkflowImportQuestions",[]):
+                  qq=copy.deepcopy(q)
+                  # Never emit donor vehicle defaults/entities.
+                  for k in list(qq):
+                      if any(x in k.lower() for x in ("default","vehicle","vin","image","photo","account","token")):
+                          qq[k]="<REDACTED>"
+                  import_questions.append(scrub(qq))
               out[name]={
                   "share_id":sid,
                   "workflow_name":fields.get("name",{}).get("value"),
                   "tesla_actions":actions,
+                  "tesla_action_count":len(actions),
+                  "import_question_count":len(import_questions),
+                  "import_questions":import_questions,
               }
 
           pathlib.Path("/tmp/tesla-donors.json").write_text(
