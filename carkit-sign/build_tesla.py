@@ -10,6 +10,8 @@ APP_NAMES={
  "com.teslamotors.TeslaApp":"Tesla",
  "tw.gov.freeway1968Ver2.Freeway1968HD":"高速公路1968",
  "com.xatori.plugshare":"PlugShare",
+ "com.upower":"U-POWER",
+ "tw.com.frihed.evalues":"EVALUE",
 }
 
 TEAM="PS9EBAM2PU"
@@ -312,9 +314,11 @@ trunk_menu=menu("行李廂",["前行李廂","後車廂"],{
     "後車廂":set_command("REAR","menu-rear"),
 },"trunk-menu")
 
-charge_station_menu=menu("找充電站",["Apple 地圖","AmpGO","PlugShare"],{
+charge_station_menu=menu("找充電站",["Apple 地圖","AmpGO（App Store）","U-POWER","EVALUE","PlugShare"],{
     "Apple 地圖":[*url_open("https://maps.apple.com/?q=%E9%9B%BB%E5%8B%95%E8%BB%8A%E5%85%85%E9%9B%BB%E7%AB%99","menu-charge-maps"),exit_shortcut()],
-    "AmpGO":[*url_open("https://apps.apple.com/tw/app/id6470348628","menu-ampgo-store"),exit_shortcut()],
+    "AmpGO（App Store）":[*url_open("https://apps.apple.com/tw/app/id6470348628","menu-ampgo-store"),exit_shortcut()],
+    "U-POWER":[app("com.upower","menu-upower"),exit_shortcut()],
+    "EVALUE":[app("tw.com.frihed.evalues","menu-evalue"),exit_shortcut()],
     "PlugShare":[app("com.xatori.plugshare","menu-plugshare"),exit_shortcut()],
 },"charge-stations-menu")
 
