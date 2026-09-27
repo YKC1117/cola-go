@@ -1551,5 +1551,7 @@ bindLucky();
 bindWarranty();
 bindConnector();
 bindInstall();
-show(location.hash.slice(1)||"home",false);
+const initialView=(performance.getEntriesByType("navigation")[0]?.type==="reload")?"home":(location.hash.slice(1)||"home");
+if(initialView==="home" && location.hash) history.replaceState(null,"",location.pathname+location.search);
+show(initialView,false);
 load();
