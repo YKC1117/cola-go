@@ -130,6 +130,7 @@ let browser;
   check('Tesla real-car report copy button is visible',await page.locator('#copyTeslaReportBtn').isVisible());
   check('Tesla report template contains required fields',(await page.locator('#teslaReportTemplate').textContent()).includes('iPhone 型號：')&&(await page.locator('#teslaReportTemplate').textContent()).includes('Siri「特斯拉助手」：'));
   await page.locator('#copyTeslaReportBtn').click();
+  await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
   const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-10');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
