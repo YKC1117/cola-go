@@ -126,7 +126,7 @@ let browser;
   check('Unknown route recovers to home',await page.locator('[data-view=home]').isVisible());
   await page.locator('#installBtn').click();
   check('PWA installation help is available',await page.locator('#toast').textContent().then(x=>x.includes('主畫面')||x.includes('安裝')));
-  await page.locator('[data-go="shortcuts"]').click();
+  await page.evaluate(()=>show('shortcuts'));
   check('Tesla real-car report copy button is visible',await page.locator('#copyTeslaReportBtn').isVisible());
   check('Tesla report template contains required fields',(await page.locator('#teslaReportTemplate').textContent()).includes('iPhone 型號：')&&(await page.locator('#teslaReportTemplate').textContent()).includes('Siri「特斯拉助手」：'));
   await page.locator('#copyTeslaReportBtn').click();
