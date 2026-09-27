@@ -151,12 +151,18 @@ jobs:
             local xy
             xy="$(jq -r --arg l "$label" '[.. | objects | select(.AXLabel == $l and (.frame|type) == "object") | [((.frame.x + (.frame.width/2))|round), ((.frame.y + (.frame.height/2))|round)]][0] | if . == null then empty else @tsv end' "$json_file" 2>/dev/null || true)"
             if test -z "$xy" && test "$label" = "Add Shortcut"; then
-              # iOS 26/27 Simulator can visibly render the native share sheet
-              # while returning an empty AX tree. This runner is the fixed
-              # iPhone Pro Max target; the Add Shortcut button center is stable.
-              # Import success is still proved later by reopening by name and
-              # running the shortcut, so this fallback alone never grants PASS.
-              xy=
+              # iOS Simulator can visibly render the native share sheet while
+              # returning an empty AX tree. This workflow uses a fixed iPhone
+              # Pro Max target, where the Add Shortcut button center is stable.
+              # Later reopen/runtime checks still prove that import succeeded.
+              xy="220 865"
+              echo "AX label missing; fallback tap $label at 220,865"
+            fi
+            test -n "$xy"
+            read -r x y <<< "$xy"
+            echo "tap $label at $x,$y"
+            run_idb idb ui tap "$x" "$y" --udid "$UDID"
+          }
 
           mkdir -p /tmp/carkit-probe
           git rev-parse HEAD > /tmp/carkit-probe/commit.txt
