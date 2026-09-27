@@ -27,7 +27,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          run_id="$(gh run list             --repo "$GH_REPO"             --branch temp/carkit-shortcut-sign             --workflow "CarKit Shortcut Build"             --status success             --limit 1             --json databaseId             --jq '.[0].databaseId')"
+          run_id="$(gh api "repos/$GH_REPO/actions/runs?branch=temp%2Fcarkit-shortcut-sign&status=success&per_page=20" --jq '.workflow_runs[] | select(.name=="CarKit Shortcut Build") | .id' | head -n 1)"
           test -n "$run_id"
           echo "Using signed CarKit build run: $run_id"
           rm -rf /tmp/carkit-signed
