@@ -206,7 +206,7 @@ fuel_center=menu("加油 / eTag",[
  "eTag / 通行費":[app("fetci.eTagGO.PRD","menu-etag")]
 },"fuel-center")
 
-items=["神盾","導航","路況","停車 / 找車","加油 / eTag","音樂"]
+items=["神盾","導航","路況","停車 / 找車","加油 / eTag","音樂","先不用"]
 branches={
  "神盾":[app("tw.com.ainvest.outpack","menu-start-shield")],
  "導航":nav,
@@ -214,13 +214,14 @@ branches={
  "停車 / 找車":parking_center,
  "加油 / eTag":fuel_center,
  "音樂":music,
+ "先不用":[exit_shortcut()],
 }
 manual_menu=menu("油車助手｜請選功能",items,branches,"main-menu")
 
 actions=[
   act("is.workflow.actions.comment",{
     "UUID":uid("header-title"),
-    "WFCommentActionText":"Oil Driver v1.2｜油車助手\n- 與 Tesla Driver 完全分開\n- 點開捷徑直接顯示功能選單，不需要輸入文字或背口令\n- Siri 呼叫「油車助手」時使用同一套選單\n- 主畫面只留 6 個高頻入口\n- 導航使用 Apple 原生 Open Directions，直接帶入每次輸入的目的地；不保存預設地址"
+    "WFCommentActionText":"CarKit TW｜油車助手\n- 與特斯拉助手完全分開\n- 點開捷徑直接顯示功能選單，不需要輸入文字或背口令\n- Siri 呼叫「油車助手」時使用同一套選單\n- 上車自動化也可直接執行本捷徑，最後保留「先不用」可立即離開\n- 導航使用 Apple 原生 Open Directions，直接帶入每次輸入的目的地；不保存預設地址"
   }),
   act("is.workflow.actions.comment",{
     "UUID":uid("header-validation"),
@@ -228,7 +229,8 @@ actions=[
   }),
 ]
 
-# User-facing shortcut: no Shortcut Input dependency. Automations must use separate helper shortcuts.
+# User-facing shortcut: no Shortcut Input dependency. A personal CarPlay/Bluetooth
+# automation can run this shortcut directly; no helper shortcut is required.
 # Main interactive entry: one tap / Siri invocation goes straight to the menu.
 actions += manual_menu
 actions.append(exit_shortcut())
