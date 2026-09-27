@@ -73,13 +73,13 @@ function bindNav(){
 }
 
 function bindExternal(root=document){
-  $("[data-url]",root).forEach(el=>{
+  $$("[data-url]",root).forEach(el=>{
     el.onclick=()=>window.open(el.dataset.url,"_blank","noopener");
   });
 }
 
 function bindCopy(root=document){
-  $("[data-copy-target]",root).forEach(el=>{
+  $$("[data-copy-target]",root).forEach(el=>{
     el.onclick=async()=>{
       const target=$(el.dataset.copyTarget);
       const text=target?.textContent?.trim();
