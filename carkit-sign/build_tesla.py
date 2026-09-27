@@ -492,7 +492,7 @@ driving_tools_menu=menu("行車工具",["神盾測速照相","高速公路1968",
 },"driving-tools-menu")
 
 main_items=[
-    "快速出發","車外遙控","導航","找充電站","停車 / 找車","行車工具","語音控制","Tesla App"
+    "快速出發","車外遙控","導航","找充電站","停車 / 找車","行車工具","語音控制","Tesla App","先不用"
 ]
 main_branches={
     "快速出發":set_prepare("menu-quick-start"),
@@ -503,6 +503,7 @@ main_branches={
     "停車 / 找車":find_menu,
     "行車工具":driving_tools_menu,
     "Tesla App":[app(BUNDLE,"menu-tesla-app"),exit_shortcut()],
+    "先不用":[exit_shortcut()],
 }
 manual_menu=menu("特斯拉助手｜請選功能",main_items,main_branches,"main-menu")
 
@@ -527,7 +528,8 @@ actions=[
   })
 ]
 
-# User-facing shortcut: no Shortcut Input dependency. Automations must use separate helper shortcuts.
+# User-facing shortcut: no Shortcut Input dependency. A personal CarPlay/Bluetooth
+# automation can run this shortcut directly; no helper shortcut is required.
 
 # Always initialize canonical command to empty text.
 actions += set_command("NONE","command-init")
