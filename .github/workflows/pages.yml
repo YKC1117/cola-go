@@ -37,7 +37,7 @@ jobs:
               signed = urllib.request.urlopen(req, timeout=60).read()
               if not signed.startswith(b"AEA1"):
                   raise SystemExit(name + ": invalid signed shortcut")
-              out_name = {"油車助手":"oil-driver.shortcut","特斯拉助手":"tesla-driver.shortcut"}[name]
+              out_name = {"油車助手":"oil-driver.shortcut.txt","特斯拉助手":"tesla-driver.shortcut.txt"}[name]
               (pathlib.Path("downloads") / out_name).write_bytes(signed)
               print(name, len(signed), "AEA1 PASS")
           PY
