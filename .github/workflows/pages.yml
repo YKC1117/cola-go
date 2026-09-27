@@ -29,7 +29,7 @@ jobs:
           python carkit-sign/build_tesla.py
           mkdir -p downloads
           python - <<'PY'
-          import json, pathlib, urllib.request
+          import json, pathlib, urllib.request, zipfile
           for name in ["油車助手", "特斯拉助手"]:
               src = pathlib.Path("carkit-sign/generated") / (name + ".shortcut.xml")
               payload = json.dumps({"shortcutName": name, "shortcut": src.read_text(encoding="utf-8")}).encode()
@@ -37,9 +37,11 @@ jobs:
               signed = urllib.request.urlopen(req, timeout=60).read()
               if not signed.startswith(b"AEA1"):
                   raise SystemExit(name + ": invalid signed shortcut")
-              out_name = {"油車助手":"oil-driver.shortcut.txt","特斯拉助手":"tesla-driver.shortcut.txt"}[name]
-              (pathlib.Path("downloads") / out_name).write_bytes(signed)
-              print(name, len(signed), "AEA1 PASS")
+              shortcut_name = {"油車助手":"油車助手.shortcut","特斯拉助手":"特斯拉助手.shortcut"}[name]
+              zip_name = {"油車助手":"oil-driver.zip","特斯拉助手":"tesla-driver.zip"}[name]
+              with zipfile.ZipFile(pathlib.Path("downloads") / zip_name, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                  zf.writestr(shortcut_name, signed)
+              print(name, len(signed), "AEA1 PASS", zip_name)
           PY
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
