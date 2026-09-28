@@ -131,6 +131,9 @@ let browser;
   if(checkedInNorth){
     await page.waitForFunction(()=>['live','stale'].includes(state.tunnel?.status)&&document.querySelectorAll('#tunnelList .metric').length>0);
     check('Checked-in TDX tunnel cache renders official speed rows',await page.locator('#tunnelList .metric').count()>0&&await page.evaluate(()=>['live','stale'].includes(state.tunnel?.status)));
+    const checkedInStamp=Date.parse(checkedInTunnel.liveUpdatedAt||checkedInTunnel.updatedAt||'');
+    const expectedTunnelStatus=Number.isFinite(checkedInStamp)&&Date.now()-checkedInStamp<=45*60*1000?'live':'stale';
+    check('TDX tunnel freshness label matches snapshot age',await page.evaluate(expected=>state.tunnel?.status===expected,expectedTunnelStatus));
   }else{
     check('Missing tunnel feed renders unavailable without speed numbers',await page.locator('#tunnelList .metric').count()===0 && (await page.locator('#tunnelList').textContent()).includes('沒有資料'));
   }
