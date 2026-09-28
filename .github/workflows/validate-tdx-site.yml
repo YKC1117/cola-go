@@ -33,6 +33,14 @@ jobs:
           grep -q 'assets/tdx-runtime.js' index.html
           grep -q 'TDX_CLIENT_ID' .github/workflows/sync-tdx-data.yml
           grep -q 'TDX_CLIENT_SECRET' .github/workflows/sync-tdx-data.yml
+          grep -q '^  workflow_dispatch:' .github/workflows/sync-tdx-data.yml
+          grep -q '^  schedule:' .github/workflows/sync-tdx-data.yml
+          ! grep -q '^  push:' .github/workflows/sync-tdx-data.yml
+          grep -Fq 'cancel-in-progress: false' .github/workflows/sync-tdx-data.yml
+          grep -Fq 'snapshot="$(mktemp -d)"' .github/workflows/sync-tdx-data.yml
+          grep -Fq 'git reset --hard origin/main' .github/workflows/sync-tdx-data.yml
+          grep -Fq 'git push origin HEAD:main' .github/workflows/sync-tdx-data.yml
+          ! grep -Fq 'git pull --rebase origin main' .github/workflows/sync-tdx-data.yml
           grep -q 'ConnectorLiveStatus' scripts/sync_tdx.py
           grep -q 'Road/Traffic/Live/Freeway' scripts/sync_tdx.py
           grep -q 'data/tdx/traffic.json' assets/tdx-runtime.js
