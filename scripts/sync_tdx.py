@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, os, re, sys, time, urllib.parse, urllib.request
+import json, os, re, sys, time, urllib.parse, urllib.request, urllib.error
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -29,8 +29,18 @@ def request(url, *, data=None, headers=None, timeout=45):
         if wait>0: time.sleep(wait)
         last_call=time.monotonic()
     req=urllib.request.Request(url,data=data,headers=headers or {})
-    with urllib.request.urlopen(req,timeout=timeout) as r:
-        return json.load(r)
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(req,timeout=timeout) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code==429 and attempt<4:
+                delay=max(35,int(e.headers.get("Retry-After") or 35))
+                print("TDX_RATE_LIMIT",delay,"seconds",file=sys.stderr,flush=True)
+                time.sleep(delay)
+                last_call=time.monotonic()
+                continue
+            raise
 
 def token():
     cid=os.environ.get("TDX_CLIENT_ID","")
