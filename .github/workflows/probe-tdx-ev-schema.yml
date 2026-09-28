@@ -12,82 +12,56 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 4
     env:
       TDX_CLIENT_ID: ${{ secrets.TDX_CLIENT_ID }}
       TDX_CLIENT_SECRET: ${{ secrets.TDX_CLIENT_SECRET }}
     steps:
-      - name: Probe sanitized Tainan EV schemas
+      - name: Probe sanitized EV station details and operator endpoint
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json, os, time, urllib.parse, urllib.request
+          import json, os, time, urllib.parse, urllib.request, urllib.error
 
           token_url="https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token"
-          data=urllib.parse.urlencode({
+          body=urllib.parse.urlencode({
               "grant_type":"client_credentials",
               "client_id":os.environ["TDX_CLIENT_ID"],
               "client_secret":os.environ["TDX_CLIENT_SECRET"],
           }).encode()
-          req=urllib.request.Request(token_url,data=data,headers={"content-type":"application/x-www-form-urlencoded"})
-          with urllib.request.urlopen(req,timeout=30) as r:
+          with urllib.request.urlopen(urllib.request.Request(token_url,data=body,headers={"content-type":"application/x-www-form-urlencoded"}),timeout=30) as r:
               token=json.load(r)["access_token"]
 
           base="https://tdx.transportdata.tw/api/basic"
-          paths=[
-              ("Station","/v1/EV/Station/City/Tainan",2),
-              ("ChargingPoint","/v1/EV/ChargingPoint/City/Tainan",3),
-              ("Connector","/v1/EV/Connector/City/Tainan",8),
-              ("ConnectorLiveStatus","/v1/EV/ConnectorLiveStatus/City/Tainan",20),
-          ]
-          interesting={
-              "Station":{
-                  "StationID","ChargingStationID","StationName","Name","Address","LocationDescription",
-                  "OperatorID","OperatorName","ServiceProvider","ServiceProviderName","Telephone","Phone",
-                  "ServiceTime","OpeningHours","ParkingRate","FareDescription","DataUpdateTime","UpdateTime",
-                  "PositionLat","PositionLon","StationPosition","GeoHash"
-              },
-              "ChargingPoint":{
-                  "StationID","ChargingStationID","ChargingPointID","PointID","Connectors","ConnectorTypes",
-                  "TotalConnectors","Status","UpdateTime","DataCollectTime"
-              },
-              "Connector":{
-                  "StationID","ChargingStationID","ChargingPointID","ConnectorID","ConnectorType","Type",
-                  "ChargingType","MaxPower","MaxPowerKW","Power","RatedPower","CurrentType","Voltage","Amperage",
-                  "Status","UpdateTime","DataCollectTime"
-              },
-              "ConnectorLiveStatus":{
-                  "StationID","ChargingStationID","ChargingPointID","ConnectorID","Status","ConnectorStatus",
-                  "AvailabilityStatus","StatusDescription","StatusDesc","Description","DataCollectTime","UpdateTime"
-              }
-          }
+          headers={"Authorization":"Bearer "+token,"Accept":"application/json","User-Agent":"COLA-GO-schema-probe/1.0"}
 
-          def normalize(v):
-              if isinstance(v,dict):
-                  return {k:normalize(v[k]) for k in sorted(v) if k in {"Zh_tw","En","PositionLat","PositionLon"}}
-              if isinstance(v,list):
-                  return [normalize(x) for x in v[:4]]
-              if isinstance(v,str) and len(v)>140:
-                  return v[:137]+"..."
-              return v
+          def get(path,top):
+              q=urllib.parse.urlencode({"$format":"JSON","$top":str(top)})
+              with urllib.request.urlopen(urllib.request.Request(base+path+"?"+q,headers=headers),timeout=30) as r:
+                  p=json.load(r)
+              return p if isinstance(p,list) else next((v for v in p.values() if isinstance(v,list)),[])
 
-          for idx,(name,path,top) in enumerate(paths):
-              if idx:
-                  time.sleep(13)
-              query=urllib.parse.urlencode({"$format":"JSON","$top":str(top)})
-              req=urllib.request.Request(base+path+"?"+query,headers={
-                  "Authorization":"Bearer "+token,
-                  "Accept":"application/json",
-                  "User-Agent":"COLA-GO-schema-probe/1.0",
-              })
-              with urllib.request.urlopen(req,timeout=30) as r:
-                  payload=json.load(r)
-              rows=payload if isinstance(payload,list) else next((v for v in payload.values() if isinstance(v,list)),[])
-              print("\n===",name,"count",len(rows),"===")
-              keys=sorted({k for row in rows if isinstance(row,dict) for k in row.keys()})
-              print("KEYS",json.dumps(keys,ensure_ascii=False))
-              for n,row in enumerate(rows[:top],1):
-                  safe={k:normalize(v) for k,v in row.items() if k in interesting[name]}
-                  print("ROW",n,json.dumps(safe,ensure_ascii=False,sort_keys=True))
+          rows=get("/v1/EV/Station/City/Tainan",2)
+          print("=== Station detail ===")
+          for i,row in enumerate(rows,1):
+              safe={k:row.get(k) for k in [
+                  "StationID","StationName","Description","OperatorID","OperationType","PositionLat","PositionLon",
+                  "Spaces","ChargingPoints","Connectors","Location","ServiceTime","ParkingRate","ChargingRate",
+                  "Telephone","Reference"
+              ] if k in row}
+              print("ROW",i,json.dumps(safe,ensure_ascii=False,sort_keys=True))
+
+          time.sleep(13)
+          print("=== Operator endpoint ===")
+          for path in ["/v1/EV/Operator","/v1/EV/Operator/City/Tainan"]:
+              try:
+                  operators=get(path,20)
+                  print("PATH",path,"COUNT",len(operators))
+                  for row in operators[:20]:
+                      safe={k:row.get(k) for k in ["OperatorID","OperatorName","Telephone","Address","WebURL","BAN"] if k in row}
+                      print("OP",json.dumps(safe,ensure_ascii=False,sort_keys=True))
+                  break
+              except urllib.error.HTTPError as e:
+                  print("PATH",path,"HTTP",e.code)
           PY
