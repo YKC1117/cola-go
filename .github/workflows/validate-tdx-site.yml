@@ -35,6 +35,29 @@ jobs:
           assert validated_parking_available(0, 12) == 12
           assert validated_parking_available(None, 12) == 12
           PY
+      - name: Charging schema sanity guard
+        run: |
+          python3 - <<'PY'
+          from scripts.sync_tdx import (
+              classify_live_state, connector_type_name, power_mode_name,
+              power_rating_kw, station_location,
+          )
+          assert classify_live_state(1) == "available"
+          assert classify_live_state(2) == "occupied"
+          assert classify_live_state(3) == "fault"
+          assert classify_live_state(0) == "unknown"
+          assert connector_type_name(2) == "CCS2"
+          assert connector_type_name(4) == "Tesla TPC"
+          assert connector_type_name(6) == "Mennekes(Type2)"
+          assert power_mode_name(1) == "AC"
+          assert power_mode_name(2) == "DC"
+          assert power_rating_kw("250kW") == 250
+          assert power_rating_kw(11) == 11
+          location=station_location({
+              "Location":{"Address":{"City":"臺南市","Town":"東區","Road":"民族路一段","Lane":"17巷","No":"37號對面"}}
+          },"臺南市")
+          assert location == "臺南市東區民族路一段17巷37號對面"
+          PY
       - name: JavaScript syntax
         run: |
           node --check assets/app.js
@@ -54,6 +77,11 @@ jobs:
           ! grep -Fq 'git pull --rebase origin main' .github/workflows/sync-tdx-data.yml
           test ! -f .github/workflows/tdx-worker.yml
           grep -q 'ConnectorLiveStatus' scripts/sync_tdx.py
+          grep -q 'LastUpdateTime' scripts/sync_tdx.py
+          grep -q 'PowerRating' scripts/sync_tdx.py
+          grep -q 'Operator/City/' scripts/sync_tdx.py
+          grep -Fq 'data-charge-quick="available"' index.html
+          grep -Fq 'id="chargingNearby"' index.html
           grep -q 'Road/Traffic/Live/Freeway' scripts/sync_tdx.py
           grep -q 'data/tdx/traffic.json' assets/tdx-runtime.js
           grep -q 'data/tdx/tunnel.json' assets/tdx-runtime.js
