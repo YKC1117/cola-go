@@ -1,0 +1,93 @@
+name: Probe TDX EV schema once
+
+on:
+  push:
+    branches: ["probe/tdx-ev-schema-20260928"]
+    paths:
+      - ".github/workflows/probe-tdx-ev-schema.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TDX_CLIENT_ID: ${{ secrets.TDX_CLIENT_ID }}
+      TDX_CLIENT_SECRET: ${{ secrets.TDX_CLIENT_SECRET }}
+    steps:
+      - name: Probe sanitized Tainan EV schemas
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, time, urllib.parse, urllib.request
+
+          token_url="https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token"
+          data=urllib.parse.urlencode({
+              "grant_type":"client_credentials",
+              "client_id":os.environ["TDX_CLIENT_ID"],
+              "client_secret":os.environ["TDX_CLIENT_SECRET"],
+          }).encode()
+          req=urllib.request.Request(token_url,data=data,headers={"content-type":"application/x-www-form-urlencoded"})
+          with urllib.request.urlopen(req,timeout=30) as r:
+              token=json.load(r)["access_token"]
+
+          base="https://tdx.transportdata.tw/api/basic"
+          paths=[
+              ("Station","/v1/EV/Station/City/Tainan",2),
+              ("ChargingPoint","/v1/EV/ChargingPoint/City/Tainan",3),
+              ("Connector","/v1/EV/Connector/City/Tainan",8),
+              ("ConnectorLiveStatus","/v1/EV/ConnectorLiveStatus/City/Tainan",20),
+          ]
+          interesting={
+              "Station":{
+                  "StationID","ChargingStationID","StationName","Name","Address","LocationDescription",
+                  "OperatorID","OperatorName","ServiceProvider","ServiceProviderName","Telephone","Phone",
+                  "ServiceTime","OpeningHours","ParkingRate","FareDescription","DataUpdateTime","UpdateTime",
+                  "PositionLat","PositionLon","StationPosition","GeoHash"
+              },
+              "ChargingPoint":{
+                  "StationID","ChargingStationID","ChargingPointID","PointID","Connectors","ConnectorTypes",
+                  "TotalConnectors","Status","UpdateTime","DataCollectTime"
+              },
+              "Connector":{
+                  "StationID","ChargingStationID","ChargingPointID","ConnectorID","ConnectorType","Type",
+                  "ChargingType","MaxPower","MaxPowerKW","Power","RatedPower","CurrentType","Voltage","Amperage",
+                  "Status","UpdateTime","DataCollectTime"
+              },
+              "ConnectorLiveStatus":{
+                  "StationID","ChargingStationID","ChargingPointID","ConnectorID","Status","ConnectorStatus",
+                  "AvailabilityStatus","StatusDescription","StatusDesc","Description","DataCollectTime","UpdateTime"
+              }
+          }
+
+          def normalize(v):
+              if isinstance(v,dict):
+                  return {k:normalize(v[k]) for k in sorted(v) if k in {"Zh_tw","En","PositionLat","PositionLon"}}
+              if isinstance(v,list):
+                  return [normalize(x) for x in v[:4]]
+              if isinstance(v,str) and len(v)>140:
+                  return v[:137]+"..."
+              return v
+
+          for idx,(name,path,top) in enumerate(paths):
+              if idx:
+                  time.sleep(13)
+              query=urllib.parse.urlencode({"$format":"JSON","$top":str(top)})
+              req=urllib.request.Request(base+path+"?"+query,headers={
+                  "Authorization":"Bearer "+token,
+                  "Accept":"application/json",
+                  "User-Agent":"COLA-GO-schema-probe/1.0",
+              })
+              with urllib.request.urlopen(req,timeout=30) as r:
+                  payload=json.load(r)
+              rows=payload if isinstance(payload,list) else next((v for v in payload.values() if isinstance(v,list)),[])
+              print("\n===",name,"count",len(rows),"===")
+              keys=sorted({k for row in rows if isinstance(row,dict) for k in row.keys()})
+              print("KEYS",json.dumps(keys,ensure_ascii=False))
+              for n,row in enumerate(rows[:top],1):
+                  safe={k:normalize(v) for k,v in row.items() if k in interesting[name]}
+                  print("ROW",n,json.dumps(safe,ensure_ascii=False,sort_keys=True))
+          PY
