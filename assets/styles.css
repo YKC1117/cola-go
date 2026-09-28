@@ -263,7 +263,8 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .hero-photo { position:absolute;z-index:-2;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 62%; }
 .home-hero::before { content:"";position:absolute;z-index:-1;inset:0;background:linear-gradient(90deg,#06060970,transparent 80%),linear-gradient(0deg,#08090b 0%,transparent 32%,#08090b40); }
 .hero-content { padding:calc(48px + env(safe-area-inset-top,0px)) 4px 12px; }
-.hero-brand { display:flex;align-items:center;gap:10px;margin-bottom:24px; }
+.hero-brand { display:flex;align-items:center;gap:10px;width:max-content;max-width:100%;margin:0 0 24px;padding:0;color:inherit;text-align:left;touch-action:manipulation; }
+.hero-brand:active { opacity:.72; }
 .app-shell:has([data-view="home"].active) .topbar { position:absolute;inset:0 0 auto;background:transparent;border:0; }
 .app-shell:has([data-view="home"].active) .topbar .brand { visibility:hidden; }
 .hero-brand>img { width:46px;height:46px;filter:drop-shadow(0 0 14px #ec183d55); }
