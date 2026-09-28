@@ -50,6 +50,16 @@ let browser;
   check('Public inquiry links do not expose GitHub issue forms',await page.evaluate(()=>![...document.querySelectorAll('[data-url]')].some(el=>/github\.com\/YKC1117\/cola-go\/issues\/new/.test(el.dataset.url||''))));
   check('No duplicate IDs',await page.evaluate(()=>{const ids=[...document.querySelectorAll('[id]')].map(x=>x.id);return new Set(ids).size===ids.length;}));
   check('No private route defaults or route-fill attributes',await page.evaluate(()=>!document.querySelector('[data-route],[data-fill-route]')&&!document.querySelector('#tripFrom').value&&!document.querySelector('#tripTo').value));
+  await page.locator('.bottom-nav [data-go=charging]').click();
+  await page.evaluate(()=>{window.__logoReloadSentinel='set';});
+  await Promise.all([
+    page.waitForNavigation({waitUntil:'domcontentloaded'}),
+    page.locator('.brand[data-go=home]').click()
+  ]);
+  await page.waitForFunction(()=>document.querySelector('.view.active')?.dataset.view==='home');
+  check('Brand returns home with a full reload',page.url().endsWith('#home')&&await page.evaluate(()=>window.__logoReloadSentinel===undefined));
+  await applyFonts(page);
+  await page.evaluate(()=>{window.__opened=[];window.open=(url)=>{window.__opened.push(url);return null;};});
   const source=fs.readFileSync(path.join(root,'index.html'),'utf8')+fs.readFileSync(path.join(root,'assets/app.js'),'utf8');
   check('No prohibited private route strings',['東山','嘉義','台北'].every(to=>!source.includes('台南'+'|'+to)));
   const css=fs.readFileSync(path.join(root,'assets/styles.css'),'utf8');

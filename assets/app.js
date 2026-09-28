@@ -66,6 +66,11 @@ function bindNav(){
   $$("[data-go]").forEach(el=>{
     el.onclick=e=>{
       e.preventDefault();
+      if(el.classList.contains("brand")&&el.dataset.go==="home"){
+        history.replaceState(null,"",location.pathname+location.search+"#home");
+        location.reload();
+        return;
+      }
       show(el.dataset.go);
     };
   });
@@ -163,9 +168,11 @@ function renderAll(){
   renderLocations();
   renderCCTV();
 
-  const live=state.traffic?.status==="live";
+  const trafficStatus=state.traffic?.status||"unavailable";
+  const live=trafficStatus==="live";
+  const stale=trafficStatus==="stale";
   $("#syncState").classList.toggle("ready",live);
-  $("#syncText").textContent=live?"即時":"同步中";
+  $("#syncText").textContent=live?"即時":stale?"最後可用":"同步中";
   $("#lastUpdate").textContent=formatTime(state.traffic?.updatedAt);
 
   $("#chargeQuick").textContent=state.charging.length?state.charging.length+" 處":"服務區";
@@ -174,7 +181,7 @@ function renderAll(){
   const h1=avg(state.traffic?.highways?.["1"]||[]);
   $("#trafficValue").textContent=h1?h1+" km/h":"—";
   $("#trafficDot").className=live?"dot ready":"dot pending";
-  $("#trafficCaption").textContent=live&&h1?"國 1 平均":"可開 1968 即時查看";
+  $("#trafficCaption").textContent=live&&h1?"國 1 平均":stale&&h1?"TDX 最後可用資料":"可開 1968 即時查看";
 
   const snow=avg([...(state.tunnel?.south||[]),...(state.tunnel?.north||[])]);
   $("#tunnelValue").textContent=snow?snow+" km/h":"—";
@@ -228,14 +235,26 @@ function renderCharging(){
     const key=chargingKey(x);
     const favorite=state.chargingFavorites.includes(key);
     const query=encodeURIComponent(x.name+" "+x.location);
+    const tdx=x.road==="tdx";
+    const known=tdx&&!x.liveStale&&x.liveStatusKnown&&Number.isFinite(Number(x.availableConnectors));
+    const synced=tdx&&!x.liveStale&&Number(x.liveStateCount)>0;
+    const statusLine=tdx
+      ? (x.liveStale
+        ? '<div class="charging-status-line"><span>最後可用</span><small>即時接頭狀態更新暫時中斷</small></div>'
+        : known
+          ? '<div class="charging-status-line"><span>TDX 即時</span><small>可用 '+Number(x.availableConnectors)+' / '+Number(x.liveStateCount)+' 槍</small></div>'
+          : synced
+            ? '<div class="charging-status-line"><span>TDX 即時</span><small>狀態已同步，空槍數未能安全判讀</small></div>'
+            : '<div class="charging-status-line"><span>設備資料</span><small>未提供可安全判讀的即時空槍</small></div>')
+      : '<div class="charging-status-line"><span>設備資料</span><small>非即時空槍</small></div>';
     return '<article class="list-item charging-item">'+
       '<div class="list-head">'+
         '<div><div class="charging-title-line"><h3>'+esc(x.name)+'</h3><button class="favorite-btn '+(favorite?'active':'')+'" data-charge-favorite="'+esc(key)+'" aria-label="'+(favorite?'取消收藏':'加入收藏')+'" aria-pressed="'+favorite+'">★</button></div><div class="meta">'+esc(x.direction)+' · '+esc(x.operator)+'</div></div>'+
         '<span class="route-tag">國 '+esc(x.road)+'</span>'+
       '</div>'+
-      '<div class="charging-status-line"><span>設備資料</span><small>非即時空槍</small></div>'+
+      statusLine+
       '<div class="specs">'+
-        '<span>'+esc(x.spaces)+' 車位</span>'+
+        '<span>'+esc(x.spaces)+(tdx?' 充電點':' 車位')+'</span>'+
         '<span>'+esc(x.power)+'</span>'+
         (x.connectors||[]).map(c=>'<span>'+esc(c)+'</span>').join("")+
       '</div>'+
@@ -409,7 +428,7 @@ async function ensureParkingCity(city){
 }
 
 function parkingSelectedRows(){
-  if(state.parkingCity==="Tainan"&&state.parkingLive?.status==="live"){
+  if(state.parkingCity==="Tainan"&&["live","stale"].includes(state.parkingLive?.status)){
     return (state.parkingLive.items||[]).map(x=>({
       id:String(x.id||x.code||x.name),
       city:"Tainan",
@@ -418,7 +437,7 @@ function parkingSelectedRows(){
       address:x.address||"",
       fare:x.chargeFee||"",
       total:Number(x.carTotal||0),
-      available:Number(x.car||0),
+      available:x.car==null?null:Number(x.car),
       green:Number(x.green||0),
       chargeTime:x.chargeTime||"",
       dataCollectTime:x.sourceUpdate||state.parkingLive.updatedAt||"",
@@ -481,8 +500,10 @@ function renderParking(){
     root.innerHTML='<div class="parking-national-intro"><b>全台停車快速入口</b><p>選擇縣市後，可使用 Google Maps／Apple 地圖快速尋找附近停車場；有官方即時資料時會同步顯示。</p><div class="item-actions"><button class="go" data-national-map="google">Google Maps 找附近</button><button data-national-map="apple">Apple 地圖找附近</button></div></div>';
   }else if(city==="Tainan"){
     const rows=parkingSelectedRows().filter(x=>!query||[x.name,x.town,x.address].join(" ").toLowerCase().includes(query)).sort((a,b)=>(b.available??-1)-(a.available??-1));
-    $("#parkingLiveTime").textContent=state.parkingLive?.status==="live"?(state.parkingLive.updatedAt||"官方即時"):"官方即時暫不可用";
-    $("#parkingScopeStatus").textContent=state.parkingLive?.status==="live"?"已接臺南市官方即時剩餘車位":"仍可使用全台地圖搜尋";
+    const tainanLive=state.parkingLive?.status==="live";
+    const tainanStale=state.parkingLive?.status==="stale";
+    $("#parkingLiveTime").textContent=tainanLive?(state.parkingLive.updatedAt||"官方即時"):tainanStale?(state.parkingLive.updatedAt||"最後可用"):"官方即時暫不可用";
+    $("#parkingScopeStatus").textContent=tainanLive?"已接臺南市 TDX 即時剩餘車位":tainanStale?"TDX 更新暫時中斷，顯示最後可用資料":"仍可使用全台地圖搜尋";
     root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>'+(query?"找不到符合的臺南停車場":"臺南官方即時資料暫時無法取得")+'</b><p>即時車位資料暫時無法取得，仍可使用 Google Maps 或 Apple 地圖找停車場。</p></div>';
   }else if(state.parkingRemote.status==="loading"&&state.parkingRemote.city===city){
     $("#parkingLiveTime").textContent="讀取官方資料中";
@@ -896,7 +917,10 @@ function renderTraffic(){
     '</article>'
   ).join(""):'<div class="empty"><b>國 '+state.highway+' 自動同步目前沒有資料</b><p>即時路況資料暫時無法取得，可直接開啟高公局 1968 查看。</p></div>';
 
-  root.innerHTML=list+official;
+  const statusNote=state.traffic?.status==="stale"
+    ? '<div class="notice">TDX 暫時無法更新，以下顯示最後可用資料 · '+esc(formatTime(state.traffic?.updatedAt))+'</div>'
+    : "";
+  root.innerHTML=statusNote+list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
   $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(state.highway));
 }
@@ -919,7 +943,10 @@ function renderTunnel(){
     '</article>'
   ).join(""):'<div class="empty"><b>雪隧自動同步目前沒有資料</b><p>直接開 1968 可查看國 5 即時影像與路況。</p></div>';
 
-  root.innerHTML=list+official;
+  const statusNote=state.tunnel?.status==="stale"
+    ? '<div class="notice">TDX 暫時無法更新，以下顯示最後可用資料 · '+esc(formatTime(state.tunnel?.updatedAt))+'</div>'
+    : "";
+  root.innerHTML=statusNote+list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
   $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad("5"));
 }
