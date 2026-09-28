@@ -16,6 +16,7 @@ const state={
   chargingConnector:"all",
   chargingPower:0,
   chargingOperator:"all",
+  chargingCity:"all",
   chargingQuick:"all",
   chargingSort:"smart",
   chargingOrigin:null,
@@ -217,6 +218,45 @@ function chargingPowerLabel(x){
   if(x?.road==="tdx"&&/^[12](?:\.0)?\s*kW$/i.test(legacy))return "功率未提供";
   return legacy||"功率未提供";
 }
+function chargingLiveCounts(x){
+  const explicit={
+    available:Number(x?.availableConnectors),
+    occupied:Number(x?.occupiedConnectors),
+    fault:Number(x?.faultedConnectors),
+    unavailable:Number(x?.unavailableConnectors),
+    unknown:Number(x?.unknownConnectors)
+  };
+  const hasExplicit=Boolean(x?.liveStatusKnown)||[explicit.occupied,explicit.fault,explicit.unavailable,explicit.unknown].some(v=>Number.isFinite(v)&&v>0);
+  if(hasExplicit){
+    return {
+      available:Number.isFinite(explicit.available)?explicit.available:0,
+      occupied:Number.isFinite(explicit.occupied)?explicit.occupied:0,
+      fault:Number.isFinite(explicit.fault)?explicit.fault:0,
+      unavailable:Number.isFinite(explicit.unavailable)?explicit.unavailable:0,
+      unknown:Number.isFinite(explicit.unknown)?explicit.unknown:0,
+      total:Number(x?.liveStateCount)||0
+    };
+  }
+  const states=x?.liveStates&&typeof x.liveStates==="object"?x.liveStates:{};
+  const keys=Object.keys(states).filter(k=>Number(states[k])>0);
+  if(keys.length&&keys.every(k=>["0","1","2","3"].includes(String(k)))){
+    return {
+      available:Number(states["1"]||0),
+      occupied:Number(states["2"]||0),
+      fault:Number(states["3"]||0),
+      unavailable:0,
+      unknown:Number(states["0"]||0),
+      total:keys.reduce((sum,k)=>sum+Number(states[k]||0),0)
+    };
+  }
+  return {available:0,occupied:0,fault:0,unavailable:0,unknown:Number(x?.liveStateCount||0),total:Number(x?.liveStateCount||0)};
+}
+function chargingOperatorLabel(x){
+  const value=String(x?.operator||"").trim();
+  if(!value||value==="TDX")return "TDX 官方站點";
+  if(/^\d{8}$/.test(value))return "營運商名稱待同步";
+  return value;
+}
 function chargingDirectionMatch(x){
   const d=String(x.direction||"");
   if(state.chargingDirection==="all")return true;
@@ -238,7 +278,7 @@ function chargingDistanceKm(x){
 function chargingQuickMatch(x){
   if(state.chargingQuick==="all")return true;
   if(state.chargingQuick==="available"){
-    return x.road==="tdx"&&!x.liveStale&&Number(x.availableConnectors)>0;
+    return x.road==="tdx"&&!x.liveStale&&chargingLiveCounts(x).available>0;
   }
   if(state.chargingQuick==="fast")return chargingPowerKw(x)>=100;
   if(state.chargingQuick==="ccs2")return chargingConnectors(x).includes("CCS2");
@@ -251,8 +291,8 @@ function chargingQuickMatch(x){
 function chargingSortRank(x){
   if(x.road!=="tdx")return 5;
   if(x.liveStale)return 4;
-  if(Number(x.availableConnectors)>0)return 0;
-  if(Number(x.liveStateCount)>0&&x.liveStatusKnown)return 1;
+  if(chargingLiveCounts(x).available>0)return 0;
+  if(Number(x.liveStateCount)>0&&chargingLiveCounts(x).unknown===0)return 1;
   if(Number(x.liveStateCount)>0)return 2;
   return 3;
 }
@@ -270,26 +310,21 @@ function chargingStatusMarkup(x){
   if(!tdx)return '<div class="charging-status-line static"><span>設備資料</span><small>此筆未提供即時空槍</small></div>';
   const updated=x.statusUpdatedAt?formatTime(x.statusUpdatedAt):"更新時間未提供";
   if(x.liveStale)return '<div class="charging-status-line stale"><span>狀態逾時</span><small>顯示最後可用資料 · '+esc(updated)+'</small></div>';
-  const total=Number(x.liveStateCount)||0;
-  if(!total)return '<div class="charging-status-line static"><span>設備資料</span><small>此站目前沒有可用的即時槍況</small></div>';
+  const counts=chargingLiveCounts(x);
+  if(!counts.total)return '<div class="charging-status-line static"><span>設備資料</span><small>此站目前沒有可用的即時槍況</small></div>';
 
-  const available=Number(x.availableConnectors)||0;
-  const occupied=Number(x.occupiedConnectors)||0;
-  const faulted=Number(x.faultedConnectors)||0;
-  const unavailable=Number(x.unavailableConnectors)||0;
-  const unknown=Number(x.unknownConnectors)||0;
   const parts=[];
-  if(occupied)parts.push("使用中 "+occupied);
-  if(faulted)parts.push("故障 "+faulted);
-  if(unavailable)parts.push("其他不可用 "+unavailable);
-  if(unknown)parts.push("未知 "+unknown);
+  if(counts.occupied)parts.push("使用中 "+counts.occupied);
+  if(counts.fault)parts.push("故障 "+counts.fault);
+  if(counts.unavailable)parts.push("其他不可用 "+counts.unavailable);
+  if(counts.unknown)parts.push("未知 "+counts.unknown);
   parts.push(updated);
 
-  if(available>0){
-    const label=(unknown?"至少 ":"")+available+" 槍可用";
+  if(counts.available>0){
+    const label=(counts.unknown?"至少 ":"")+counts.available+" 槍可用";
     return '<div class="charging-status-line available"><span>'+label+'</span><small>'+esc(parts.join(" · "))+'</small></div>';
   }
-  if(x.liveStatusKnown){
+  if(counts.unknown===0){
     return '<div class="charging-status-line busy"><span>目前無空槍</span><small>'+esc(parts.join(" · "))+'</small></div>';
   }
   return '<div class="charging-status-line partial"><span>即時狀態部分未知</span><small>'+esc(parts.join(" · "))+'</small></div>';
@@ -316,6 +351,7 @@ function renderCharging(){
   const q=($("#chargingSearch")?.value||"").trim().toLowerCase();
   let rows=state.charging
     .filter(x=>(state.road==="all"||x.road===state.road))
+    .filter(x=>state.chargingCity==="all"||x.city===state.chargingCity)
     .filter(chargingDirectionMatch)
     .filter(x=>state.chargingConnector==="all"||chargingConnectors(x).includes(state.chargingConnector))
     .filter(x=>chargingPowerKw(x)>=Number(state.chargingPower||0))
@@ -337,7 +373,7 @@ function renderCharging(){
     if(fa!==fb)return Number(fb)-Number(fa);
     const rank=chargingSortRank(a)-chargingSortRank(b);
     if(rank)return rank;
-    const available=Number(b.availableConnectors||0)-Number(a.availableConnectors||0);
+    const available=chargingLiveCounts(b).available-chargingLiveCounts(a).available;
     if(available)return available;
     const power=chargingPowerKw(b)-chargingPowerKw(a);
     if(power)return power;
@@ -368,7 +404,7 @@ function renderCharging(){
     const destination=encodeURIComponent(hasCoords?(lat+","+lon):(x.name+" "+x.location));
     const tdx=x.road==="tdx";
     const distance=chargingDistanceKm(x);
-    const meta=[tdx?x.cityName:x.direction,x.operator].filter(Boolean).join(" · ");
+    const meta=[tdx?x.cityName:x.direction,chargingOperatorLabel(x)].filter(Boolean).join(" · ");
     const routeTag=tdx?"TDX":("國 "+x.road);
     return '<article class="list-item charging-item">'+
       '<div class="list-head">'+
@@ -1281,6 +1317,7 @@ function bindChargingTools(){
     if(!el)return;
     el.onchange=()=>{state[key]=transform(el.value);renderCharging();};
   };
+  bindSelect("chargingCity","chargingCity");
   bindSelect("chargingDirection","chargingDirection");
   bindSelect("chargingConnector","chargingConnector");
   bindSelect("chargingPower","chargingPower",Number);
@@ -1317,6 +1354,7 @@ function bindChargingTools(){
 
   $("#resetChargingFilters")?.addEventListener("click",()=>{
     state.road="all";
+    state.chargingCity="all";
     state.chargingDirection="all";
     state.chargingConnector="all";
     state.chargingPower=0;
