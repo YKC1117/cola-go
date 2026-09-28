@@ -24,6 +24,17 @@ jobs:
       - uses: actions/checkout@v4
       - name: Python syntax
         run: python3 -m py_compile scripts/sync_tdx.py
+      - name: Parking availability sanity guard
+        run: |
+          python3 - <<'PY'
+          from scripts.sync_tdx import validated_parking_available
+          assert validated_parking_available(235, 55) == 55
+          assert validated_parking_available(235, 254) is None
+          assert validated_parking_available(235, -1) is None
+          assert validated_parking_available(235, None) is None
+          assert validated_parking_available(0, 12) == 12
+          assert validated_parking_available(None, 12) == 12
+          PY
       - name: JavaScript syntax
         run: |
           node --check assets/app.js
