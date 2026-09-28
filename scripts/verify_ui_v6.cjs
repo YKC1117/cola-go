@@ -126,7 +126,14 @@ let browser;
   await page.locator('.bottom-nav [data-go=tunnel]').click();
   await page.locator('#tunnelDirection [data-direction=north]').click();
   check('Snow tunnel direction changes',await page.evaluate(()=>state.direction==='north'));
-  check('Missing tunnel feed renders unavailable without speed numbers',await page.locator('#tunnelList .metric').count()===0 && (await page.locator('#tunnelList').textContent()).includes('沒有資料'));
+  const checkedInTunnel=JSON.parse(fs.readFileSync(path.join(root,'data/tdx/tunnel.json'),'utf8'));
+  const checkedInNorth=Array.isArray(checkedInTunnel.north)?checkedInTunnel.north.length:0;
+  if(checkedInNorth){
+    await page.waitForFunction(()=>['live','stale'].includes(state.tunnel?.status)&&document.querySelectorAll('#tunnelList .metric').length>0);
+    check('Checked-in TDX tunnel cache renders official speed rows',await page.locator('#tunnelList .metric').count()>0&&await page.evaluate(()=>['live','stale'].includes(state.tunnel?.status)));
+  }else{
+    check('Missing tunnel feed renders unavailable without speed numbers',await page.locator('#tunnelList .metric').count()===0 && (await page.locator('#tunnelList').textContent()).includes('沒有資料'));
+  }
   for(const width of [390,1440]){
     await page.setViewportSize({width,height:900});
     const views=await page.locator('.view').evaluateAll(xs=>xs.map(x=>x.dataset.view));
@@ -166,8 +173,9 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-20');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-21');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
+  check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
   await context.setOffline(true);
   await page.reload();
   await page.waitForFunction(()=>document.querySelectorAll('#chargingList article').length>0);

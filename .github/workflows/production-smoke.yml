@@ -65,6 +65,7 @@ jobs:
           grep -Fq '$$("[data-go]").forEach' "$work/app.js"
           grep -Fq './data/tdx/traffic.json' "$work/tdx-runtime.js"
           grep -Fq './data/tdx/tunnel.json' "$work/tdx-runtime.js"
+          grep -Fq 'u.pathname.includes("/data/tdx/")' "$work/sw.js"
 
           python3 - "$work" <<'PY'
           import json, pathlib, sys
