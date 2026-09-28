@@ -407,38 +407,145 @@ def sync_parking_live(tok):
             stale_or_unavailable(path, message="TDX 即時剩餘車位暫時無法更新")
 
 
+CONNECTOR_TYPES = {
+    1: "CCS1", 2: "CCS2", 3: "CHAdeMO", 4: "Tesla TPC",
+    5: "J1772(Type1)", 6: "Mennekes(Type2)", 254: "其他", 255: "未知",
+}
+POWER_MODES = {1: "AC", 2: "DC"}
+
+
+def connector_type_name(value):
+    if value is None or value == "":
+        return ""
+    try:
+        key = int(str(value).strip())
+    except (TypeError, ValueError):
+        return str(value).strip()
+    return CONNECTOR_TYPES.get(key, str(key))
+
+
+def power_mode_name(value):
+    if value is None or value == "":
+        return ""
+    try:
+        key = int(str(value).strip())
+    except (TypeError, ValueError):
+        return str(value).strip()
+    return POWER_MODES.get(key, str(key))
+
+
+def power_rating_kw(value):
+    if value is None or value == "":
+        return None
+    if isinstance(value, (int, float)):
+        result = number(value)
+        return result if result is not None and result > 0 else None
+    match = re.search(r"(\d+(?:\.\d+)?)\s*k?w", str(value), re.I)
+    if not match:
+        match = re.search(r"(\d+(?:\.\d+)?)", str(value))
+    return number(match.group(1)) if match else None
+
+
+def station_location(record, city_name):
+    location = record.get("Location")
+    if isinstance(location, str) and location.strip():
+        return location.strip()
+    pieces = []
+    poi = ""
+    if isinstance(location, dict):
+        node = location.get("Address") or location.get("CityRoad")
+        if isinstance(node, dict):
+            ordered = (
+                "City", "Town", "Village", "Road", "Section", "Lane",
+                "Alley", "No", "Floor",
+            )
+            address = "".join(str(node.get(key) or "") for key in ordered).strip()
+            if address:
+                pieces.append(address)
+        place = location.get("Place")
+        if isinstance(place, dict):
+            poi = str(place.get("POI") or place.get("Name") or "").strip()
+        elif isinstance(place, str):
+            poi = place.strip()
+    fallback = str(record.get("Address") or "").strip()
+    if fallback and fallback not in pieces:
+        pieces.append(fallback)
+    if poi:
+        pieces.append(poi)
+    return " · ".join(pieces) or city_name
+
+
 def inline_connector_summary(record):
     candidates = record.get("Connectors") or record.get("ConnectorTypes") or []
     if not isinstance(candidates, list):
         return []
     out = []
     for connector in candidates:
+        if not isinstance(connector, dict):
+            continue
         out.append({
             "id": str(connector.get("ConnectorID") or ""),
-            "type": connector.get("ConnectorType") or connector.get("Type") or connector.get("ChargingType"),
-            "power": number(connector.get("MaxPower") or connector.get("MaxPowerKW") or connector.get("Power")),
+            "type": connector_type_name(
+                connector.get("ConnectorType") if connector.get("ConnectorType") is not None
+                else connector.get("Type") if connector.get("Type") is not None
+                else connector.get("ChargingType")
+            ),
+            "powerMode": power_mode_name(connector.get("Power")),
+            "powerKw": power_rating_kw(
+                connector.get("PowerRating")
+                or connector.get("MaxPower")
+                or connector.get("MaxPowerKW")
+            ),
+            "quantity": integer(connector.get("Quantity")) or 1,
         })
     return out
 
 
-def normalize_station(record, city, city_name):
+def operator_map(rows):
+    out = {}
+    for record in rows:
+        operator_id = str(record.get("OperatorID") or record.get("BAN") or "")
+        if not operator_id:
+            continue
+        out[operator_id] = {
+            "name": zh(record.get("OperatorName")) or operator_id,
+            "telephone": str(record.get("Telephone") or ""),
+            "webURL": str(record.get("WebURL") or ""),
+        }
+    return out
+
+
+def normalize_station(record, city, city_name, operators=None):
     source_id = str(record.get("StationID") or record.get("ChargingStationID") or "")
     if not source_id:
         return None
     lat, lon = pos(record)
+    operator_id = str(record.get("OperatorID") or record.get("OperatorId") or "")
+    operator = (operators or {}).get(operator_id, {})
+    station_phone = str(record.get("Telephone") or "")
     return {
         "id": f"{city}:{source_id}",
         "sourceId": source_id,
         "city": city,
         "cityName": city_name,
         "name": zh(record.get("StationName")) or zh(record.get("Name")) or source_id,
-        "location": str(record.get("Address") or city_name),
-        "operator": str(record.get("OperatorID") or record.get("OperatorId") or "TDX"),
+        "location": station_location(record, city_name),
+        "operator": operator.get("name") or operator_id or "TDX",
+        "operatorId": operator_id,
+        "operatorWebURL": operator.get("webURL") or "",
+        "operatorTelephone": operator.get("telephone") or "",
+        "telephone": station_phone,
+        "serviceTime": str(record.get("ServiceTime") or ""),
+        "parkingRate": str(record.get("ParkingRate") or ""),
+        "chargingRate": str(record.get("ChargingRate") or ""),
+        "description": str(record.get("Description") or ""),
+        "operationType": integer(record.get("OperationType")),
         "lat": lat,
         "lon": lon,
         "road": "tdx",
         "direction": city_name,
         "note": "TDX 官方充電站",
+        "spaces": integer(record.get("ChargingPoints") or record.get("Spaces")) or "—",
         "_inlineConnectors": inline_connector_summary(record),
     }
 
@@ -457,12 +564,25 @@ def normalize_connector(record):
     connector_id = str(record.get("ConnectorID") or "")
     station_id = str(record.get("StationID") or record.get("ChargingStationID") or "")
     point_id = str(record.get("ChargingPointID") or "")
+    raw_type = (
+        record.get("ConnectorType") if record.get("ConnectorType") is not None
+        else record.get("Type") if record.get("Type") is not None
+        else record.get("ChargingType")
+    )
     return {
         "id": connector_id,
         "stationId": station_id,
         "pointId": point_id,
-        "type": record.get("ConnectorType") or record.get("Type") or record.get("ChargingType"),
-        "power": number(record.get("MaxPower") or record.get("MaxPowerKW") or record.get("Power")),
+        "type": connector_type_name(raw_type),
+        "powerMode": power_mode_name(record.get("Power")),
+        "powerKw": power_rating_kw(
+            record.get("PowerRating")
+            or record.get("MaxPower")
+            or record.get("MaxPowerKW")
+        ),
+        "voltage": str(record.get("Voltage") or ""),
+        "currentRating": str(record.get("CurrentRating") or ""),
+        "quantity": 1,
     }
 
 
@@ -481,8 +601,13 @@ def sync_charging_static(tok):
             continue
         try:
             station_raw = api_all(tok, f"/v1/EV/Station/City/{city}")
+            operator_raw = []
             point_raw = []
             connector_raw = []
+            try:
+                operator_raw = api_all(tok, f"/v1/EV/Operator/City/{city}")
+            except Exception as error:
+                print("EV_OPERATOR_OPTIONAL_FAIL", city, repr(error), file=sys.stderr)
             try:
                 point_raw = api_all(tok, f"/v1/EV/ChargingPoint/City/{city}")
             except Exception as error:
@@ -492,7 +617,8 @@ def sync_charging_static(tok):
             except Exception as error:
                 print("EV_CONNECTOR_OPTIONAL_FAIL", city, repr(error), file=sys.stderr)
 
-            stations = [normalize_station(x, city, city_name) for x in station_raw]
+            operators = operator_map(operator_raw)
+            stations = [normalize_station(x, city, city_name, operators) for x in station_raw]
             stations = [x for x in stations if x]
             points = [normalize_point(x) for x in point_raw]
             connectors = [normalize_connector(x) for x in connector_raw]
@@ -527,37 +653,38 @@ def sync_charging_static(tok):
                     station.pop("_inlineConnectors", None)
 
                 connector_types = sorted({
-                    str(x.get("type")) for x in joined_connectors if x.get("type") not in {None, ""}
+                    str(x.get("type")) for x in joined_connectors
+                    if x.get("type") not in {None, "", "未知"}
                 })
-                powers = [number(x.get("power")) for x in joined_connectors]
-                powers = [x for x in powers if x is not None]
+                powers = [number(x.get("powerKw")) for x in joined_connectors]
+                powers = [x for x in powers if x is not None and x > 0]
+                power_modes = sorted({
+                    str(x.get("powerMode")) for x in joined_connectors
+                    if x.get("powerMode")
+                })
                 connector_ids = sorted({
                     str(x.get("id")) for x in joined_connectors if x.get("id")
                 })
                 point_ids = sorted({x["id"] for x in station_points if x.get("id")})
+                connector_count = sum(integer(x.get("quantity")) or 1 for x in joined_connectors)
+                max_power = max(powers) if powers else None
 
                 station.update({
                     "connectors": connector_types,
                     "connectorIds": connector_ids,
                     "chargingPointIds": point_ids,
-                    "connectorCount": len(connector_ids) or len(joined_connectors),
-                    "spaces": len(point_ids) or integer(
-                        next(
-                            (
-                                x.get("TotalChargingPoints")
-                                for x in station_raw
-                                if str(x.get("StationID") or x.get("ChargingStationID") or "") == source_id
-                            ),
-                            None,
-                        )
-                    ) or "—",
-                    "power": (f"{int(max(powers))} kW" if powers else "功率依現場"),
+                    "connectorCount": connector_count,
+                    "spaces": len(point_ids) or station.get("spaces") or "—",
+                    "powerModes": power_modes,
+                    "maxPowerKw": max_power,
+                    "power": (f"{int(max_power) if float(max_power).is_integer() else max_power:g} kW" if max_power else "功率未提供"),
                 })
 
                 previous = old_by_id.get(station["id"], {})
                 for key in (
-                    "liveStateCount", "availableConnectors", "liveStatusKnown",
-                    "liveStates", "statusUpdatedAt", "liveStale",
+                    "liveStateCount", "availableConnectors", "occupiedConnectors",
+                    "faultedConnectors", "unavailableConnectors", "unknownConnectors",
+                    "liveStatusKnown", "liveStates", "statusUpdatedAt", "liveStale",
                 ):
                     if key in previous:
                         station[key] = previous[key]
@@ -566,7 +693,11 @@ def sync_charging_static(tok):
             if not city_rows:
                 raise RuntimeError("TDX returned no charging stations")
             all_rows.extend(city_rows)
-            print("EV_STATIC", city, len(city_rows), "points", len(points), "connectors", len(connectors))
+            print(
+                "EV_STATIC", city, len(city_rows),
+                "operators", len(operators),
+                "points", len(points), "connectors", len(connectors),
+            )
         except Exception as error:
             failures.append(city)
             print("EV_STATIC_FAIL", city, repr(error), file=sys.stderr)
@@ -593,24 +724,38 @@ def sync_charging_static(tok):
 
 
 _AVAILABLE_TOKENS = ("available", "free", "idle", "ready", "可用", "空閒", "閒置", "待機")
-_UNAVAILABLE_TOKENS = (
-    "occupied", "charging", "busy", "unavailable", "faulted", "fault",
-    "offline", "reserved", "inoperative", "使用中", "充電中", "忙碌",
-    "故障", "離線", "預約",
-)
+_OCCUPIED_TOKENS = ("occupied", "charging", "busy", "reserved", "使用中", "充電中", "忙碌", "預約")
+_FAULT_TOKENS = ("faulted", "fault", "故障", "異常")
+_UNAVAILABLE_TOKENS = ("unavailable", "offline", "inoperative", "離線", "不可用")
 
 
 def classify_live_state(value):
     if value is None:
-        return None
+        return "unknown"
     text = str(value).strip().lower()
-    if not text or text.replace(".", "", 1).isdigit():
-        return None
+    if not text:
+        return "unknown"
+    try:
+        code = int(float(text))
+    except ValueError:
+        code = None
+    if code == 1:
+        return "available"
+    if code == 2:
+        return "occupied"
+    if code == 3:
+        return "fault"
+    if code is not None:
+        return "unknown"
+    if any(token in text for token in _FAULT_TOKENS):
+        return "fault"
+    if any(token in text for token in _OCCUPIED_TOKENS):
+        return "occupied"
     if any(token in text for token in _UNAVAILABLE_TOKENS):
-        return False
+        return "unavailable"
     if any(token in text for token in _AVAILABLE_TOKENS):
-        return True
-    return None
+        return "available"
+    return "unknown"
 
 
 def sync_charging_live(tok):
@@ -640,17 +785,21 @@ def sync_charging_live(tok):
             for row in city_rows:
                 station_rows = grouped.get(str(row.get("sourceId") or ""), [])
                 states = Counter()
-                classifications = []
+                classes = Counter()
                 source_times = []
                 for record in station_rows:
                     raw_state = (
-                        record.get("Status") if record.get("Status") is not None
-                        else record.get("ConnectorStatus") if record.get("ConnectorStatus") is not None
+                        record.get("ConnectorStatus") if record.get("ConnectorStatus") is not None
+                        else record.get("Status") if record.get("Status") is not None
                         else record.get("AvailabilityStatus")
                     )
                     states[str(raw_state if raw_state is not None else "unknown")] += 1
-                    classifications.append(classify_live_state(raw_state))
-                    stamp = record.get("DataCollectTime") or record.get("UpdateTime")
+                    classes[classify_live_state(raw_state)] += 1
+                    stamp = (
+                        record.get("LastUpdateTime")
+                        or record.get("DataCollectTime")
+                        or record.get("UpdateTime")
+                    )
                     if stamp:
                         source_times.append(str(stamp))
 
@@ -658,12 +807,12 @@ def sync_charging_live(tok):
                 row["liveStates"] = dict(states)
                 row["liveStale"] = False
                 row["statusUpdatedAt"] = max(source_times) if source_times else None
-                if station_rows and all(value is not None for value in classifications):
-                    row["liveStatusKnown"] = True
-                    row["availableConnectors"] = sum(1 for value in classifications if value is True)
-                else:
-                    row["liveStatusKnown"] = False
-                    row["availableConnectors"] = None
+                row["availableConnectors"] = classes["available"] if station_rows else None
+                row["occupiedConnectors"] = classes["occupied"] if station_rows else 0
+                row["faultedConnectors"] = classes["fault"] if station_rows else 0
+                row["unavailableConnectors"] = classes["unavailable"] if station_rows else 0
+                row["unknownConnectors"] = classes["unknown"] if station_rows else 0
+                row["liveStatusKnown"] = bool(station_rows) and classes["unknown"] == 0
                 if row["statusUpdatedAt"] and (newest is None or row["statusUpdatedAt"] > newest):
                     newest = row["statusUpdatedAt"]
 
