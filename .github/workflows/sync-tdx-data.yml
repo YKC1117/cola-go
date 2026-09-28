@@ -1,6 +1,11 @@
 name: Sync TDX official data
 
 on:
+  push:
+    branches: ["main"]
+    paths:
+      - "scripts/sync_tdx.py"
+      - ".github/workflows/sync-tdx-data.yml"
   workflow_dispatch:
     inputs:
       bootstrap:
