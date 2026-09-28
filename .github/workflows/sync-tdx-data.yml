@@ -56,11 +56,33 @@ jobs:
           set -euo pipefail
           git config user.name "COLA GO Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/tdx/
-          if git diff --cached --quiet; then
-            echo "No TDX data changes."
-            exit 0
-          fi
-          git commit -m "data: refresh TDX official cache"
-          git pull --rebase origin main
-          git push
+
+          snapshot="$(mktemp -d)"
+          trap 'rm -rf "$snapshot"' EXIT
+          cp -a data/tdx "$snapshot/tdx"
+
+          for attempt in 1 2 3; do
+            echo "Publish attempt $attempt"
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf data/tdx
+            mkdir -p data
+            cp -a "$snapshot/tdx" data/tdx
+
+            git add data/tdx/
+            if git diff --cached --quiet; then
+              echo "No TDX data changes."
+              exit 0
+            fi
+
+            git commit -m "data: refresh TDX official cache"
+            if git push origin HEAD:main; then
+              echo "TDX cache published."
+              exit 0
+            fi
+
+            echo "Main changed during publish; retrying on latest main." >&2
+          done
+
+          echo "Unable to publish TDX cache after 3 attempts." >&2
+          exit 1
