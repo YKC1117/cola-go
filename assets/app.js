@@ -199,9 +199,23 @@ function parseChargingPower(value){
   const m=String(value||"").match(/\d+(?:\.\d+)?/);
   return m?Number(m[0]):0;
 }
+const LEGACY_TDX_CONNECTOR_TYPES={"1":"CCS1","2":"CCS2","3":"CHAdeMO","4":"Tesla TPC","5":"J1772(Type1)","6":"Mennekes(Type2)","254":"其他","255":"未知"};
+function chargingConnectors(x){
+  return (x?.connectors||[]).map(value=>LEGACY_TDX_CONNECTOR_TYPES[String(value)]||String(value)).filter(Boolean);
+}
 function chargingPowerKw(x){
   const direct=Number(x?.maxPowerKw);
-  return Number.isFinite(direct)&&direct>0?direct:parseChargingPower(x?.power);
+  if(Number.isFinite(direct)&&direct>0)return direct;
+  const legacy=String(x?.power||"").trim();
+  if(x?.road==="tdx"&&/^[12](?:\.0)?\s*kW$/i.test(legacy))return 0;
+  return parseChargingPower(legacy);
+}
+function chargingPowerLabel(x){
+  const kw=Number(x?.maxPowerKw);
+  if(Number.isFinite(kw)&&kw>0)return (Number.isInteger(kw)?kw:kw.toFixed(1))+" kW";
+  const legacy=String(x?.power||"").trim();
+  if(x?.road==="tdx"&&/^[12](?:\.0)?\s*kW$/i.test(legacy))return "功率未提供";
+  return legacy||"功率未提供";
 }
 function chargingDirectionMatch(x){
   const d=String(x.direction||"");
@@ -227,10 +241,10 @@ function chargingQuickMatch(x){
     return x.road==="tdx"&&!x.liveStale&&Number(x.availableConnectors)>0;
   }
   if(state.chargingQuick==="fast")return chargingPowerKw(x)>=100;
-  if(state.chargingQuick==="ccs2")return (x.connectors||[]).includes("CCS2");
+  if(state.chargingQuick==="ccs2")return chargingConnectors(x).includes("CCS2");
   if(state.chargingQuick==="tesla"){
     const text=[x.name,x.operator,x.note].join(" ").toLowerCase();
-    return (x.connectors||[]).includes("Tesla TPC")||text.includes("tesla")||text.includes("特斯拉");
+    return chargingConnectors(x).includes("Tesla TPC")||text.includes("tesla")||text.includes("特斯拉");
   }
   return true;
 }
@@ -303,7 +317,7 @@ function renderCharging(){
   let rows=state.charging
     .filter(x=>(state.road==="all"||x.road===state.road))
     .filter(chargingDirectionMatch)
-    .filter(x=>state.chargingConnector==="all"||(x.connectors||[]).includes(state.chargingConnector))
+    .filter(x=>state.chargingConnector==="all"||chargingConnectors(x).includes(state.chargingConnector))
     .filter(x=>chargingPowerKw(x)>=Number(state.chargingPower||0))
     .filter(x=>state.chargingOperator==="all"||x.operator===state.chargingOperator)
     .filter(chargingQuickMatch)
@@ -365,8 +379,8 @@ function renderCharging(){
       '<div class="specs">'+
         (distance!=null?'<span>'+esc(distance<10?distance.toFixed(1):Math.round(distance))+' km</span>':"")+
         '<span>'+esc(x.spaces)+(tdx?' 充電點':' 車位')+'</span>'+
-        '<span>'+esc(x.power||"功率未提供")+'</span>'+
-        (x.connectors||[]).map(c=>'<span>'+esc(c)+'</span>').join("")+
+        '<span>'+esc(chargingPowerLabel(x))+'</span>'+
+        chargingConnectors(x).map(c=>'<span>'+esc(c)+'</span>').join("")+
       '</div>'+
       '<div class="location-line"><svg><use href="#i-pin"/></svg><span>'+esc(x.location)+(x.note&&!tdx?" · "+esc(x.note):"")+'</span></div>'+
       chargingDetailMarkup(x)+
