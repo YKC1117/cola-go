@@ -66,7 +66,8 @@ function bindNav(){
   $$("[data-go]").forEach(el=>{
     el.onclick=e=>{
       e.preventDefault();
-      if(el.classList.contains("brand")&&el.dataset.go==="home"){
+      if(el.hasAttribute("data-home-reload")&&el.dataset.go==="home"){
+        try{sessionStorage.clear();}catch{}
         history.replaceState(null,"",location.pathname+location.search+"#home");
         location.reload();
         return;

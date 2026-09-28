@@ -50,14 +50,24 @@ let browser;
   check('Public inquiry links do not expose GitHub issue forms',await page.evaluate(()=>![...document.querySelectorAll('[data-url]')].some(el=>/github\.com\/YKC1117\/cola-go\/issues\/new/.test(el.dataset.url||''))));
   check('No duplicate IDs',await page.evaluate(()=>{const ids=[...document.querySelectorAll('[id]')].map(x=>x.id);return new Set(ids).size===ids.length;}));
   check('No private route defaults or route-fill attributes',await page.evaluate(()=>!document.querySelector('[data-route],[data-fill-route]')&&!document.querySelector('#tripFrom').value&&!document.querySelector('#tripTo').value));
+  await page.setViewportSize({width:390,height:844});
   await page.locator('.bottom-nav [data-go=charging]').click();
-  await page.evaluate(()=>{window.__logoReloadSentinel='set';});
+  await page.evaluate(()=>{window.__logoReloadSentinel='topbar';sessionStorage.setItem('cola-go-logo-test','stale');});
   await Promise.all([
     page.waitForNavigation({waitUntil:'domcontentloaded'}),
-    page.locator('.brand[data-go=home]').click()
+    page.locator('.brand[data-home-reload]').click()
   ]);
   await page.waitForFunction(()=>document.querySelector('.view.active')?.dataset.view==='home');
-  check('Brand returns home with a full reload',page.url().endsWith('#home')&&await page.evaluate(()=>window.__logoReloadSentinel===undefined));
+  check('Topbar brand returns home with a full reload',page.url().endsWith('#home')&&await page.evaluate(()=>window.__logoReloadSentinel===undefined&&sessionStorage.getItem('cola-go-logo-test')===null));
+
+  check('Visible home hero brand is a real clickable button',await page.locator('.hero-brand[data-home-reload]').evaluate(el=>el.tagName==='BUTTON'&&getComputedStyle(el).visibility!=='hidden'));
+  await page.evaluate(()=>{window.__logoReloadSentinel='hero';sessionStorage.setItem('cola-go-logo-test','stale');});
+  await Promise.all([
+    page.waitForNavigation({waitUntil:'domcontentloaded'}),
+    page.locator('.hero-brand[data-home-reload]').click()
+  ]);
+  await page.waitForFunction(()=>document.querySelector('.view.active')?.dataset.view==='home');
+  check('Visible home hero brand reloads home on mobile',page.url().endsWith('#home')&&await page.evaluate(()=>window.__logoReloadSentinel===undefined&&sessionStorage.getItem('cola-go-logo-test')===null));
   await applyFonts(page);
   await page.evaluate(()=>{window.__opened=[];window.open=(url)=>{window.__opened.push(url);return null;};});
   const source=fs.readFileSync(path.join(root,'index.html'),'utf8')+fs.readFileSync(path.join(root,'assets/app.js'),'utf8');
