@@ -193,7 +193,7 @@ function renderAll(){
 }
 
 function chargingKey(x){
-  return [x.road,x.id||x.name,x.direction].join("|");
+  return [x.road,x.name,x.direction].join("|");
 }
 function parseChargingPower(value){
   const m=String(value||"").match(/\d+(?:\.\d+)?/);
