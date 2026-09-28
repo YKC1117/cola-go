@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, os, sys, time, urllib.parse, urllib.request
+import json, os, re, sys, time, urllib.parse, urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -159,7 +159,7 @@ def sync_charging(tok, bootstrap):
                 rows.append({"id":f"{city}:{sid}" if sid else f"{city}:{len(rows)}","city":city,"cityName":city_name,
                   "name":zh(x.get("StationName")) or zh(x.get("Name")) or sid or "充電站","location":str(x.get("Address") or city_name),
                   "operator":str(x.get("OperatorID") or x.get("OperatorId") or "TDX"),"connectors":types,
-                  "power":(str(int(max(powers)))+" kW") if powers else "功率依現場","spaces":x.get("ChargingPoints") or x.get("TotalChargingPoints") or "—",
+                  "power":(str(int(max(powers)))+" kW") if powers else "功率依現場","spaces":(len(x.get("ChargingPoints")) if isinstance(x.get("ChargingPoints"),list) else (x.get("TotalChargingPoints") or "—")),
                   "lat":lat,"lon":lon,"road":"tdx","direction":city_name,"note":"TDX 官方充電站"})
             print("EV",city,len(raw))
         except Exception as e:
@@ -173,9 +173,14 @@ def sync_cctv(tok):
         for x in raw:
             sid=str(x.get("CCTVID") or x.get("CCTVId") or "")
             if not sid: continue
-            rows.append({"id":sid,"road":str(x.get("RoadName") or ""),"direction":str(x.get("RoadDirection") or ""),
-              "name":str(x.get("LocationDescription") or x.get("LocationMile") or sid),"lat":x.get("PositionLat"),"lon":x.get("PositionLon"),
-              "imageUrl":x.get("ImageURL") or x.get("ImageUrl"),"streamUrl":x.get("VideoStreamURL") or x.get("StreamURL")})
+            road=str(x.get("RoadName") or "")
+            m=re.search(r"(?:國道|Freeway\\s*(?:No\\.?\\s*)?)([1-6])",road,re.I)
+            road_no=m.group(1) if m else ""
+            stream=x.get("VideoStreamURL") or x.get("StreamURL") or x.get("ImageURL") or x.get("ImageUrl") or ""
+            rows.append({"id":sid,"road":road,"roadNo":road_no,"direction":str(x.get("RoadDirection") or ""),
+              "mile":str(x.get("LocationMile") or x.get("LocationDescription") or ""),"start":"","end":"",
+              "lat":float(x.get("PositionLat")) if x.get("PositionLat") is not None else None,
+              "lon":float(x.get("PositionLon")) if x.get("PositionLon") is not None else None,"stream":stream})
         if rows: save(OUT/"cctv.json",{"status":"official","updatedAt":now(),"source":"TDX／交通部","items":rows})
         print("CCTV",len(rows))
     except Exception as e:
