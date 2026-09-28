@@ -139,6 +139,16 @@
     return data?.highways&&Object.values(data.highways).some(rows=>Array.isArray(rows)&&rows.length);
   }
 
+  function sanitizeParkingItems(items){
+    return (Array.isArray(items)?items:[]).map(item=>{
+      const total=Number(item?.total);
+      const raw=item?.available;
+      const available=raw==null?null:Number(raw);
+      const invalid=available!=null&&(!Number.isFinite(available)||available<0||(Number.isFinite(total)&&total>0&&available>total));
+      return invalid?{...item,available:null}:item;
+    });
+  }
+
   async function loadOfficialTraffic(){
     const [trafficResult,tunnelResult]=await Promise.allSettled([
       officialGet("./data/tdx/traffic.json"),
@@ -172,11 +182,12 @@
       const data=withFreshness(raw,raw?.status==="live"||Boolean(raw?.liveUpdatedAt));
       if(!Array.isArray(data?.items)||!data.items.length)throw new Error("no official cache");
       const stale=Boolean(data.stale||data.status==="stale");
-      state.parkingRemote={status:"ready",city,items:data.items,updatedAt:data.updatedAt||null,source:data.source||"TDX／交通部",stale,error:""};
+      const safeItems=sanitizeParkingItems(data.items);
+      state.parkingRemote={status:"ready",city,items:safeItems,updatedAt:data.updatedAt||null,source:data.source||"TDX／交通部",stale,error:""};
       if(city==="Tainan"){
         state.parkingLive={
           status:stale?"stale":"live",stale,updatedAt:data.updatedAt||null,
-          items:data.items.map(x=>({id:x.id,name:x.name,zone:x.town,address:x.address,chargeFee:x.fare,
+          items:safeItems.map(x=>({id:x.id,name:x.name,zone:x.town,address:x.address,chargeFee:x.fare,
             carTotal:x.total,car:x.available,sourceUpdate:x.dataCollectTime,lat:x.lat,lng:x.lon}))
         };
       }
