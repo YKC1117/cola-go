@@ -1,0 +1,100 @@
+name: Smoke test COLA GO production
+
+on:
+  workflow_run:
+    workflows: ["Deploy COLA GO to GitHub Pages"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify production website and TDX cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://ykc1117.github.io/cola-go"
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+
+          for attempt in {1..12}; do
+            if curl -fsSL --retry 2 --retry-delay 2 "$base/data/tdx/status.json" -o "$work/status.json"; then
+              if python3 - "$work/status.json" <<'PY'
+          import json, sys
+          data=json.load(open(sys.argv[1], encoding="utf-8"))
+          ds=data.get("datasets",{})
+          ok=(ds.get("charging",{}).get("count",0)>0 and
+              ds.get("traffic",{}).get("count",0)>0 and
+              ds.get("tunnel",{}).get("count",0)>0 and
+              ds.get("cctv",{}).get("count",0)>0)
+          raise SystemExit(0 if ok else 1)
+          PY
+              then
+                break
+              fi
+            fi
+            if [[ "$attempt" == "12" ]]; then
+              echo "Production TDX status did not become ready." >&2
+              exit 1
+            fi
+            sleep 10
+          done
+
+          curl -fsSL "$base/" -o "$work/index.html"
+          curl -fsSL "$base/assets/app.js" -o "$work/app.js"
+          curl -fsSL "$base/assets/tdx-runtime.js" -o "$work/tdx-runtime.js"
+          curl -fsSL "$base/manifest.webmanifest" -o "$work/manifest.webmanifest"
+          curl -fsSL "$base/sw.js" -o "$work/sw.js"
+          curl -fsSL "$base/data/tdx/charging.json" -o "$work/charging.json"
+          curl -fsSL "$base/data/tdx/traffic.json" -o "$work/traffic.json"
+          curl -fsSL "$base/data/tdx/tunnel.json" -o "$work/tunnel.json"
+          curl -fsSL "$base/data/tdx/cctv.json" -o "$work/cctv.json"
+          curl -fsSL "$base/data/tdx/parking/Tainan.json" -o "$work/tainan.json"
+
+          grep -Fq 'assets/tdx-runtime.js' "$work/index.html"
+          grep -Fq 'https://www.icloud.com/shortcuts/fc68c6a436e347408b342607b4e0b377' "$work/index.html"
+          grep -Fq 'https://www.icloud.com/shortcuts/87aad0f93e5e473ba01401f4e80fd43e' "$work/index.html"
+          ! grep -Eqi 'waze\.com|data-map="waze"' "$work/index.html" "$work/app.js"
+          grep -Fq 'classList.contains("brand")' "$work/app.js"
+          grep -Fq 'location.reload()' "$work/app.js"
+          grep -Fq '$$("[data-go]").forEach' "$work/app.js"
+          grep -Fq './data/tdx/traffic.json' "$work/tdx-runtime.js"
+          grep -Fq './data/tdx/tunnel.json' "$work/tdx-runtime.js"
+
+          python3 - "$work" <<'PY'
+          import json, pathlib, sys
+          root=pathlib.Path(sys.argv[1])
+          status=json.load(open(root/"status.json", encoding="utf-8"))
+          charging=json.load(open(root/"charging.json", encoding="utf-8"))
+          traffic=json.load(open(root/"traffic.json", encoding="utf-8"))
+          tunnel=json.load(open(root/"tunnel.json", encoding="utf-8"))
+          cctv=json.load(open(root/"cctv.json", encoding="utf-8"))
+          tainan=json.load(open(root/"tainan.json", encoding="utf-8"))
+
+          assert status["source"] == "TDX／交通部"
+          assert status["datasets"]["charging"]["count"] > 0
+          assert status["datasets"]["traffic"]["count"] > 0
+          assert status["datasets"]["tunnel"]["count"] > 0
+          assert status["datasets"]["cctv"]["count"] > 0
+
+          assert charging.get("status") in {"live","partial","stale","official"}
+          assert len(charging.get("items",[])) > 0
+          assert traffic.get("status") in {"live","stale"}
+          assert sum(len(v) for v in traffic.get("highways",{}).values()) > 0
+          assert tunnel.get("status") in {"live","stale"}
+          assert len(tunnel.get("south",[])) + len(tunnel.get("north",[])) > 0
+          assert len(cctv.get("items",[])) > 0
+          assert len(tainan.get("items",[])) > 0
+
+          print("PRODUCTION_SMOKE_PASS")
+          print("charging", len(charging["items"]), charging.get("status"), charging.get("updatedAt"))
+          print("traffic", sum(len(v) for v in traffic["highways"].values()), traffic.get("status"), traffic.get("updatedAt"))
+          print("tunnel", len(tunnel.get("south",[])), len(tunnel.get("north",[])), tunnel.get("status"), tunnel.get("updatedAt"))
+          print("cctv", len(cctv["items"]), cctv.get("updatedAt"))
+          print("tainan", len(tainan["items"]), tainan.get("status"), tainan.get("updatedAt"))
+          PY
