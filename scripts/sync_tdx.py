@@ -244,6 +244,14 @@ def parking_availability(record):
     return integer(total), integer(available)
 
 
+def validated_parking_available(total, available):
+    if available is None or available < 0:
+        return None
+    if total is not None and total > 0 and available > total:
+        return None
+    return available
+
+
 def normalize_parking_basic(record, city, city_name):
     source_id = str(record.get("CarParkID") or record.get("ParkingID") or "")
     if not source_id:
@@ -360,6 +368,7 @@ def sync_parking_live(tok):
                 raise RuntimeError("TDX returned no parking availability rows")
 
             rows = []
+            invalid_availability = 0
             for base in base_rows:
                 row = dict(base)
                 row["available"] = None
@@ -367,9 +376,12 @@ def sync_parking_live(tok):
                 row["sourceType"] = "basic"
                 current = live.get(str(row.get("id")))
                 if current:
-                    if current["total"] is not None:
+                    if current["total"] is not None and current["total"] > 0:
                         row["total"] = current["total"]
-                    row["available"] = current["available"]
+                    safe_available = validated_parking_available(row.get("total"), current["available"])
+                    if current["available"] is not None and safe_available is None:
+                        invalid_availability += 1
+                    row["available"] = safe_available
                     row["dataCollectTime"] = current["dataCollectTime"]
                     row["sourceType"] = "live"
                 rows.append(row)
@@ -389,7 +401,7 @@ def sync_parking_live(tok):
                 "items": rows,
             }
             save(path, snapshot)
-            print("PARK_LIVE", city, len(live))
+            print("PARK_LIVE", city, len(live), "invalidAvailability", invalid_availability)
         except Exception as error:
             print("PARK_LIVE_FAIL", city, repr(error), file=sys.stderr)
             stale_or_unavailable(path, message="TDX 即時剩餘車位暫時無法更新")
