@@ -41,6 +41,7 @@ jobs:
           grep -Fq 'git reset --hard origin/main' .github/workflows/sync-tdx-data.yml
           grep -Fq 'git push origin HEAD:main' .github/workflows/sync-tdx-data.yml
           ! grep -Fq 'git pull --rebase origin main' .github/workflows/sync-tdx-data.yml
+          test ! -f .github/workflows/tdx-worker.yml
           grep -q 'ConnectorLiveStatus' scripts/sync_tdx.py
           grep -q 'Road/Traffic/Live/Freeway' scripts/sync_tdx.py
           grep -q 'data/tdx/traffic.json' assets/tdx-runtime.js
