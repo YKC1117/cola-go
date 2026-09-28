@@ -141,12 +141,16 @@ def connector_summary(x):
 
 def sync_charging(tok, bootstrap):
     path=OUT/"charging.json"
-    if not bootstrap and path.exists(): return
-    rows=[]
-    for city,city_name in CITIES:
-        if city not in EV_CITIES: continue
+    old=load_old(path,{"items":[]})
+    old_rows=old.get("items",[]) if isinstance(old,dict) else []
+    by_city={}
+    for row in old_rows:
+        if row.get("city"): by_city.setdefault(row["city"],[]).append(row)
+    targets=[(c,n) for c,n in CITIES if c in EV_CITIES and (bootstrap or c not in by_city)]
+    for city,city_name in targets:
         try:
             raw=items(api_get(tok,f"/v1/EV/Station/City/{city}"))
+            city_rows=[]
             for x in raw:
                 sid=str(x.get("StationID") or x.get("ChargingStationID") or "")
                 lat,lon=pos(x)
@@ -156,15 +160,22 @@ def sync_charging(tok, bootstrap):
                 for c in cons:
                     try: powers.append(float(c.get("power")))
                     except: pass
-                rows.append({"id":f"{city}:{sid}" if sid else f"{city}:{len(rows)}","city":city,"cityName":city_name,
+                city_rows.append({"id":f"{city}:{sid}" if sid else f"{city}:{len(city_rows)}","city":city,"cityName":city_name,
                   "name":zh(x.get("StationName")) or zh(x.get("Name")) or sid or "充電站","location":str(x.get("Address") or city_name),
                   "operator":str(x.get("OperatorID") or x.get("OperatorId") or "TDX"),"connectors":types,
-                  "power":(str(int(max(powers)))+" kW") if powers else "功率依現場","spaces":(len(x.get("ChargingPoints")) if isinstance(x.get("ChargingPoints"),list) else (x.get("TotalChargingPoints") or "—")),
+                  "power":(str(int(max(powers)))+" kW") if powers else "功率依現場",
+                  "spaces":(len(x.get("ChargingPoints")) if isinstance(x.get("ChargingPoints"),list) else (x.get("TotalChargingPoints") or "—")),
                   "lat":lat,"lon":lon,"road":"tdx","direction":city_name,"note":"TDX 官方充電站"})
-            print("EV",city,len(raw))
+            if city_rows:
+                by_city[city]=city_rows
+            print("EV",city,len(city_rows))
         except Exception as e:
             print("EV_FAIL",city,repr(e),file=sys.stderr)
-    if rows: save(path,{"status":"official","updatedAt":now(),"source":"TDX／交通部","items":rows})
+    rows=[]
+    for city,_ in CITIES:
+        rows.extend(by_city.get(city,[]))
+    if rows:
+        save(path,{"status":"official","updatedAt":now(),"source":"TDX／交通部","cities":sorted(by_city),"items":rows})
 
 def sync_cctv(tok):
     try:
