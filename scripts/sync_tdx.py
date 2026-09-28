@@ -469,8 +469,16 @@ def sync_charging_static(tok):
             continue
         try:
             station_raw = api_all(tok, f"/v1/EV/Station/City/{city}")
-            point_raw = api_all(tok, f"/v1/EV/ChargingPoint/City/{city}")
-            connector_raw = api_all(tok, f"/v1/EV/Connector/City/{city}")
+            point_raw = []
+            connector_raw = []
+            try:
+                point_raw = api_all(tok, f"/v1/EV/ChargingPoint/City/{city}")
+            except Exception as error:
+                print("EV_POINT_OPTIONAL_FAIL", city, repr(error), file=sys.stderr)
+            try:
+                connector_raw = api_all(tok, f"/v1/EV/Connector/City/{city}")
+            except Exception as error:
+                print("EV_CONNECTOR_OPTIONAL_FAIL", city, repr(error), file=sys.stderr)
 
             stations = [normalize_station(x, city, city_name) for x in station_raw]
             stations = [x for x in stations if x]
