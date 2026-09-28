@@ -233,9 +233,38 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .charging-title-line h3 { min-width:0 }
 .favorite-btn { width:34px;height:34px;min-height:34px;border-radius:50%;color:#b6b7b2;font-size:17px;line-height:1;flex:none;margin-top:-7px }
 .favorite-btn.active { color:#c98b18;background:#352b12 }
-.charging-status-line { display:flex;align-items:center;gap:8px;margin-top:11px }
-.charging-status-line span { font-size:11px;color:var(--ink);font-weight:600 }
-.charging-status-line small { font-size:11px;color:var(--muted) }
+.charging-status-line { display:flex;align-items:center;gap:8px;margin-top:11px;flex-wrap:wrap }
+.charging-status-line span { font-size:11px;color:var(--ink);font-weight:700;padding:4px 7px;border-radius:99px;background:var(--soft) }
+.charging-status-line small { font-size:11px;color:var(--muted);line-height:1.45 }
+.charging-status-line.available span { color:var(--good);background:#123322 }
+.charging-status-line.busy span,.charging-status-line.partial span { color:var(--warn);background:#352b12 }
+.charging-status-line.stale span { color:var(--bad);background:#371a22 }
+.charging-primary { display:grid;gap:10px;margin:4px 0 14px }
+.charging-main-search { margin:0 }
+.charging-nearby { min-height:58px;padding:10px 13px;border:1px solid var(--line);border-radius:14px;background:var(--card);display:flex;align-items:center;justify-content:space-between;text-align:left;gap:10px }
+.charging-nearby>span { display:grid;grid-template-columns:24px 1fr;column-gap:9px;align-items:center }
+.charging-nearby>span svg { grid-row:1/3;color:var(--coral) }
+.charging-nearby b { font-size:14px;font-weight:750 }
+.charging-nearby small { color:var(--muted);font-size:11px }
+.charging-nearby[aria-pressed="true"] { border-color:#7d2836;background:var(--coral-soft) }
+.charging-quick-filter { display:flex;gap:7px;overflow-x:auto;padding:1px 0 3px;scrollbar-width:none }
+.charging-quick-filter::-webkit-scrollbar { display:none }
+.charging-quick-filter button { flex:none;min-height:38px;padding:7px 11px;border:1px solid var(--line);border-radius:99px;background:var(--card);font-size:12px;font-weight:650;white-space:nowrap }
+.charging-quick-filter button.active { background:#fff;color:#111;border-color:#fff }
+.charging-result-summary { font-size:11px;color:var(--muted);padding:0 2px }
+.charging-advanced { margin:0 0 8px }
+.charging-road-filter { margin:4px 0 12px }
+.charging-source { border-top:1px solid var(--line);margin-top:10px }
+.charging-source small { display:block;font-size:11px;color:var(--muted);margin-top:3px;line-height:1.45 }
+.charging-more { margin:12px 0 0;border-top:1px solid var(--line);padding-top:10px }
+.charging-more summary { font-size:12px;font-weight:650;color:var(--muted);cursor:pointer }
+.charging-detail-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;margin-top:10px }
+.charging-detail-grid small { display:block;font-size:10px;color:var(--muted) }
+.charging-detail-grid b { display:block;font-size:12px;line-height:1.55;margin-top:2px;font-weight:600;overflow-wrap:anywhere }
+.charging-more p { font-size:12px;color:var(--muted);line-height:1.6;margin:10px 0 0 }
+.charging-more a { display:inline-block;margin-top:10px;font-size:12px }
+.charging-nav-actions { margin-top:13px }
+.charging-map-secondary { margin-top:22px }
 .parking-actions { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 0; }
 .parking-actions button { min-height:64px;padding:12px 13px;border:1px solid var(--line);border-radius:14px;background:var(--card);display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left }
 .parking-actions b { display:block;font-size:13px;font-weight:650 }

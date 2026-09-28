@@ -32,27 +32,42 @@
   const originalRenderParking=renderParking;
 
   function ensureChargingCityFilter(){
-    if(document.querySelector("#chargingCity"))return;
-    const grid=document.querySelector(".charging-filter-grid");
-    if(!grid)return;
-    const label=document.createElement("label");
-    label.innerHTML='<span>縣市</span><select id="chargingCity">'+cityOptions.map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join("")+'</select>';
-    grid.prepend(label);
-    label.querySelector("select").addEventListener("change",()=>{
+    let select=document.querySelector("#chargingCity");
+    if(!select){
+      const grid=document.querySelector(".charging-filter-grid");
+      if(!grid)return;
+      const label=document.createElement("label");
+      label.innerHTML='<span>縣市</span><select id="chargingCity">'+cityOptions.map(([v,n])=>'<option value="'+v+'">'+n+'</option>').join("")+'</select>';
+      grid.prepend(label);
+      select=label.querySelector("select");
+    }
+    if(select.dataset.bound==="1")return;
+    select.dataset.bound="1";
+    select.addEventListener("change",()=>{
       state.road="all";
       document.querySelectorAll("#roadFilter button").forEach(b=>b.classList.toggle("active",b.dataset.road==="all"));
       renderCharging();
     });
   }
 
+  function syncChargingOperatorOptions(){
+    const select=document.querySelector("#chargingOperator");
+    if(!select)return;
+    const current=select.value||"all";
+    const operators=[...new Set([
+      ...curatedCharging.map(x=>x.operator),
+      ...officialChargingAll.map(x=>x.operator)
+    ].filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),"zh-Hant"));
+    select.innerHTML='<option value="all">全部業者</option>'+operators.map(name=>'<option value="'+String(name).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")+'">'+String(name).replace(/&/g,"&amp;").replace(/</g,"&lt;")+'</option>').join("");
+    select.value=operators.includes(current)?current:"all";
+    if(select.value==="all")state.chargingOperator="all";
+  }
+
   function chargingSubset(){
     const city=document.querySelector("#chargingCity")?.value||"all";
-    const q=(document.querySelector("#chargingSearch")?.value||"").trim().toLowerCase();
     let rows=officialChargingAll;
     if(city!=="all")rows=rows.filter(x=>x.city===city);
-    if(q)rows=rows.filter(x=>JSON.stringify(x).toLowerCase().includes(q));
-    // Keep the mobile DOM bounded. Search/city filtering still queries the complete official cache.
-    return rows.slice(0,160);
+    return rows;
   }
 
   renderCharging=function(){
@@ -79,9 +94,8 @@
     if(chip){
       const city=document.querySelector("#chargingCity")?.value||"all";
       const total=city==="all"?officialChargingAll.length:officialChargingAll.filter(x=>x.city===city).length;
-      const shown=official.length;
-      const health=chargingStatus==="live"?" · 即時狀態已同步":chargingStatus==="partial"?" · 部分資料更新延遲":chargingStatus==="stale"?" · 顯示最後可用資料":"";
-      chip.textContent="官方資料 · "+shown+"/"+total+" 筆"+(chargingUpdatedAt?" · 已同步":"")+health;
+      const health=chargingStatus==="live"?"即時槍況":chargingStatus==="partial"?"部分更新延遲":chargingStatus==="stale"?"最後可用資料":"設備資料";
+      chip.textContent=total+" 站 · "+health+(chargingUpdatedAt?" · "+formatTime(chargingUpdatedAt):"");
     }
     const totalCount=officialChargingAll.length+curatedCharging.length;
     if(document.querySelector("#chargeQuick"))document.querySelector("#chargeQuick").textContent=totalCount?totalCount+" 站":"充電站";
@@ -117,8 +131,9 @@
       await waitForBaseCharging();
       curatedCharging=(state.charging||[]).filter(x=>x.road!=="tdx");
       officialChargingAll=data.items.map(x=>data.stale?{...x,liveStale:true}:x);
-      chargingUpdatedAt=data.updatedAt||null;
+      chargingUpdatedAt=data.liveUpdatedAt||data.updatedAt||null;
       chargingStatus=data.status||"official";
+      syncChargingOperatorOptions();
       const search=document.querySelector("#chargingSearch");
       if(search)search.oninput=()=>renderCharging();
       renderCharging();

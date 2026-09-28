@@ -106,22 +106,45 @@ let browser;
   check('Direct navigation options stay focused on Google and Apple',await page.locator('#tripResult [data-map]').evaluateAll(nodes=>nodes.map(n=>n.dataset.map).sort().join(',')==='apple,google'));
   await page.locator('.bottom-nav [data-go=charging]').click();
   const all=await page.locator('#chargingList article').count();
+  check('Charging mobile-first controls are visible',await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingQuickFilter').isVisible()&&await page.locator('#chargingSearch').isVisible());
+
+  await page.locator('[data-charge-quick="available"]').click();
+  check('Available-now quick filter updates state',await page.evaluate(()=>state.chargingQuick==='available'));
+  check('Available-now filter never includes unknown or zero-availability TDX rows',await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>x.road==='tdx'&&!x.liveStale&&Number(x.availableConnectors)>0)));
+  await page.locator('[data-charge-quick="fast"]').click();
+  check('100 kW quick filter only includes verified 100 kW+ rows',await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>chargingPowerKw(x)>=100)));
+  await page.locator('[data-charge-quick="all"]').click();
+
+  await page.locator('.charging-advanced > summary').click();
   await page.locator('#roadFilter [data-road="3"]').click();
   const filtered=await page.locator('#chargingList article').count();
   check('Charging road filter changes actual results',filtered>0&&filtered<all);
-  await page.locator('[data-view=charging] summary').click();
   await page.locator('#chargingConnector').selectOption('CCS2');
   check('Connector filter retained',await page.evaluate(()=>state.chargingConnector==='CCS2'));
   await page.locator('#resetChargingFilters').click();
+
   await page.locator('#chargingSearch').fill('NO_MATCH_UI_TEST');
   check('Charging search empty state',await page.locator('#chargingList article').count()===0);
   await page.locator('#resetChargingFilters').click();
+
   await page.locator('#chargingList .favorite-btn').first().click();
   await page.locator('#chargingFavoritesOnly').click();
   check('Charging favorites persist and filter',await page.locator('#chargingList article').count()===1 && await page.evaluate(()=>JSON.parse(localStorage.getItem('cola-go-charging-favorites')||'[]').length===1));
   await page.locator('#resetChargingFilters').click();
+
+  await context.grantPermissions(['geolocation'],{origin:base});
+  await context.setGeolocation({latitude:22.993,longitude:120.214});
+  await page.locator('#chargingNearby').click();
+  await page.waitForFunction(()=>state.chargingSort==='nearby'&&Boolean(state.chargingOrigin));
+  check('Nearby charging uses geolocation only after explicit tap',await page.evaluate(()=>state.chargingSort==='nearby'&&Math.abs(state.chargingOrigin.lat-22.993)<0.001));
+  check('Nearby charging renders distance when coordinates exist',await page.locator('#chargingList .specs').first().textContent().then(x=>x.includes('km')));
+  await page.locator('#chargingNearby').click();
+  check('Nearby charging can return to smart sorting',await page.evaluate(()=>state.chargingSort==='smart'&&state.chargingOrigin===null));
+
+  await page.locator('#chargingList [data-charge-google]').first().click();
+  check('Charging card Google action opens driving directions',await page.evaluate(()=>window.__opened.at(-1).startsWith('https://www.google.com/maps/dir/?api=1&destination=')));
   await page.locator('#nearbyGoogle').click();
-  check('Nearby charging opens real map service',await page.evaluate(()=>window.__opened.at(-1).startsWith('https://www.google.com/maps/search/')));
+  check('Generic nearby charging search remains available',await page.evaluate(()=>window.__opened.at(-1).startsWith('https://www.google.com/maps/search/')));
   await page.locator('.bottom-nav [data-go=parking]').click();
   await page.locator('#parkingCitySelect').selectOption('Tainan');
   check('Parking city selector updates scope',await page.locator('#parkingScopeTitle').textContent()==='臺南市');
