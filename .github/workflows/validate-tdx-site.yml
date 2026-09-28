@@ -82,6 +82,9 @@ jobs:
           grep -q 'Operator/City/' scripts/sync_tdx.py
           grep -Fq 'data-charge-quick="available"' index.html
           grep -Fq 'id="chargingNearby"' index.html
+          grep -q 'chargingConnectorNames' assets/app.js
+          grep -q 'chargingLiveCounts' assets/app.js
+          grep -q 'bindSelect("chargingCity","chargingCity")' assets/app.js
           grep -q 'Road/Traffic/Live/Freeway' scripts/sync_tdx.py
           grep -q 'data/tdx/traffic.json' assets/tdx-runtime.js
           grep -q 'data/tdx/tunnel.json' assets/tdx-runtime.js

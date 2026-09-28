@@ -105,7 +105,16 @@ let browser;
   check('Route navigation uses entered destination, no preset origin',await page.evaluate(()=>{const u=new URL(window.__opened.at(-1));return u.searchParams.get('destination')==='臺中車站'&&!u.searchParams.has('origin');}));
   check('Direct navigation options stay focused on Google and Apple',await page.locator('#tripResult [data-map]').evaluateAll(nodes=>nodes.map(n=>n.dataset.map).sort().join(',')==='apple,google'));
   await page.locator('.bottom-nav [data-go=charging]').click();
+  await page.waitForFunction(()=>state.charging.some(x=>x.road==='tdx'));
   const all=await page.locator('#chargingList article').count();
+  await page.locator('#chargingCity').selectOption('Tainan');
+  const tainanCount=await page.locator('#chargingList article').count();
+  check('Charging city selector filters actual results',tainanCount>0&&tainanCount<all&&await page.evaluate(()=>state.chargingCity==='Tainan'));
+  await page.locator('#chargingCity').selectOption('all');
+  await page.locator('[data-charge-quick="available"]').click();
+  const availableCount=await page.locator('#chargingList article').count();
+  check('Charging available quick filter decodes legacy TDX live states',availableCount>0&&availableCount<all);
+  await page.locator('[data-charge-quick="all"]').click();
   check('Charging mobile-first controls are visible',await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingQuickFilter').isVisible()&&await page.locator('#chargingSearch').isVisible());
 
   await page.locator('[data-charge-quick="available"]').click();
@@ -120,7 +129,7 @@ let browser;
   const filtered=await page.locator('#chargingList article').count();
   check('Charging road filter changes actual results',filtered>0&&filtered<all);
   await page.locator('#chargingConnector').selectOption('CCS2');
-  check('Connector filter retained',await page.evaluate(()=>state.chargingConnector==='CCS2'));
+  check('Connector filter decodes legacy numeric TDX connector types',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingConnector==='CCS2'));
   await page.locator('#resetChargingFilters').click();
 
   await page.locator('#chargingSearch').fill('NO_MATCH_UI_TEST');
