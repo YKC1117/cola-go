@@ -126,7 +126,14 @@ let browser;
   await page.locator('.bottom-nav [data-go=tunnel]').click();
   await page.locator('#tunnelDirection [data-direction=north]').click();
   check('Snow tunnel direction changes',await page.evaluate(()=>state.direction==='north'));
-  check('Missing tunnel feed renders unavailable without speed numbers',await page.locator('#tunnelList .metric').count()===0 && (await page.locator('#tunnelList').textContent()).includes('沒有資料'));
+  const checkedInTunnel=JSON.parse(fs.readFileSync(path.join(root,'data/tdx/tunnel.json'),'utf8'));
+  const checkedInNorth=Array.isArray(checkedInTunnel.north)?checkedInTunnel.north.length:0;
+  if(checkedInNorth){
+    await page.waitForFunction(()=>['live','stale'].includes(state.tunnel?.status)&&document.querySelectorAll('#tunnelList .metric').length>0);
+    check('Checked-in TDX tunnel cache renders official speed rows',await page.locator('#tunnelList .metric').count()>0&&await page.evaluate(()=>['live','stale'].includes(state.tunnel?.status)));
+  }else{
+    check('Missing tunnel feed renders unavailable without speed numbers',await page.locator('#tunnelList .metric').count()===0 && (await page.locator('#tunnelList').textContent()).includes('沒有資料'));
+  }
   for(const width of [390,1440]){
     await page.setViewportSize({width,height:900});
     const views=await page.locator('.view').evaluateAll(xs=>xs.map(x=>x.dataset.view));
