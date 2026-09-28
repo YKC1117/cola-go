@@ -5,26 +5,9 @@ on:
     branches: ["ops/charging-static-refresh-20260928"]
     paths:
       - ".github/workflows/sync-tdx-data.yml"
-  workflow_dispatch:
-    inputs:
-      mode:
-        description: "TDX sync mode"
-        required: true
-        default: "all"
-        type: choice
-        options:
-          - all
-          - dynamic
-          - static
-  schedule:
-    - cron: "7 * * * *"
-    - cron: "22 * * * *"
-    - cron: "37 * * * *"
-    - cron: "52 * * * *"
-    - cron: "43 2 * * *"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: cola-go-tdx-sync
@@ -33,65 +16,6 @@ concurrency:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    env:
-      TDX_CLIENT_ID: ${{ secrets.TDX_CLIENT_ID }}
-      TDX_CLIENT_SECRET: ${{ secrets.TDX_CLIENT_SECRET }}
-      TDX_MIN_INTERVAL: "13"
+    timeout-minutes: 2
     steps:
-      - uses: actions/checkout@v4
-      - name: Select sync mode
-        shell: bash
-        run: |
-          set -euo pipefail
-          mode="all"
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            mode="${{ inputs.mode }}"
-          elif [[ "${{ github.event_name }}" == "push" ]]; then
-            mode="static"
-          elif [[ "${{ github.event_name }}" == "schedule" ]]; then
-            if [[ "${{ github.event.schedule }}" == "43 2 * * *" ]]; then
-              mode="static"
-            else
-              mode="dynamic"
-            fi
-          fi
-          echo "TDX_SYNC_MODE=$mode" >> "$GITHUB_ENV"
-          echo "TDX sync mode: $mode"
-      - name: Sync protected TDX data cache
-        run: python3 scripts/sync_tdx.py
-      - name: Commit refreshed official cache
-        run: |
-          set -euo pipefail
-          git config user.name "COLA GO Bot"
-          git config user.email "actions@users.noreply.github.com"
-
-          snapshot="$(mktemp -d)"
-          trap 'rm -rf "$snapshot"' EXIT
-          cp -a data/tdx "$snapshot/tdx"
-
-          for attempt in 1 2 3; do
-            echo "Publish attempt $attempt"
-            git fetch origin main
-            git reset --hard origin/main
-            rm -rf data/tdx
-            mkdir -p data
-            cp -a "$snapshot/tdx" data/tdx
-
-            git add data/tdx/
-            if git diff --cached --quiet; then
-              echo "No TDX data changes."
-              exit 0
-            fi
-
-            git commit -m "data: refresh TDX official cache"
-            if git push origin HEAD:main; then
-              echo "TDX cache published."
-              exit 0
-            fi
-
-            echo "Main changed during publish; retrying on latest main." >&2
-          done
-
-          echo "Unable to publish TDX cache after 3 attempts." >&2
-          exit 1
+      - run: echo "Superseded by existing full TDX refresh; no API calls."
