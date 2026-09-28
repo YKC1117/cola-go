@@ -329,6 +329,15 @@ function chargingStatusMarkup(x){
   }
   return '<div class="charging-status-line partial"><span>即時狀態部分未知</span><small>'+esc(parts.join(" · "))+'</small></div>';
 }
+function chargingDisplayText(value){
+  return String(value??"")
+    .replace(/<br\s*\/?>/gi," · ")
+    .replace(/&nbsp;/gi," ")
+    .replace(/<[^>]*>/g," ")
+    .replace(/\s+/g," ")
+    .replace(/\s*·\s*/g," · ")
+    .trim();
+}
 function chargingDetailMarkup(x){
   const rows=[
     ["營業時間",x.serviceTime],
@@ -339,7 +348,7 @@ function chargingDetailMarkup(x){
   ].filter(row=>row[1]);
   if(!rows.length&&!x.operatorWebURL&&!x.description)return "";
   return '<details class="charging-more"><summary>站點詳細資訊</summary>'+
-    (rows.length?'<div class="charging-detail-grid">'+rows.map(row=>'<div><small>'+esc(row[0])+'</small><b>'+esc(row[1])+'</b></div>').join("")+'</div>':"")+
+    (rows.length?'<div class="charging-detail-grid">'+rows.map(row=>'<div><small>'+esc(row[0])+'</small><b>'+esc(chargingDisplayText(row[1]))+'</b></div>').join("")+'</div>':"")+
     (x.description?'<p>'+esc(x.description)+'</p>':"")+
     (x.operatorWebURL?'<a href="'+esc(x.operatorWebURL)+'" target="_blank" rel="noopener noreferrer">業者官方網站</a>':"")+
     '</details>';
