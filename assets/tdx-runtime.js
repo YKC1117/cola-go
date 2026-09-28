@@ -7,6 +7,15 @@
     return r.json();
   };
 
+  const DYNAMIC_MAX_AGE_MS=45*60*1000;
+  const withFreshness=(data, dynamic=false)=>{
+    if(!data||!dynamic)return data;
+    const stamp=Date.parse(data.liveUpdatedAt||data.updatedAt||"");
+    if(!Number.isFinite(stamp))return {...data,status:"stale",stale:true};
+    if(Date.now()-stamp>DYNAMIC_MAX_AGE_MS)return {...data,status:"stale",stale:true};
+    return data;
+  };
+
   const cityOptions=[
     ["all","全台灣"],["Taipei","臺北市"],["NewTaipei","新北市"],["Taoyuan","桃園市"],["Taichung","臺中市"],
     ["Tainan","臺南市"],["Kaohsiung","高雄市"],["Keelung","基隆市"],["Hsinchu","新竹市"],["HsinchuCounty","新竹縣"],
@@ -103,11 +112,11 @@
 
   async function loadOfficialCharging(){
     try{
-      const data=await officialGet("./data/tdx/charging.json");
+      const data=withFreshness(await officialGet("./data/tdx/charging.json"),true);
       if(!Array.isArray(data?.items)||!data.items.length)return;
       await waitForBaseCharging();
       curatedCharging=(state.charging||[]).filter(x=>x.road!=="tdx");
-      officialChargingAll=data.items;
+      officialChargingAll=data.items.map(x=>data.stale?{...x,liveStale:true}:x);
       chargingUpdatedAt=data.updatedAt||null;
       chargingStatus=data.status||"official";
       const search=document.querySelector("#chargingSearch");
@@ -137,12 +146,12 @@
     ]);
     let changed=false;
     if(trafficResult.status==="fulfilled"&&hasHighwayRows(trafficResult.value)){
-      state.traffic=trafficResult.value;
+      state.traffic=withFreshness(trafficResult.value,true);
       state.trafficFallbackStatus="done";
       changed=true;
     }
     if(tunnelResult.status==="fulfilled"){
-      const data=tunnelResult.value;
+      const data=withFreshness(tunnelResult.value,true);
       if((Array.isArray(data?.south)&&data.south.length)||(Array.isArray(data?.north)&&data.north.length)){
         state.tunnel=data;
         changed=true;
@@ -159,7 +168,8 @@
     state.parkingRemote={status:"loading",city,items:[],updatedAt:null,source:"TDX／交通部",error:""};
     renderParking();
     try{
-      const data=await officialGet("./data/tdx/parking/"+encodeURIComponent(city)+".json");
+      const raw=await officialGet("./data/tdx/parking/"+encodeURIComponent(city)+".json");
+      const data=withFreshness(raw,raw?.status==="live"||Boolean(raw?.liveUpdatedAt));
       if(!Array.isArray(data?.items)||!data.items.length)throw new Error("no official cache");
       const stale=Boolean(data.stale||data.status==="stale");
       state.parkingRemote={status:"ready",city,items:data.items,updatedAt:data.updatedAt||null,source:data.source||"TDX／交通部",stale,error:""};
