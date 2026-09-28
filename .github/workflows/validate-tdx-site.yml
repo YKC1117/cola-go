@@ -7,6 +7,7 @@ on:
     paths:
       - "scripts/sync_tdx.py"
       - "assets/tdx-runtime.js"
+      - "assets/app.js"
       - "index.html"
       - "sw.js"
       - ".github/workflows/sync-tdx-data.yml"
@@ -24,10 +25,18 @@ jobs:
       - name: Python syntax
         run: python3 -m py_compile scripts/sync_tdx.py
       - name: JavaScript syntax
-        run: node --check assets/tdx-runtime.js
+        run: |
+          node --check assets/app.js
+          node --check assets/tdx-runtime.js
       - name: Integration markers
         run: |
           grep -q 'assets/tdx-runtime.js' index.html
           grep -q 'TDX_CLIENT_ID' .github/workflows/sync-tdx-data.yml
           grep -q 'TDX_CLIENT_SECRET' .github/workflows/sync-tdx-data.yml
+          grep -q 'ConnectorLiveStatus' scripts/sync_tdx.py
+          grep -q 'Road/Traffic/Live/Freeway' scripts/sync_tdx.py
+          grep -q 'data/tdx/traffic.json' assets/tdx-runtime.js
+          grep -q 'data/tdx/tunnel.json' assets/tdx-runtime.js
+          grep -Fq '$$("[data-go]").forEach' assets/app.js
+          grep -q 'location.reload()' assets/app.js
           ! grep -R -E 'client_secret[[:space:]]*[:=][[:space:]]*["'\''"][A-Za-z0-9_-]{12,}' scripts assets .github/workflows || exit 1

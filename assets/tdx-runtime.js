@@ -18,6 +18,7 @@
   let officialChargingAll=[];
   let curatedCharging=[];
   let chargingUpdatedAt=null;
+  let chargingStatus="official";
   const originalRenderCharging=renderCharging;
   const originalRenderParking=renderParking;
 
@@ -70,7 +71,8 @@
       const city=document.querySelector("#chargingCity")?.value||"all";
       const total=city==="all"?officialChargingAll.length:officialChargingAll.filter(x=>x.city===city).length;
       const shown=official.length;
-      chip.textContent="官方資料 · "+shown+"/"+total+" 筆"+(chargingUpdatedAt?" · 已同步":"");
+      const health=chargingStatus==="live"?" · 即時狀態已同步":chargingStatus==="partial"?" · 部分資料更新延遲":chargingStatus==="stale"?" · 顯示最後可用資料":"";
+      chip.textContent="官方資料 · "+shown+"/"+total+" 筆"+(chargingUpdatedAt?" · 已同步":"")+health;
     }
     const totalCount=officialChargingAll.length+curatedCharging.length;
     if(document.querySelector("#chargeQuick"))document.querySelector("#chargeQuick").textContent=totalCount?totalCount+" 站":"充電站";
@@ -79,11 +81,16 @@
 
   renderParking=function(){
     originalRenderParking();
-    if(state.parkingCity==="Tainan"&&state.parkingRemote?.source?.includes("TDX")){
+    if(state.parkingRemote?.source?.includes("TDX")&&state.parkingRemote.city===state.parkingCity){
       const t=document.querySelector("#parkingLiveTime");
       const s=document.querySelector("#parkingScopeStatus");
-      if(t)t.textContent=(state.parkingRemote.updatedAt?formatTime(state.parkingRemote.updatedAt):"TDX 官方資料");
-      if(s)s.textContent="TDX 官方剩餘車位快取 · 以顯示更新時間為準";
+      if(state.parkingRemote.stale){
+        if(t)t.textContent=state.parkingRemote.updatedAt?formatTime(state.parkingRemote.updatedAt):"最後可用資料";
+        if(s)s.textContent="TDX 更新暫時中斷，顯示最後可用資料";
+      }else{
+        if(t)t.textContent=state.parkingRemote.updatedAt?formatTime(state.parkingRemote.updatedAt):"TDX 官方資料";
+        if(s)s.textContent="TDX 官方停車資料 · 以顯示更新時間為準";
+      }
     }
   };
 
@@ -102,6 +109,7 @@
       curatedCharging=(state.charging||[]).filter(x=>x.road!=="tdx");
       officialChargingAll=data.items;
       chargingUpdatedAt=data.updatedAt||null;
+      chargingStatus=data.status||"official";
       const search=document.querySelector("#chargingSearch");
       if(search)search.oninput=()=>renderCharging();
       renderCharging();
@@ -112,9 +120,35 @@
     try{
       const data=await officialGet("./data/tdx/cctv.json");
       if(!Array.isArray(data?.items)||!data.items.length)return;
-      state.cctv={status:"ready",items:data.items,source:data.source||"TDX／交通部",error:""};
+      const source=(data.source||"TDX／交通部")+(data.stale?"（最後可用資料）":"");
+      state.cctv={status:"ready",items:data.items,source,error:""};
       renderCCTV();
     }catch{}
+  }
+
+  function hasHighwayRows(data){
+    return data?.highways&&Object.values(data.highways).some(rows=>Array.isArray(rows)&&rows.length);
+  }
+
+  async function loadOfficialTraffic(){
+    const [trafficResult,tunnelResult]=await Promise.allSettled([
+      officialGet("./data/tdx/traffic.json"),
+      officialGet("./data/tdx/tunnel.json")
+    ]);
+    let changed=false;
+    if(trafficResult.status==="fulfilled"&&hasHighwayRows(trafficResult.value)){
+      state.traffic=trafficResult.value;
+      state.trafficFallbackStatus="done";
+      changed=true;
+    }
+    if(tunnelResult.status==="fulfilled"){
+      const data=tunnelResult.value;
+      if((Array.isArray(data?.south)&&data.south.length)||(Array.isArray(data?.north)&&data.north.length)){
+        state.tunnel=data;
+        changed=true;
+      }
+    }
+    if(changed)renderAll();
   }
 
   ensureParkingCity=async function(city){
@@ -127,10 +161,11 @@
     try{
       const data=await officialGet("./data/tdx/parking/"+encodeURIComponent(city)+".json");
       if(!Array.isArray(data?.items)||!data.items.length)throw new Error("no official cache");
-      state.parkingRemote={status:"ready",city,items:data.items,updatedAt:data.updatedAt||null,source:data.source||"TDX／交通部",error:""};
+      const stale=Boolean(data.stale||data.status==="stale");
+      state.parkingRemote={status:"ready",city,items:data.items,updatedAt:data.updatedAt||null,source:data.source||"TDX／交通部",stale,error:""};
       if(city==="Tainan"){
         state.parkingLive={
-          status:"live",updatedAt:data.updatedAt||null,
+          status:stale?"stale":"live",stale,updatedAt:data.updatedAt||null,
           items:data.items.map(x=>({id:x.id,name:x.name,zone:x.town,address:x.address,chargeFee:x.fare,
             carTotal:x.total,car:x.available,sourceUpdate:x.dataCollectTime,lat:x.lat,lng:x.lon}))
         };
@@ -152,4 +187,5 @@
   ensureChargingCityFilter();
   Promise.resolve().then(loadOfficialCharging);
   Promise.resolve().then(loadOfficialCCTV);
+  Promise.resolve().then(loadOfficialTraffic);
 })();
