@@ -2,6 +2,8 @@ name: Validate TDX website integration
 
 on:
   pull_request:
+  push:
+    branches: ["main"]
     paths:
       - "scripts/sync_tdx.py"
       - "assets/tdx-runtime.js"
