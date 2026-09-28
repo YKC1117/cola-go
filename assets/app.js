@@ -63,9 +63,14 @@ function show(view,push=true){
 }
 
 function bindNav(){
-  $$("[data-go]").forEach(el=>{
+  $("[data-go]").forEach(el=>{
     el.onclick=e=>{
       e.preventDefault();
+      if(el.classList.contains("brand")&&el.dataset.go==="home"){
+        location.href=location.pathname+location.search+"#home";
+        location.reload();
+        return;
+      }
       show(el.dataset.go);
     };
   });
