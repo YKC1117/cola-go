@@ -1,6 +1,10 @@
 name: Sync TDX official data
 
 on:
+  push:
+    branches: ["ops/charging-static-refresh-20260928"]
+    paths:
+      - ".github/workflows/sync-tdx-data.yml"
   workflow_dispatch:
     inputs:
       mode:
@@ -43,6 +47,8 @@ jobs:
           mode="all"
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             mode="${{ inputs.mode }}"
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            mode="static"
           elif [[ "${{ github.event_name }}" == "schedule" ]]; then
             if [[ "${{ github.event.schedule }}" == "43 2 * * *" ]]; then
               mode="static"
