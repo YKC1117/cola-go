@@ -3,6 +3,8 @@ name: Validate TDX Worker
 on:
   push:
     branches: ["infra/tdx-proxy"]
+  pull_request:
+    branches: ["main"]
     paths:
       - "infra/tdx-worker/**"
       - ".github/workflows/tdx-worker.yml"
