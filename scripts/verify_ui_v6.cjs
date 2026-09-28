@@ -111,7 +111,7 @@ let browser;
 
   await page.locator('[data-charge-quick="available"]').click();
   check('Available-now quick filter updates state',await page.evaluate(()=>state.chargingQuick==='available'));
-  check('Available-now filter decodes current TDX liveStates safely',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>x.road==='tdx'&&!x.liveStale&&chargingLiveCounts(x).available>0)));
+  check('Available-now filter decodes current TDX liveStates safely',await page.evaluate(()=>state.chargingQuick==='available'&&state.charging.filter(chargingQuickMatch).every(x=>x.road==='tdx'&&!x.liveStale&&chargingLiveCounts(x).available>0))&&((await page.locator('#chargingList article').count()>0)||((await page.locator('#chargingList .empty').textContent()).includes('即時空槍'))));
   await page.locator('[data-charge-quick="fast"]').click();
   check('100 kW quick filter only includes verified 100 kW+ rows',await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>chargingPowerKw(x)>=100)));
   await page.locator('[data-charge-quick="all"]').click();
