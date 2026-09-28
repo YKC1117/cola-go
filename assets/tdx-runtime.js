@@ -47,6 +47,12 @@
 
   renderCharging=function(){
     ensureChargingCityFilter();
+    const currentCurated=(state.charging||[]).filter(x=>x.road!=="tdx");
+    if(currentCurated.length&&!curatedCharging.length)curatedCharging=currentCurated;
+    if(!officialChargingAll.length){
+      originalRenderCharging();
+      return;
+    }
     const official=state.road==="all"?chargingSubset():[];
     state.charging=[...official,...curatedCharging];
     originalRenderCharging();
