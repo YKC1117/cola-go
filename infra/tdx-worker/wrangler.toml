@@ -1,0 +1,23 @@
+name = "cola-go-tdx"
+main = "src/index.js"
+compatibility_date = "2026-09-24"
+workers_dev = true
+
+[vars]
+APP_ENV = "production"
+ALLOWED_ORIGINS = "https://ykc1117.github.io"
+TDX_CREDENTIAL_VERSION = "1"
+TDX_CALLS_PER_MINUTE = "4"
+TDX_MONTHLY_POINT_BUDGET = "2.4"
+TDX_TIMEOUT_MS = "8000"
+MAX_UPSTREAM_BYTES = "2097152"
+MAX_PUBLIC_BYTES = "524288"
+TDX_ENABLED = "false"
+
+[[durable_objects.bindings]]
+name = "TDX_COORDINATOR"
+class_name = "TdxCoordinator"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TdxCoordinator"]
