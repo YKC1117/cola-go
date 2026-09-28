@@ -21,7 +21,7 @@ permissions:
 
 concurrency:
   group: cola-go-tdx-sync
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   sync:
