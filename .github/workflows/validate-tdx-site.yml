@@ -57,6 +57,7 @@ jobs:
           grep -q 'Road/Traffic/Live/Freeway' scripts/sync_tdx.py
           grep -q 'data/tdx/traffic.json' assets/tdx-runtime.js
           grep -q 'data/tdx/tunnel.json' assets/tdx-runtime.js
+          grep -q 'sanitizeParkingItems' assets/tdx-runtime.js
           grep -Fq '$$("[data-go]").forEach' assets/app.js
           grep -q 'location.reload()' assets/app.js
           ! grep -R -E 'client_secret[[:space:]]*[:=][[:space:]]*["'\''"][A-Za-z0-9_-]{12,}' scripts assets .github/workflows || exit 1
