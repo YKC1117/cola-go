@@ -107,6 +107,7 @@ let browser;
   await page.locator('.bottom-nav [data-go=charging]').click();
   await page.waitForFunction(()=>state.charging.some(x=>x.road==='tdx'));
   const all=await page.locator('#chargingList article').count();
+  await page.locator('.charging-advanced > summary').click();
   await page.locator('#chargingCity').selectOption('Tainan');
   check('Charging city selector filters actual results',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingCity==='Tainan'&&[...document.querySelectorAll('#chargingList article')].every(el=>el.textContent.includes('臺南市'))));
   await page.locator('#chargingCity').selectOption('all');
@@ -117,12 +118,11 @@ let browser;
 
   await page.locator('[data-charge-quick="available"]').click();
   check('Available-now quick filter updates state',await page.evaluate(()=>state.chargingQuick==='available'));
-  check('Available-now filter never includes unknown or zero-availability TDX rows',await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>x.road==='tdx'&&!x.liveStale&&Number(x.availableConnectors)>0)));
+  check('Available-now filter never includes unknown or zero-availability TDX rows',await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>x.road==='tdx'&&!x.liveStale&&chargingLiveCounts(x).available>0)));
   await page.locator('[data-charge-quick="fast"]').click();
   check('100 kW quick filter only includes verified 100 kW+ rows',await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>chargingPowerKw(x)>=100)));
   await page.locator('[data-charge-quick="all"]').click();
 
-  await page.locator('.charging-advanced > summary').click();
   await page.locator('#roadFilter [data-road="3"]').click();
   const filtered=await page.locator('#chargingList article').count();
   check('Charging road filter changes actual results',filtered>0&&filtered<all);
