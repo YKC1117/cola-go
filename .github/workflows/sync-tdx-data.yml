@@ -14,7 +14,7 @@ on:
         default: "false"
         type: boolean
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "17 */4 * * *"
 
 permissions:
   contents: write
@@ -31,7 +31,7 @@ jobs:
       TDX_CLIENT_ID: ${{ secrets.TDX_CLIENT_ID }}
       TDX_CLIENT_SECRET: ${{ secrets.TDX_CLIENT_SECRET }}
       TDX_BOOTSTRAP: ${{ (github.event_name == 'workflow_dispatch' && inputs.bootstrap) && '1' || '0' }}
-      TDX_MIN_INTERVAL: "16"
+      TDX_MIN_INTERVAL: "13"
     steps:
       - uses: actions/checkout@v4
       - name: Sync protected TDX data cache
