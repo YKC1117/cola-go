@@ -426,7 +426,9 @@ function renderCharging(){
         (!tdx?'<button data-camera-road="'+esc(x.road)+'">CCTV</button>':"")+
       '</div>'+
     '</article>';
-  }).join(""):'<div class="empty"><b>沒有符合的充電站</b><p>可以切回「全部」、清除進階篩選，或改用搜尋站名／地區。</p></div>';
+  }).join(""):(state.chargingQuick==="available"
+    ? '<div class="empty"><b>目前沒有可確認的即時空槍</b><p>可能是目前沒有空槍，或 TDX 快取已逾時。COLA GO 不會把過期狀態當成「現在可用」。</p></div>'
+    : '<div class="empty"><b>沒有符合的充電站</b><p>可以切回「全部」、清除進階篩選，或改用搜尋站名／地區。</p></div>');
 
   $$("[data-charge-favorite]",root).forEach(b=>b.onclick=()=>{
     const key=b.dataset.chargeFavorite;
