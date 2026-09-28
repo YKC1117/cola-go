@@ -118,7 +118,7 @@
 </details>
 </section>
 <section class="view" data-view="shortcuts">
-<div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"></use></svg></button><div><span class="mini-label">CARKIT TW</span><h1>車用捷徑</h1><p class="page-subtitle">Apple 系統專用｜下載捷徑後，需另外設定一次上車自動化</p></div></div>
+<div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"></use></svg></button><div><span class="mini-label">CARKIT TW</span><h1>車用捷徑</h1><p class="page-subtitle">Apple 系統專用｜安裝後設定一次，上車即可自動啟動</p></div></div>
 
 <div class="shortcut-grid">
 <article class="shortcut-card">
@@ -129,8 +129,9 @@
 <span class="verified">已驗證：捷徑安裝、主選單、導航基本流程</span>
 <span class="pending">待車友回報：不同品牌車機的 CarPlay／Bluetooth 自動觸發</span>
 </div>
-<div class="shortcut-note"><b>注意：</b>安裝「油車助手」本身不會自動連線。若要上車自動啟動，安裝後還需在 iPhone 建立一次 CarPlay 或 Bluetooth 個人自動化；不同品牌與年份的車機行為可能不同。</div>
+<div class="shortcut-note"><b>上車自動啟動：</b>安裝後打開「油車助手」的編輯畫面，在 Automation 加入 CarPlay「連線」；沒有 CarPlay 時可改用 Bluetooth 指定自己的車機。設定一次後，以後連上車子就會觸發。</div>
 <a class="primary shortcut-download" href="https://www.icloud.com/shortcuts/fc68c6a436e347408b342607b4e0b377" target="_blank" rel="noopener noreferrer">取得油車助手</a>
+<a class="external-btn secondary shortcut-setup-link" href="shortcuts://open-shortcut?name=%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B"><span><b>設定油車上車自動化</b><small>已安裝後點這裡，直接打開油車助手</small></span><svg><use href="#i-arrow"></use></svg></a>
 </article>
 
 <article class="shortcut-card">
@@ -141,8 +142,9 @@
 <span class="verified">已驗證：捷徑安裝、主選單、語音入口</span>
 <span class="pending">待驗證：Tesla 實車遠端控制</span>
 </div>
-<div class="shortcut-note"><b>注意：</b>安裝「特斯拉助手」本身不會自動連線。若要上車自動啟動，安裝後還需在 iPhone 建立一次 Bluetooth 個人自動化；第一次加入時，部分 Tesla 原生控制會請你選擇自己的車。</div>
+<div class="shortcut-note"><b>上車自動啟動：</b>安裝後打開「特斯拉助手」的編輯畫面，在 Automation 加入 Bluetooth，指定自己的 Tesla。設定一次後，以後連上 Tesla 藍牙就會觸發；第一次使用部分 Tesla 原生控制時仍可能要求選擇車輛。</div>
 <a class="primary shortcut-download" href="https://www.icloud.com/shortcuts/87aad0f93e5e473ba01401f4e80fd43e" target="_blank" rel="noopener noreferrer">取得特斯拉助手</a>
+<a class="external-btn secondary shortcut-setup-link" href="shortcuts://open-shortcut?name=%E7%89%B9%E6%96%AF%E6%8B%89%E5%8A%A9%E6%89%8B"><span><b>設定 Tesla 上車自動化</b><small>已安裝後點這裡，直接打開特斯拉助手</small></span><svg><use href="#i-arrow"></use></svg></a>
 </article>
 </div>
 
@@ -179,17 +181,16 @@ Siri「特斯拉助手」：
 </div>
 
 <div class="info-box shortcut-automation">
-<b>必要設定：建立一次上車自動化</b>
-<p><b>下載捷徑不等於已完成自動化。</b> Apple 的個人自動化屬於每支 iPhone 自己的設定，不能跟著分享捷徑一起安裝。只有完成下面設定後，連上車子時才會自動執行油車助手或特斯拉助手。</p>
+<b>上車自動啟動｜只要設定一次</b>
+<p><b>iOS 27 可直接替既有捷徑加上 Automation trigger。</b> 不需要再另外做一支「執行捷徑」的自動化；把觸發條件直接加在油車助手或特斯拉助手上即可。</p>
 <ol>
 <li>先安裝「油車助手」或「特斯拉助手」。</li>
-<li>打開 iPhone「捷徑」App →「自動化」→ 新增個人自動化。</li>
-<li><b>油車：</b>有 CarPlay 就選「CarPlay → 連線」；沒有 CarPlay 就選「Bluetooth」，指定自己的車機。</li>
-<li><b>Tesla：</b>選「Bluetooth」，指定自己的 Tesla。</li>
-<li>動作選「執行捷徑」，再指定「油車助手」或「特斯拉助手」。</li>
-<li>依 iPhone 畫面開啟自動執行；若需要鎖定時執行，請允許「鎖定時執行」。個別動作仍可能要求系統權限或解鎖。</li>
+<li>打開該捷徑 →「編輯」→「Automation」。</li>
+<li><b>油車：</b>選「CarPlay」→「連線」；沒有 CarPlay 時選「Bluetooth」→ 指定自己的車機。</li>
+<li><b>Tesla：</b>選「Bluetooth」→ 指定自己的 Tesla。</li>
+<li>若希望手機鎖定時也能觸發：在該捷徑「編輯」→「資訊」→「隱私權」開啟「鎖定時允許執行」。</li>
 </ol>
-<div class="shortcut-note">完成這一次設定後，之後連上指定 CarPlay／Bluetooth 才會觸發助手。若沒有建立這個個人自動化，兩支捷徑都只會在你手動點擊或用 Siri 呼叫時執行。</div>
+<div class="shortcut-note">完成後，這支捷徑會出現在「自動化」中；以後連上指定 CarPlay／Bluetooth 就會觸發。自動化屬於每支 iPhone 的本機設定，分享捷徑本身不會把你的車機或 Tesla 裝置一起分享出去。</div>
 </div>
 
 <div class="shortcut-disclaimer">捷徑是 COLA GO 的選用功能，不影響網站本身使用；網站核心功能不需要安裝捷徑或登入帳號。駕駛中請以語音或車機操作為主，避免分心操作手機。</div>
