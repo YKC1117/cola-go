@@ -13,7 +13,10 @@ on:
           - dynamic
           - static
   schedule:
-    - cron: "7,22,37,52 * * * *"
+    - cron: "7 * * * *"
+    - cron: "22 * * * *"
+    - cron: "37 * * * *"
+    - cron: "52 * * * *"
     - cron: "43 2 * * *"
 
 permissions:

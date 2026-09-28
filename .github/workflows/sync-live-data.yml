@@ -2,12 +2,6 @@ name: Sync live freeway data
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "scripts/sync_traffic.py"
-      - ".github/workflows/sync-live-data.yml"
-  schedule:
-    - cron: "*/30 * * * *"
 
 permissions:
   contents: write
