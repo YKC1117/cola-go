@@ -105,22 +105,26 @@ let browser;
   check('Route navigation uses entered destination, no preset origin',await page.evaluate(()=>{const u=new URL(window.__opened.at(-1));return u.searchParams.get('destination')==='臺中車站'&&!u.searchParams.has('origin');}));
   check('Direct navigation options stay focused on Google and Apple',await page.locator('#tripResult [data-map]').evaluateAll(nodes=>nodes.map(n=>n.dataset.map).sort().join(',')==='apple,google'));
   await page.locator('.bottom-nav [data-go=charging]').click();
+  await page.waitForFunction(()=>state.charging.some(x=>x.road==='tdx'));
   const all=await page.locator('#chargingList article').count();
   check('Charging mobile-first controls are visible',await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingQuickFilter').isVisible()&&await page.locator('#chargingSearch').isVisible());
 
   await page.locator('[data-charge-quick="available"]').click();
   check('Available-now quick filter updates state',await page.evaluate(()=>state.chargingQuick==='available'));
-  check('Available-now filter never includes unknown or zero-availability TDX rows',await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>x.road==='tdx'&&!x.liveStale&&Number(x.availableConnectors)>0)));
+  check('Available-now filter decodes current TDX liveStates safely',await page.evaluate(()=>state.chargingQuick==='available'&&state.charging.filter(chargingQuickMatch).every(x=>x.road==='tdx'&&!x.liveStale&&chargingLiveCounts(x).available>0))&&((await page.locator('#chargingList article').count()>0)||((await page.locator('#chargingList .empty').textContent()).includes('即時空槍'))));
   await page.locator('[data-charge-quick="fast"]').click();
   check('100 kW quick filter only includes verified 100 kW+ rows',await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>chargingPowerKw(x)>=100)));
   await page.locator('[data-charge-quick="all"]').click();
 
   await page.locator('.charging-advanced > summary').click();
+  await page.locator('#chargingCity').selectOption('Tainan');
+  check('Charging city selector filters actual TDX cards',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingCity==='Tainan'&&[...document.querySelectorAll('#chargingList article')].every(el=>el.textContent.includes('臺南市'))));
+  await page.locator('#chargingCity').selectOption('all');
   await page.locator('#roadFilter [data-road="3"]').click();
   const filtered=await page.locator('#chargingList article').count();
   check('Charging road filter changes actual results',filtered>0&&filtered<all);
   await page.locator('#chargingConnector').selectOption('CCS2');
-  check('Connector filter retained',await page.evaluate(()=>state.chargingConnector==='CCS2'));
+  check('Connector filter decodes legacy numeric TDX connector types',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingConnector==='CCS2'));
   await page.locator('#resetChargingFilters').click();
 
   await page.locator('#chargingSearch').fill('NO_MATCH_UI_TEST');
