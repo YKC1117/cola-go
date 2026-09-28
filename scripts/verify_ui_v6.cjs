@@ -108,12 +108,10 @@ let browser;
   await page.waitForFunction(()=>state.charging.some(x=>x.road==='tdx'));
   const all=await page.locator('#chargingList article').count();
   await page.locator('#chargingCity').selectOption('Tainan');
-  const tainanCount=await page.locator('#chargingList article').count();
-  check('Charging city selector filters actual results',tainanCount>0&&tainanCount<all&&await page.evaluate(()=>state.chargingCity==='Tainan'));
+  check('Charging city selector filters actual results',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingCity==='Tainan'&&[...document.querySelectorAll('#chargingList article')].every(el=>el.textContent.includes('臺南市'))));
   await page.locator('#chargingCity').selectOption('all');
   await page.locator('[data-charge-quick="available"]').click();
-  const availableCount=await page.locator('#chargingList article').count();
-  check('Charging available quick filter decodes legacy TDX live states',availableCount>0&&availableCount<all);
+  check('Charging available quick filter decodes legacy TDX live states',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingQuick==='available'&&[...document.querySelectorAll('#chargingList article')].every(el=>el.querySelector('.charging-status-line.available'))));
   await page.locator('[data-charge-quick="all"]').click();
   check('Charging mobile-first controls are visible',await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingQuickFilter').isVisible()&&await page.locator('#chargingSearch').isVisible());
 
