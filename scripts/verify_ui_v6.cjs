@@ -12,7 +12,7 @@ const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'docs/ui-v6/screenshots');
 const results = [];
 const check = (name, condition) => { assert.ok(condition, name); results.push(name); };
-const types = {'.html':'text/html; charset=utf-8','.js':'application/javascript','.css':'text/css','.svg':'image/svg+xml','.webp':'image/webp','.json':'application/json','.webmanifest':'application/manifest+json'};
+const types = {'.html':'text/html; charset=utf-8','.js':'application/javascript','.css':'text/css','.svg':'image/svg+xml','.jpg':'image/jpeg','.webp':'image/webp','.json':'application/json','.webmanifest':'application/manifest+json'};
 const server = http.createServer((req,res) => {
   const url = new URL(req.url,'http://localhost');
   const file = path.resolve(root,'.'+decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname));
@@ -127,9 +127,27 @@ let browser;
   await page.locator('#installBtn').click();
   check('PWA installation help is available',await page.locator('#toast').textContent().then(x=>x.includes('主畫面')||x.includes('安裝')));
   await page.evaluate(()=>show('shortcuts'));
+  for(const width of [390,430,1440]){
+    await page.setViewportSize({width,height:900});
+    for(const img of await page.locator('.shortcut-guide img').all()){
+      await img.scrollIntoViewIfNeeded(); await img.evaluate(i=>i.decode());
+      const src=await img.getAttribute('src'); const response=await context.request.get(base+'/'+src);
+      check(`Guide ${src} ${width}px HTTP/MIME`,response.status()===200&&response.headers()['content-type']==='image/jpeg');
+      check(`Guide ${src} ${width}px full ratio`,await img.evaluate(i=>Math.abs(i.clientWidth/i.clientHeight-i.naturalWidth/i.naturalHeight)<0.005&&getComputedStyle(i).objectFit==='contain'));
+      check(`Guide ${src} opens full image`,await img.evaluate(i=>i.parentElement.href===i.src&&i.parentElement.target==='_blank'));
+    }
+    check(`Guides ${width}px no overflow`,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    await page.screenshot({path:path.join(output,`shortcuts-${width}.png`),fullPage:true});
+  }
+  const guidePopupPromise=context.waitForEvent('page');
+  await page.locator('.shortcut-guide a').first().click();
+  const guidePopup=await guidePopupPromise; await guidePopup.waitForLoadState();
+  check('Guide click opens full-size image',guidePopup.url().endsWith('/assets/images/carkit-ios27-overview.jpg'));
+  await guidePopup.close();
+  check('iCloud download URLs unchanged',JSON.stringify(await page.locator('.shortcut-download').evaluateAll(a=>a.map(x=>x.href)))===JSON.stringify(['https://www.icloud.com/shortcuts/fc68c6a436e347408b342607b4e0b377','https://www.icloud.com/shortcuts/87aad0f93e5e473ba01401f4e80fd43e']));
   check('Tesla real-car report copy button is visible',await page.locator('#copyTeslaReportBtn').isVisible());
-  check('Oil validation status is explicit',await page.locator('.shortcut-card').filter({hasText:'油車助手'}).locator('.shortcut-proof').textContent().then(x=>x.includes('已驗證：捷徑安裝、主選單、導航基本流程')&&x.includes('待車友回報：不同品牌車機的 CarPlay／Bluetooth 自動觸發')));
-  check('Tesla validation status is explicit',await page.locator('.shortcut-card').filter({hasText:'特斯拉助手'}).locator('.shortcut-proof').textContent().then(x=>x.includes('已驗證：捷徑安裝、主選單、語音入口')&&x.includes('待驗證：Tesla 實車遠端控制')));
+  check('Oil validation status is explicit',await page.locator('.shortcut-card').filter({hasText:'油車助手'}).locator('.shortcut-proof').textContent().then(x=>x.includes('已驗證：捷徑安裝、主選單、導航基本流程')&&x.includes('待實車：CarPlay／Bluetooth 上車自動觸發、不同品牌車機相容性')));
+  check('Tesla validation status is explicit',await page.locator('.shortcut-card').filter({hasText:'特斯拉助手'}).locator('.shortcut-proof').textContent().then(x=>x.includes('已驗證：捷徑安裝、主選單、語音入口')&&x.includes('待驗證：Tesla Bluetooth 自動觸發／實車遠端控制')));
   check('iOS 27 direct automation setup is explicit',await page.locator('.shortcut-automation').filter({hasText:'上車自動啟動｜只要設定一次'}).textContent().then(x=>x.includes('編輯')&&x.includes('自動化操作')&&x.includes('CarPlay')&&x.includes('Bluetooth')&&x.includes('允許鎖定時執行')&&!x.includes('動作選「執行捷徑」')));
   check('Oil setup deep link targets installed shortcut',await page.locator('.shortcut-card').filter({hasText:'油車助手'}).locator('.shortcut-setup-link').getAttribute('href').then(x=>x==='shortcuts://open-shortcut?name=%E6%B2%B9%E8%BB%8A%E5%8A%A9%E6%89%8B'));
   check('Tesla setup deep link targets installed shortcut',await page.locator('.shortcut-card').filter({hasText:'特斯拉助手'}).locator('.shortcut-setup-link').getAttribute('href').then(x=>x==='shortcuts://open-shortcut?name=%E7%89%B9%E6%96%AF%E6%8B%89%E5%8A%A9%E6%89%8B'));
@@ -138,7 +156,7 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-15');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-17');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   await context.setOffline(true);
   await page.reload();
