@@ -188,7 +188,7 @@ let browser;
   await page.waitForFunction(()=>state.charging.some(x=>x.officialSupplemental&&x.networkKey==='evalue'),{timeout:12000}).catch(()=>{});
   check('EVALUE official source is loaded when available',await page.evaluate(()=>state.charging.some(x=>x.networkKey==='evalue')));
   check('Coverage panel reports all six primary networks',await page.locator('#chargingCoverageGrid [data-coverage-major]').evaluateAll(nodes=>nodes.map(n=>n.dataset.coverageMajor).join(',')==='evoasis,upower,tail,evalue,icharging,tesla'));
-  check('Operator runtime exposes per-source health tracking',await page.evaluate(()=>typeof operatorSourceHealth==='object'));
+  check('Coverage panel exposes operator source health state',await page.locator('#chargingCoverageGrid').evaluate(el=>el.dataset.sourceHealth.split(',').filter(Boolean).length>=4));
   check('Coverage panel explains live and official supplemental semantics',await page.locator('#chargingCoverage').textContent().then(x=>x.includes('即時')&&x.includes('官方補')));
   check('Charging cards expose decision-first availability',await page.locator('#chargingList .charging-availability-main').first().isVisible());
   check('Charging city control stays in the first layer',await page.locator('#chargingCity').evaluate(el=>!el.closest('.charging-advanced')));
