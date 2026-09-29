@@ -172,7 +172,7 @@
   }
 
   async function loadOperatorCharging(){
-    const paths=["./data/operators/upower.json","./data/operators/evoasis.json"];
+    const paths=["./data/operators/upower.json","./data/operators/evoasis.json","./data/operators/tail.json"];
     const results=await Promise.allSettled(paths.map(path=>officialGet(path)));
     const datasets=results.filter(x=>x.status==="fulfilled"&&Array.isArray(x.value?.items)&&x.value.items.length).map(x=>x.value);
     if(!datasets.length)return;

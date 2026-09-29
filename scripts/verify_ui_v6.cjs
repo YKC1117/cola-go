@@ -59,6 +59,15 @@ let browser;
         };
         return Promise.resolve(new Response(JSON.stringify(evoasis),{status:200,headers:{'Content-Type':'application/json'}}));
       }
+      if(String(url).includes('/data/operators/tail.json')||String(url).includes('./data/operators/tail.json')){
+        const tail={
+          schema:1,source:'TAIL 特爾電力官方站點',updatedAt:new Date().toISOString(),count:1,
+          items:[
+            {id:'official-tail-extra',road:'operator',city:'Tainan',cityName:'臺南市',name:'TAIL 測試官方補站',location:'台南市永康區測試路3號',operator:'特爾電力股份有限公司',operatorWebURL:'https://www.evtail.com.tw/locations',officialSupplemental:true,sitePowerKw:0,maxPowerKw:null,power:'',spaces:0,connectorCount:0,connectors:[],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''}
+          ]
+        };
+        return Promise.resolve(new Response(JSON.stringify(tail),{status:200,headers:{'Content-Type':'application/json'}}));
+      }
       return nativeFetch(input,init);
     };
   });
@@ -158,6 +167,10 @@ let browser;
   check('EVOASIS official DC cache supplements TDX and remains clearly non-live',await page.evaluate(()=>{
     const row=state.charging.find(x=>x.name==='EVOASIS 測試官方補站');
     return row&&row.officialSupplemental===true&&chargingOperatorProfile(row)?.key==='evoasis'&&chargingPowerKw(row)===0;
+  }));
+  check('TAIL official cache supplements TDX without inventing seat or power data',await page.evaluate(()=>{
+    const row=state.charging.find(x=>x.name==='TAIL 測試官方補站');
+    return row&&row.officialSupplemental===true&&chargingOperatorProfile(row)?.key==='tail'&&chargingPowerKw(row)===0&&Number(row.spaces)===0;
   }));
   check('Charging driver-first controls are visible',await page.locator('#chargingFindNow').isVisible()&&await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingAvailableOnly').isVisible()&&await page.locator('#chargingCity').isVisible()&&await page.locator('#chargingSearch').isVisible());
   check('Six primary charging networks are first-layer controls',await page.locator('#chargingMajorFilter [data-charge-major]').evaluateAll(nodes=>nodes.map(n=>n.dataset.chargeMajor).join(',')==='all,evoasis,upower,tail,evalue,icharging,tesla'));
@@ -336,7 +349,7 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-29');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-30');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
   await context.setOffline(true);
