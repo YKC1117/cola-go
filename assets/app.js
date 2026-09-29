@@ -216,6 +216,32 @@ const CHARGING_OPERATOR_PROFILES=[
   {key:"tesla",brand:"Tesla 超級充電",names:["台灣特斯拉汽車有限公司"],aliases:["特斯拉","Tesla","Tesla Supercharger"],official:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",stationMap:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",chargeGuide:"https://www.tesla.com/zh_tw/support/charging/supercharging",chargeHint:"Tesla App・插槍自動充電"}
 ];
 const CHARGING_MAJOR_KEYS=["evoasis","upower","tail","evalue","icharging","tesla"];
+const ICHARGING_PLUG_AND_CHARGE=[
+  ["湖口服務區南向",["湖口服務區南向","湖口南向"]],
+  ["湖口服務區北向",["湖口服務區北向","湖口北向"]],
+  ["清水服務區",["清水服務區"]],
+  ["東山服務區",["東山服務區"]],
+  ["汐止遠東世界中心",["汐止遠東世界中心"]],
+  ["內湖污水處理廠附屬公園停車場",["內湖污水處理廠附屬公園停車場","內湖汙水處理廠附屬公園停車場"]],
+  ["新生高架(南京長安)",["新生高架南京長安","新生高架南京街長安"]],
+  ["新生高架(錦州民權)",["新生高架錦州民權","新生高架錦州街民權東路"]],
+  ["富邦遼寧",["富邦遼寧"]],
+  ["港墘站",["港墘站"]],
+  ["嘉義水牛站",["嘉義水牛站"]]
+];
+function chargingNameKey(value){
+  return String(value||"").toLowerCase().replace(/臺/g,"台").replace(/[^\p{L}\p{N}]+/gu,"");
+}
+function chargingCapabilities(x){
+  const profile=chargingOperatorProfile(x);
+  if(profile?.key!=="icharging")return [];
+  const key=chargingNameKey(x?.name);
+  const plug=ICHARGING_PLUG_AND_CHARGE.some(([,aliases])=>aliases.some(alias=>{
+    const a=chargingNameKey(alias);
+    return key===a||key.includes(a)||a.includes(key);
+  }));
+  return plug?[{key:"plug-and-charge",label:"插槍即充",source:"iCharging 官方 FAQ",url:"https://www.icharging.com.tw/tw/about/%E5%B8%B8%E8%A6%8B%E5%95%8F%E9%A1%8C"}]:[];
+}
 function chargingOperatorProfile(value){
   const x=typeof value==="string"?{operator:value}:(value||{});
   const networkKey=String(x.networkKey||"").trim();
@@ -240,7 +266,7 @@ function chargingMajorMatch(x){
 }
 function chargingOperatorSearchText(x){
   const profile=chargingOperatorProfile(x);
-  return [JSON.stringify(x),profile?.brand,...(profile?.aliases||[])].filter(Boolean).join(" ").toLowerCase();
+  return [JSON.stringify(x),profile?.brand,...(profile?.aliases||[]),...chargingCapabilities(x).map(c=>c.label)].filter(Boolean).join(" ").toLowerCase();
 }
 function chargingConnectors(x){
   const rows=(x?.connectors||[]).map(value=>LEGACY_TDX_CONNECTOR_TYPES[String(value)]||String(value)).filter(Boolean);
@@ -409,7 +435,8 @@ function chargingDetailMarkup(x){
     ["聯絡電話",x.telephone||x.operatorTelephone],
     [profile&&x.operator&&profile.brand!==x.operator?"TDX 登記業者":"",profile&&x.operator&&profile.brand!==x.operator?x.operator:""],
     ["狀態更新",x.statusUpdatedAt?formatTime(x.statusUpdatedAt):""],
-    [profile?.chargeHint?"官方充電方式":"",profile?.chargeHint||""]
+    [profile?.chargeHint?"官方充電方式":"",profile?.chargeHint||""],
+    [chargingCapabilities(x).length?"官方支援功能":"",chargingCapabilities(x).map(c=>c.label).join("、")]
   ].filter(row=>row[0]&&row[1]);
   if(!rows.length&&!official&&!x.description)return "";
   const links=[
@@ -417,7 +444,8 @@ function chargingDetailMarkup(x){
     profile?.chargeGuide?'<a href="'+esc(profile.chargeGuide)+'" target="_blank" rel="noopener noreferrer">怎麼充</a>':"",
     profile?.rateGuide?'<a href="'+esc(profile.rateGuide)+'" target="_blank" rel="noopener noreferrer">官方費率</a>':"",
     profile?.ios?'<a href="'+esc(profile.ios)+'" target="_blank" rel="noopener noreferrer">iPhone App</a>':"",
-    profile?.android?'<a href="'+esc(profile.android)+'" target="_blank" rel="noopener noreferrer">Android App</a>':""
+    profile?.android?'<a href="'+esc(profile.android)+'" target="_blank" rel="noopener noreferrer">Android App</a>':"",
+    ...chargingCapabilities(x).map(c=>'<a href="'+esc(c.url)+'" target="_blank" rel="noopener noreferrer">'+esc(c.label)+' 官方說明</a>')
   ].filter(Boolean).join("");
   return '<details class="charging-more"><summary>站點詳細資訊</summary>'+
     (rows.length?'<div class="charging-detail-grid">'+rows.map(row=>'<div><small>'+esc(row[0])+'</small><b>'+esc(chargingDisplayText(row[1]))+'</b></div>').join("")+'</div>':"")+
@@ -537,6 +565,7 @@ function renderCharging(){
         (supplemental&&Number(x.spaces)<=0?'<span>席次未提供</span>':'<span>'+esc(x.spaces)+(supplemental?' 席':(tdx?' 充電點':' 車位'))+'</span>')+
         '<span class="charging-power">'+esc(chargingPowerLabel(x))+'</span>'+
         chargingConnectors(x).map(c=>'<span class="charging-connector">'+esc(c)+'</span>').join("")+
+        chargingCapabilities(x).map(c=>'<span class="charging-capability">'+esc(c.label)+'</span>').join("")+
       '</div>'+
       '<div class="location-line"><svg><use href="#i-pin"/></svg><span>'+esc(x.location)+(x.note&&!tdx?" · "+esc(x.note):"")+'</span></div>'+
       chargingDetailMarkup(x)+
