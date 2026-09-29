@@ -108,7 +108,8 @@ let browser;
   await page.locator('.bottom-nav [data-go=charging]').click();
   await page.waitForFunction(()=>state.charging.some(x=>x.road==='tdx'));
   const all=await page.locator('#chargingList article').count();
-  check('Charging driver-first controls are visible',await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingAvailableOnly').isVisible()&&await page.locator('#chargingCity').isVisible()&&await page.locator('#chargingSearch').isVisible());
+  check('Charging driver-first controls are visible',await page.locator('#chargingFindNow').isVisible()&&await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingAvailableOnly').isVisible()&&await page.locator('#chargingCity').isVisible()&&await page.locator('#chargingSearch').isVisible());
+  check('Charging cards expose decision-first availability',await page.locator('#chargingList .charging-availability-main').first().isVisible());
   check('Charging city control stays in the first layer',await page.locator('#chargingCity').evaluate(el=>!el.closest('.charging-advanced')));
   check('Charging source HTML formatting becomes readable text',await page.evaluate(()=>chargingDisplayText('尖峰<br>12.7元&nbsp;每度')==='尖峰 · 12.7元 每度'));
   check('ConnectorType 2 and 5 normalize to CCS2 and J1772',await page.evaluate(()=>chargingConnectors({connectors:['2','5']}).join(',')==='CCS2,J1772'));
@@ -148,6 +149,26 @@ let browser;
 
   await context.grantPermissions(['geolocation'],{origin:base});
   await context.setGeolocation({latitude:22.993,longitude:120.214});
+  await page.locator('#chargingFindNow').click();
+  await page.waitForFunction(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&Boolean(state.chargingOrigin));
+  check('One-tap nearby available action combines location, distance sorting, and live availability',await page.evaluate(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&state.chargingCity==='all'));
+  const oneTapCards=await page.evaluate(()=>[...document.querySelectorAll('#chargingList .charging-item')].map(card=>({
+    cls:card.className,
+    text:card.textContent.replace(/\s+/g,' ').trim().slice(0,220)
+  })));
+  const oneTapBad=oneTapCards.filter(card=>!card.cls.split(/\s+/).includes('is-available'));
+  if(oneTapBad.length){
+    console.log('ONE_TAP_NON_AVAILABLE',JSON.stringify(oneTapBad.slice(0,6)));
+    console.log('ONE_TAP_STATE',JSON.stringify(await page.evaluate(()=>({
+      availableOnly:state.chargingAvailableOnly,
+      sort:state.chargingSort,
+      summary:document.querySelector('#chargingResultSummary')?.textContent,
+      findNow:document.querySelector('#chargingFindNow')?.getAttribute('aria-pressed')
+    }))));
+    console.log('ONE_TAP_PAGE_ERRORS',JSON.stringify(errors));
+  }
+  check('One-tap nearby available never shows a non-available card',oneTapBad.length===0);
+  await page.locator('#resetChargingFilters').click();
   await page.locator('#chargingNearby').click();
   await page.waitForFunction(()=>state.chargingSort==='nearby'&&Boolean(state.chargingOrigin));
   check('Nearby charging uses geolocation only after explicit tap',await page.evaluate(()=>state.chargingSort==='nearby'&&Math.abs(state.chargingOrigin.lat-22.993)<0.001));
@@ -168,6 +189,8 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('無法取得位置'));
   check('Denied geolocation leaves charging usable without storing an origin',await page.evaluate(()=>state.chargingOrigin===null&&state.chargingSort==='smart'));
 
+  await page.locator('#chargingList [data-charge-go]').first().click();
+  check('Charging direct navigation is one tap and prefers Google Maps on non-Apple platforms',await page.evaluate(()=>window.__opened.at(-1).startsWith('https://www.google.com/maps/dir/')));
   const firstNav=page.locator('#chargingList [data-charge-nav-toggle]').first();
   await firstNav.click();
   await page.locator('#chargingList [data-charge-google]').first().click();
