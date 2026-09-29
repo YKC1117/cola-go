@@ -202,6 +202,30 @@ function parseChargingPower(value){
   return m?Number(m[0]):0;
 }
 const LEGACY_TDX_CONNECTOR_TYPES={"1":"CCS1","2":"CCS2","3":"CHAdeMO","4":"Tesla TPC","5":"J1772","6":"Type2","254":"其他","255":"其他","J1772(Type1)":"J1772","Mennekes(Type2)":"Type2"};
+const CHARGING_OPERATOR_PROFILES=[
+  {key:"ev2",brand:"電小二 EV2",ids:["58430020"],names:["程豐資通股份有限公司"],aliases:["電小二","EV2","程豐"],official:"https://www.ev2.com.tw/",ios:"https://apps.apple.com/tw/app/%E9%9B%BB%E5%B0%8F%E4%BA%8C-%E9%9B%BB%E5%8B%95%E8%BB%8A%E5%85%85%E9%9B%BB%E7%AB%99/id6677032732",android:"https://play.google.com/store/apps/details?id=tw.delta.android"},
+  {key:"evoasis",brand:"EVOASIS",names:["源點科技股份有限公司"],aliases:["OASIS","源點科技"],official:"https://www.evoasis.com.tw/"},
+  {key:"evalue",brand:"E-Value",names:["華城電能科技股份有限公司"],aliases:["EVALUE","華城電能"],official:"https://www.evalue.com.tw/"},
+  {key:"icharging",brand:"iCharging",names:["中興電工機械股份有限公司"],aliases:["中興電工"],official:"https://www.icharging.com.tw/tw"},
+  {key:"starcharger",brand:"星舟快充",names:["星舟快充"],aliases:["StarCharger","星舟"],official:"https://starcharger.com.tw/"},
+  {key:"tail",brand:"TAIL 特爾電力",names:["特爾電力股份有限公司"],aliases:["TAIL","特爾"],official:"https://www.evtail.com.tw/"},
+  {key:"acon",brand:"Acon-eco",names:["連展電能科技股份有限公司"],aliases:["Acon","連展電能"],official:"https://www.acon-eco.com/"},
+  {key:"noodoe",brand:"Noodoe",names:["拓廣科技","拓廣科技股份有限公司"],aliases:["拓廣","Noodoe EV"],official:"https://www.noodoe.com.tw/"},
+  {key:"tesla",brand:"Tesla",names:["台灣特斯拉汽車有限公司"],aliases:["特斯拉","Tesla Supercharger"],official:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan"}
+];
+function chargingOperatorProfile(value){
+  const x=typeof value==="string"?{operator:value}:(value||{});
+  const operator=String(x.operator||"").trim();
+  const operatorId=String(x.operatorId||"").trim();
+  return CHARGING_OPERATOR_PROFILES.find(profile=>
+    (operatorId&&profile.ids?.includes(operatorId))||
+    profile.names?.some(name=>operator===name||operator.includes(name))
+  )||null;
+}
+function chargingOperatorSearchText(x){
+  const profile=chargingOperatorProfile(x);
+  return [JSON.stringify(x),profile?.brand,...(profile?.aliases||[])].filter(Boolean).join(" ").toLowerCase();
+}
 function chargingConnectors(x){
   const rows=(x?.connectors||[]).map(value=>LEGACY_TDX_CONNECTOR_TYPES[String(value)]||String(value)).filter(Boolean);
   if(!rows.length&&x?.road==="tdx")return ["接頭類型未提供"];
@@ -254,11 +278,14 @@ function chargingLiveCounts(x){
   }
   return {available:0,occupied:0,fault:0,unavailable:0,unknown:Number(x?.liveStateCount||0),total:Number(x?.liveStateCount||0)};
 }
-function chargingOperatorLabel(x){
-  const value=String(x?.operator||"").trim();
-  if(!value||value==="TDX")return "TDX 官方站點";
-  if(/^\d{8}$/.test(value))return "TDX 業者 "+value;
-  return value;
+function chargingOperatorLabel(value){
+  const x=typeof value==="string"?{operator:value}:(value||{});
+  const legal=String(x.operator||"").trim();
+  const profile=chargingOperatorProfile(x);
+  if(profile)return profile.brand;
+  if(!legal||legal==="TDX")return "TDX 官方站點";
+  if(/^\d{8}$/.test(legal))return "TDX 業者 "+legal;
+  return legal;
 }
 function chargingDirectionMatch(x){
   const d=String(x.direction||"");
@@ -286,9 +313,10 @@ function chargingQuickMatch(x){
   if(state.chargingQuick==="fast")return chargingPowerKw(x)>=100;
   if(state.chargingQuick==="ccs2")return chargingConnectors(x).includes("CCS2");
   if(state.chargingQuick==="tesla"){
-    const text=[x.name,x.operator,x.note].join(" ").toLowerCase();
+    const text=[x.name,x.operator,x.note,chargingOperatorLabel(x)].join(" ").toLowerCase();
     return chargingConnectors(x).includes("Tesla TPC")||text.includes("tesla")||text.includes("特斯拉");
   }
+  if(state.chargingQuick==="ev2")return chargingOperatorProfile(x)?.key==="ev2";
   return true;
 }
 function chargingSortRank(x){
@@ -310,12 +338,18 @@ function loadChargingFavorites(){
 }
 function chargingStatusMarkup(x){
   const tdx=x.road==="tdx";
+  const profile=chargingOperatorProfile(x);
   const unknown=(title,detail,kind="is-unknown")=>'<div class="charging-status-block '+kind+'"><div class="charging-availability-row '+kind+'"><div class="charging-availability-main"><strong>--</strong><span>空槍</span></div><div class="charging-availability-copy"><b>'+esc(title)+'</b><small>'+esc(detail)+'</small></div></div></div>';
   if(!tdx)return unknown("即時狀態未知","此筆未提供即時空槍");
   const updated=x.statusUpdatedAt?formatTime(x.statusUpdatedAt):"更新時間未提供";
   if(x.liveStale)return unknown("狀態已逾時","不列入「有空槍」 · "+updated,"is-stale");
   const counts=chargingLiveCounts(x);
-  if(!counts.total)return unknown("即時狀態未知","目前沒有可安全判讀的槍況 · "+updated);
+  if(!counts.total){
+    const detail=profile
+      ? "TDX 尚未收到 "+profile.brand+" 即時槍況 · 可由業者官方確認"
+      : "TDX 目前沒有可安全判讀的即時槍況 · "+updated;
+    return unknown("未提供 TDX 即時槍況",detail);
+  }
 
   const open=counts.available>0;
   const badges=[
@@ -342,18 +376,26 @@ function chargingDisplayText(value){
     .trim();
 }
 function chargingDetailMarkup(x){
+  const profile=chargingOperatorProfile(x);
+  const official=profile?.official||x.operatorWebURL||"";
   const rows=[
     ["營業時間",x.serviceTime],
     ["充電費率",x.chargingRate],
     ["停車費率",x.parkingRate],
     ["聯絡電話",x.telephone||x.operatorTelephone],
+    [profile&&x.operator&&profile.brand!==x.operator?"TDX 登記業者":"",profile&&x.operator&&profile.brand!==x.operator?x.operator:""],
     ["狀態更新",x.statusUpdatedAt?formatTime(x.statusUpdatedAt):""]
-  ].filter(row=>row[1]);
-  if(!rows.length&&!x.operatorWebURL&&!x.description)return "";
+  ].filter(row=>row[0]&&row[1]);
+  if(!rows.length&&!official&&!x.description)return "";
+  const links=[
+    official?'<a href="'+esc(official)+'" target="_blank" rel="noopener noreferrer">'+esc(profile?.brand||"業者")+" 官方</a>":"",
+    profile?.ios?'<a href="'+esc(profile.ios)+'" target="_blank" rel="noopener noreferrer">iPhone App</a>':"",
+    profile?.android?'<a href="'+esc(profile.android)+'" target="_blank" rel="noopener noreferrer">Android App</a>':""
+  ].filter(Boolean).join("");
   return '<details class="charging-more"><summary>站點詳細資訊</summary>'+
     (rows.length?'<div class="charging-detail-grid">'+rows.map(row=>'<div><small>'+esc(row[0])+'</small><b>'+esc(chargingDisplayText(row[1]))+'</b></div>').join("")+'</div>':"")+
     (x.description?'<p>'+esc(x.description)+'</p>':"")+
-    (x.operatorWebURL?'<a href="'+esc(x.operatorWebURL)+'" target="_blank" rel="noopener noreferrer">業者官方網站</a>':"")+
+    (links?'<div class="charging-operator-links">'+links+'</div>':"")+
     '</details>';
 }
 function renderCharging(){
@@ -361,17 +403,19 @@ function renderCharging(){
   if(!root)return;
 
   const q=($("#chargingSearch")?.value||"").trim().toLowerCase();
-  let rows=state.charging
+  const candidateRows=state.charging
     .filter(x=>(state.road==="all"||x.road===state.road))
     .filter(x=>state.chargingCity==="all"||x.city===state.chargingCity)
     .filter(chargingDirectionMatch)
     .filter(x=>state.chargingConnector==="all"||chargingConnectors(x).includes(state.chargingConnector))
     .filter(x=>chargingPowerKw(x)>=Number(state.chargingPower||0))
     .filter(x=>state.chargingOperator==="all"||x.operator===state.chargingOperator)
-    .filter(x=>!state.chargingAvailableOnly||(x.road==="tdx"&&!x.liveStale&&chargingLiveCounts(x).available>0))
     .filter(chargingQuickMatch)
     .filter(x=>!state.chargingFavoritesOnly||state.chargingFavorites.includes(chargingKey(x)))
-    .filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q));
+    .filter(x=>!q||chargingOperatorSearchText(x).includes(q));
+  let rows=state.chargingAvailableOnly
+    ? candidateRows.filter(x=>x.road==="tdx"&&!x.liveStale&&chargingLiveCounts(x).available>0)
+    : candidateRows;
 
   rows.sort((a,b)=>{
     if(state.chargingSort==="nearby"){
@@ -419,11 +463,19 @@ function renderCharging(){
     if(state.chargingQuick==="fast")context.push("100 kW+");
     if(state.chargingQuick==="ccs2")context.push("CCS2");
     if(state.chargingQuick==="tesla")context.push("Tesla");
+    if(state.chargingQuick==="ev2")context.push("電小二");
     $("#chargingResultSummary").textContent=resultCount===0&&state.chargingAvailableOnly
       ?"目前沒有可確認空槍"+(state.chargingSort==="nearby"?" · 可改看附近站點":"")
       :resultCount+" 站符合"+suffix+(context.length?" · "+context.join(" · "):"");
   }
   if($("#chargingFindNow"))$("#chargingFindNow").setAttribute("aria-pressed",String(state.chargingSort==="nearby"&&state.chargingAvailableOnly));
+
+  const unverifiedRows=state.chargingAvailableOnly?candidateRows.filter(x=>x.road==="tdx"&&(x.liveStale||chargingLiveCounts(x).total===0)):[];
+  const unverifiedBrands=[...new Set(unverifiedRows.map(x=>chargingOperatorProfile(x)?.brand).filter(Boolean))].slice(0,3);
+  const unverifiedScope=state.chargingSort==="nearby"?"附近":"目前篩選";
+  const unverifiedNote=unverifiedRows.length
+    ? unverifiedScope+"另有 "+unverifiedRows.length+" 站沒有 TDX 即時槍況"+(unverifiedBrands.length?"，包含 "+unverifiedBrands.join("、"):"")+"；不代表站點不能充。"
+    : "";
 
   root.innerHTML=shown.length?shown.map(x=>{
     const key=chargingKey(x);
@@ -462,8 +514,8 @@ function renderCharging(){
       '</div>'+
     '</article>';
   }).join(""):(state.chargingAvailableOnly
-    ? '<div class="empty charging-empty"><b>目前沒有可確認的即時空槍</b><p>可能真的滿位，也可能即時狀態剛好逾時。COLA GO 不會把過期資料當成「現在可用」。</p><button class="charging-empty-primary" data-charge-show-nearby>改看附近充電站</button><small>保留距離排序，只取消「只看空槍」</small></div>'
-    : '<div class="empty charging-empty"><b>沒有符合的充電站</b><p>可以清除篩選，或改用搜尋站名、地址、業者。</p><button class="charging-empty-secondary" data-charge-clear-filters>清除充電篩選</button></div>');
+    ? '<div class="empty charging-empty"><b>目前沒有可確認的即時空槍</b><p>'+(unverifiedNote?esc(unverifiedNote)+" ":"")+'可能真的滿位，也可能業者尚未把即時槍況回傳 TDX。COLA GO 不會把未知狀態誤標成「現在可用」。</p><button class="charging-empty-primary" data-charge-show-nearby>改看附近充電站</button><small>保留距離排序，只取消「只看空槍」</small></div>'
+    : '<div class="empty charging-empty"><b>沒有符合的充電站</b><p>可以清除篩選，或改用搜尋站名、地址、業者品牌。</p><button class="charging-empty-secondary" data-charge-clear-filters>清除充電篩選</button></div>');
 
   $$("[data-charge-favorite]",root).forEach(b=>b.onclick=()=>{
     const key=b.dataset.chargeFavorite;

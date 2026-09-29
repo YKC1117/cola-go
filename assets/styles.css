@@ -277,6 +277,11 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .charging-detail-grid b { display:block;font-size:12px;line-height:1.55;margin-top:2px;font-weight:600;overflow-wrap:anywhere }
 .charging-more p { font-size:12px;color:var(--muted);line-height:1.6;margin:10px 0 0 }
 .charging-more a { display:inline-block;margin-top:10px;font-size:12px }
+.charging-operator-links { display:flex;flex-wrap:wrap;gap:7px;margin-top:10px }
+.charging-operator-links a { margin:0;min-height:36px;display:inline-flex;align-items:center;padding:7px 10px;border:1px solid #334149;border-radius:10px;background:#131a1e;color:#dce7ec;font-size:11px;font-weight:700;text-decoration:none }
+.charging-operator-links a:first-child { border-color:#315e77;background:#102634;color:#8bd8ff }
+.charging-availability-row.is-unknown .charging-availability-copy b { color:#d6e2e7 }
+.charging-availability-row.is-unknown .charging-availability-copy small { color:#93a4ac }
 .charging-nav-actions { margin-top:13px }
 .charging-map-secondary { margin-top:22px }
 /* Charging V2: decision-first mobile UI */
