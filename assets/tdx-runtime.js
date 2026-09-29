@@ -75,33 +75,80 @@
     return rows;
   }
 
+  const DEDUPE_CITY_PREFIXES=["基隆","台北","新北","桃園","新竹","苗栗","台中","彰化","南投","雲林","嘉義","台南","高雄","屏東","宜蘭","花蓮","台東","澎湖","金門","連江"];
+
+  function normalizedStationName(value){
+    let name=String(value||"").replace(/臺/g,"台").toLowerCase()
+      .replace(/evoasis|tail|特爾電力|e-?value|華城電能|華城電機|u-?power|旭電馳科研/gi,"")
+      .replace(/[^\p{L}\p{N}]+/gu,"");
+    for(const prefix of DEDUPE_CITY_PREFIXES){
+      if(name.startsWith(prefix)&&name.length>prefix.length+4){
+        name=name.slice(prefix.length);
+        break;
+      }
+    }
+    return name.replace(/(超級綠洲|超充站|快充站|充電站)$/,"");
+  }
+
+  function normalizedAddressCore(value){
+    let address=String(value||"").replace(/臺/g,"台").replace(/^\d{3,5}\s*/,"");
+    const match=address.match(/^(.*?(?:路|街|巷|道|大道|段|村|里|鄉|鎮|區).*?\d+(?:-\d+)?號)/);
+    if(match)address=match[1];
+    return address.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"");
+  }
+
   function stationNameKey(x){
     const city=String(x?.city||"");
-    const normalize=value=>String(value||"").replace(/臺/g,"台").toLowerCase().replace(/[\s\-_.·・()（）,，。號]/g,"");
-    const name=normalize(x?.name);
+    const name=String(x?.name||"").replace(/臺/g,"台").toLowerCase().replace(/[\s\-_.·・()（）,，。號]/g,"");
     return city&&name?city+"|"+name:"";
   }
 
-  function stationIdentityKeys(x){
-    const brand=chargingOperatorProfile(x)?.key||String(x?.operator||"").toLowerCase();
+  function stationMergeKeys(x,{withBrand=true}={}){
+    const brand=chargingOperatorProfile(x)?.key||String(x?.networkKey||x?.operator||"").toLowerCase();
     const city=String(x?.city||"");
-    const normalize=value=>String(value||"").replace(/臺/g,"台").toLowerCase().replace(/[\s\-_.·・()（）,，。號]/g,"");
+    if(!city)return [];
+    const prefix=withBrand?[brand,city]:[city];
     const keys=[];
-    const name=normalize(x?.name);
-    const address=normalize(x?.location);
-    if(name)keys.push([brand,city,"n",name].join("|"));
-    if(address)keys.push([brand,city,"a",address].join("|"));
-    return keys;
+    const exactName=String(x?.name||"").replace(/臺/g,"台").toLowerCase().replace(/[\s\-_.·・()（）,，。號]/g,"");
+    const safeName=normalizedStationName(x?.name);
+    const address=String(x?.location||"").replace(/臺/g,"台").toLowerCase().replace(/[\s\-_.·・()（）,，。號]/g,"");
+    const addressCore=normalizedAddressCore(x?.location);
+    if(exactName)keys.push([...prefix,"n",exactName].join("|"));
+    if(safeName&&safeName.length>=4)keys.push([...prefix,"fn",safeName].join("|"));
+    if(address)keys.push([...prefix,"a",address].join("|"));
+    if(addressCore&&addressCore.length>=6)keys.push([...prefix,"fa",addressCore].join("|"));
+    return [...new Set(keys)];
+  }
+
+  function stationIdentityKeys(x){
+    return stationMergeKeys(x,{withBrand:true});
+  }
+
+  function uniqueLookup(rows,keyFn){
+    const map=new Map();
+    for(const row of rows||[]){
+      for(const key of keyFn(row)){
+        if(!key)continue;
+        if(!map.has(key))map.set(key,row);
+        else if(map.get(key)!==row)map.set(key,null);
+      }
+    }
+    return map;
   }
 
   function enrichOfficialRows(rows){
-    const byName=new Map();
+    const exactByName=new Map();
     operatorChargingAll.forEach(item=>{
       const key=stationNameKey(item);
-      if(key&&!byName.has(key))byName.set(key,item);
+      if(key&&!exactByName.has(key))exactByName.set(key,item);
     });
+    const conservative=uniqueLookup(operatorChargingAll,item=>stationMergeKeys(item,{withBrand:false}));
     return (rows||[]).map(row=>{
-      const match=byName.get(stationNameKey(row));
+      let match=exactByName.get(stationNameKey(row))||null;
+      if(!match){
+        const hits=[...new Set(stationMergeKeys(row,{withBrand:false}).map(key=>conservative.get(key)).filter(Boolean))];
+        if(hits.length===1)match=hits[0];
+      }
       if(!match)return row;
       return {
         ...row,
