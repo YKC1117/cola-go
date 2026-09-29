@@ -466,8 +466,8 @@ function renderCharging(){
     const label=$("#chargingNearby").querySelector("b");
     if(label)label.textContent=state.chargingSort==="nearby"?"依距離排序":"附近排序";
   }
-  $("[data-charge-quick]").forEach(b=>b.classList.toggle("active",b.dataset.chargeQuick===state.chargingQuick));
-  $("[data-charge-major]").forEach(b=>b.classList.toggle("active",b.dataset.chargeMajor===state.chargingMajor));
+  $$("[data-charge-quick]").forEach(b=>b.classList.toggle("active",b.dataset.chargeQuick===state.chargingQuick));
+  $$("[data-charge-major]").forEach(b=>b.classList.toggle("active",b.dataset.chargeMajor===state.chargingMajor));
   if($("#chargingResultSummary")){
     const suffix=resultCount>shown.length?" · 先顯示前 "+shown.length+" 站":"";
     const context=[];
@@ -1456,11 +1456,11 @@ function bindChargingTools(){
     renderCharging();
   };
 
-  $("[data-charge-quick]").forEach(b=>b.addEventListener("click",()=>{
+  $$("[data-charge-quick]").forEach(b=>b.addEventListener("click",()=>{
     state.chargingQuick=b.dataset.chargeQuick||"all";
     renderCharging();
   }));
-  $("[data-charge-major]").forEach(b=>b.addEventListener("click",()=>{
+  $$("[data-charge-major]").forEach(b=>b.addEventListener("click",()=>{
     state.chargingMajor=b.dataset.chargeMajor||"all";
     state.chargingOperator="all";
     if($("#chargingOperator"))$("#chargingOperator").value="all";
