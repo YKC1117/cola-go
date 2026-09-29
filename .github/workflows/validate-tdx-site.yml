@@ -86,6 +86,28 @@ jobs:
           assert direct["location"] == "臺南市東區大同路1號"
           assert direct["locationSource"] == "TDX charging"
           PY
+      - name: Charging cache maintenance dry-run
+        run: |
+          cp data/tdx/charging.json /tmp/charging-before.json
+          python3 scripts/normalize_charging_cache.py
+          python3 - <<'PY'
+          import json, re
+          before=json.load(open("/tmp/charging-before.json", encoding="utf-8"))
+          after=json.load(open("data/tdx/charging.json", encoding="utf-8"))
+          b=before.get("items",[])
+          a=after.get("items",[])
+          def city_only(rows):
+              return sum(not x.get("location") or x.get("location")==x.get("cityName") for x in rows)
+          assert len(a)==len(b) and len(a)>0
+          assert not any(
+              str(v) in {"J1772(Type1)","Mennekes(Type2)"}
+              for x in a for v in x.get("connectors",[])
+          )
+          assert not any(re.fullmatch(r"\d{8}", str(x.get("operator") or "")) for x in a)
+          assert city_only(a) < city_only(b)
+          print("CHARGING_CACHE_DRY_RUN_PASS", "cityOnly", city_only(b), "->", city_only(a))
+          PY
+          cp /tmp/charging-before.json data/tdx/charging.json
       - name: JavaScript syntax
         run: |
           node --check assets/app.js

@@ -1,0 +1,49 @@
+name: Normalize charging cache maintenance
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "scripts/normalize_charging_cache.py"
+      - ".github/workflows/normalize-charging-cache.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cola-go-tdx-sync
+  cancel-in-progress: false
+
+jobs:
+  normalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Normalize checked-in charging cache
+        run: python3 scripts/normalize_charging_cache.py
+      - name: Publish normalized cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "COLA GO Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/tdx/charging.json
+          if git diff --cached --quiet; then
+            echo "Charging cache already normalized."
+            exit 0
+          fi
+          git commit -m "data: normalize charging cache"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "Normalized charging cache published."
+              exit 0
+            fi
+            echo "Main changed; rebasing normalized cache (attempt $attempt)." >&2
+            git fetch origin main
+            git rebase origin/main
+          done
+          exit 1
