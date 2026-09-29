@@ -51,7 +51,7 @@
     const operators=[...new Set([
       ...curatedCharging.map(x=>x.operator),
       ...officialChargingAll.map(x=>x.operator)
-    ].filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),"zh-Hant"));
+    ].filter(Boolean))].sort((a,b)=>chargingOperatorLabel(a).localeCompare(chargingOperatorLabel(b),"zh-Hant"));
     select.innerHTML='<option value="all">全部業者</option>'+operators.map(name=>{
       const value=String(name).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
       const label=chargingOperatorLabel(name).replace(/&/g,"&amp;").replace(/</g,"&lt;");
@@ -88,13 +88,17 @@
     });
     const chip=document.querySelector(".charging-source-chip");
     const title=document.querySelector(".charging-source b");
-    if(title)title.textContent="TDX 全台官方充電站";
-    if(chip){
+    const sourceNote=document.querySelector(".charging-source small");
+    if(title)title.textContent="TDX 全台官方充電站＋業者品牌";
+    if(chip||sourceNote){
       const city=document.querySelector("#chargingCity")?.value||"all";
-      const total=city==="all"?officialChargingAll.length:officialChargingAll.filter(x=>x.city===city).length;
-      const health=chargingStatus==="live"?"槍況已同步":chargingStatus==="partial"?"部分更新延遲":chargingStatus==="stale"?"資料已逾時":"設備資料";
+      const scope=city==="all"?officialChargingAll:officialChargingAll.filter(x=>x.city===city);
+      const total=scope.length;
+      const liveCount=scope.filter(x=>!x.liveStale&&Number(x.liveStateCount)>0).length;
+      const brandCount=scope.filter(x=>Boolean(chargingOperatorProfile(x))).length;
       const syncTime=chargingUpdatedAt?formatTime(chargingUpdatedAt).replace(" 更新",""):"";
-      chip.textContent=total+" 站 · "+health+(syncTime?" · 最後同步 "+syncTime:"");
+      if(chip)chip.textContent=total+" 站 · "+liveCount+" 站有即時槍況";
+      if(sourceNote)sourceNote.textContent="交通部 TDX 站點與槍況 · "+brandCount+" 站已辨識常用充電品牌"+(syncTime?" · "+syncTime+" 同步":"");
     }
     const totalCount=officialChargingAll.length+curatedCharging.length;
     if(document.querySelector("#chargeQuick"))document.querySelector("#chargeQuick").textContent=totalCount?totalCount+" 站":"充電站";
