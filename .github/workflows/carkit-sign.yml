@@ -18,6 +18,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Probe JiXing iOS metadata
+        run: |
+          python3 - <<'PY'
+          import json
+          from urllib.request import Request, urlopen
+
+          url="https://itunes.apple.com/lookup?id=6755052698&country=tw"
+          req=Request(url,headers={"User-Agent":"CarKit-TW/1.0"})
+          with urlopen(req,timeout=30) as resp:
+              data=json.load(resp)
+          assert data.get("resultCount")==1, data
+          app=data["results"][0]
+          print("JIXING_TRACK_ID=", app.get("trackId"))
+          print("JIXING_TRACK_NAME=", app.get("trackName"))
+          print("JIXING_BUNDLE_ID=", app.get("bundleId"))
+          assert app.get("trackId")==6755052698
+          assert app.get("bundleId"), app
+          PY
+
       - name: Build shortcuts
         run: |
           set -euxo pipefail
