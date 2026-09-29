@@ -68,6 +68,16 @@ let browser;
         };
         return Promise.resolve(new Response(JSON.stringify(tail),{status:200,headers:{'Content-Type':'application/json'}}));
       }
+      if(String(url).includes('/data/operators/evalue.json')||String(url).includes('./data/operators/evalue.json')){
+        const evalue={
+          schema:1,source:'EVALUE 官方充電站',updatedAt:new Date().toISOString(),count:2,
+          items:[
+            {id:'official-evalue-partner-dup',road:'operator',city:'Tainan',cityName:'臺南市',name:'台南統一精工速邁樂新營二站',location:'',operator:'華城電能科技股份有限公司',operatorId:'90807408',networkKey:'evalue',operatorWebURL:'https://www.evalue.com.tw/find',officialSourceURL:'https://www.evalue.com.tw/find/9991',officialSupplemental:true,sitePowerKw:180,maxPowerKw:180,power:'DC 180kW',spaces:1,connectorCount:1,connectors:['CCS1','CCS2'],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''},
+            {id:'official-evalue-extra',road:'operator',city:'Tainan',cityName:'臺南市',name:'EVALUE 測試官方補站',location:'',operator:'華城電能科技股份有限公司',operatorId:'90807408',networkKey:'evalue',operatorWebURL:'https://www.evalue.com.tw/find',officialSourceURL:'https://www.evalue.com.tw/find/9992',officialSupplemental:true,sitePowerKw:180,maxPowerKw:180,power:'DC 180kW',spaces:1,connectorCount:1,connectors:['CCS2'],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''}
+          ]
+        };
+        return Promise.resolve(new Response(JSON.stringify(evalue),{status:200,headers:{'Content-Type':'application/json'}}));
+      }
       return nativeFetch(input,init);
     };
   });
