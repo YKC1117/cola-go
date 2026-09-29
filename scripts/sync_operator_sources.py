@@ -134,7 +134,7 @@ class EvalueListParser(HTMLParser):
             self.option_parts = []
         elif tag == "a":
             href = attrs.get("href") or ""
-            if re.search(r"/find/\d+$", href):
+            if re.search(r"(?:^|/)find/\d+/?(?:[?#].*)?$", href):
                 self.current_href = href
                 self.anchor_parts = []
 
