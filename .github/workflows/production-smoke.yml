@@ -100,6 +100,13 @@ jobs:
           numeric_operator=sum(1 for x in items if str(x.get("operator") or "").isdigit() and len(str(x.get("operator") or "")) == 8)
           numeric_connector_rows=sum(1 for x in items if any(str(v).isdigit() for v in (x.get("connectors") or [])))
           normalized_connector=sum(1 for x in items if any(str(v) in {"CCS1","CCS2","CHAdeMO","Tesla TPC","J1772","Type2","其他"} for v in (x.get("connectors") or [])))
+
+          # Charging data-quality guards: fail loudly instead of silently regressing.
+          assert detailed_location >= int(len(items) * 0.90), (detailed_location, len(items))
+          assert numeric_operator == 0, numeric_operator
+          assert numeric_connector_rows == 0, numeric_connector_rows
+          assert normalized_connector >= len(items) - 20, (normalized_connector, len(items))
+
           assert traffic.get("status") in {"live","stale"}
           assert sum(len(v) for v in traffic.get("highways",{}).values()) > 0
           assert tunnel.get("status") in {"live","stale"}
