@@ -475,6 +475,7 @@ jobs:
       - name: Publish signed shortcuts to branch
         run: |
           set -euxo pipefail
+          mkdir -p downloads
           cp "carkit-sign/out/油車助手.shortcut" downloads/oil-driver.shortcut
           cp "carkit-sign/out/特斯拉助手.shortcut" downloads/tesla-driver.shortcut
           git config user.name "COLA GO Bot"
