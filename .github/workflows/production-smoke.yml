@@ -57,6 +57,14 @@ jobs:
           curl -fsSL "$base/data/tdx/parking/Tainan.json" -o "$work/tainan.json"
 
           grep -Fq 'assets/tdx-runtime.js' "$work/index.html"
+          grep -Fq 'id="chargingNearby"' "$work/index.html"
+          grep -Fq 'id="chargingAvailableOnly"' "$work/index.html"
+          grep -Fq 'id="chargingCity"' "$work/index.html"
+          grep -Fq 'data-charge-nav-toggle' "$work/app.js"
+          grep -Fq 'chargingAvailableOnly' "$work/app.js"
+          grep -Fq 'const TAIWAN_CITIES=' "$work/app.js"
+          grep -Fq 'chargingOperatorLabel(name)' "$work/tdx-runtime.js"
+          grep -Fq 'cola-go-ui-v6-22' "$work/sw.js"
           grep -Fq 'https://www.icloud.com/shortcuts/fc68c6a436e347408b342607b4e0b377' "$work/index.html"
           grep -Fq 'https://www.icloud.com/shortcuts/87aad0f93e5e473ba01401f4e80fd43e' "$work/index.html"
           ! grep -Eqi 'waze\.com|data-map="waze"' "$work/index.html" "$work/app.js"
@@ -86,6 +94,11 @@ jobs:
 
           assert charging.get("status") in {"live","partial","stale","official"}
           assert len(charging.get("items",[])) > 0
+
+          items=charging.get("items",[])
+          detailed_location=sum(1 for x in items if x.get("location") and x.get("location") != x.get("cityName"))
+          numeric_operator=sum(1 for x in items if str(x.get("operator") or "").isdigit() and len(str(x.get("operator") or "")) == 8)
+          normalized_connector=sum(1 for x in items if any(str(v) in {"CCS1","CCS2","CHAdeMO","Tesla TPC","J1772","Type2","其他"} for v in (x.get("connectors") or [])))
           assert traffic.get("status") in {"live","stale"}
           assert sum(len(v) for v in traffic.get("highways",{}).values()) > 0
           assert tunnel.get("status") in {"live","stale"}
@@ -95,6 +108,7 @@ jobs:
 
           print("PRODUCTION_SMOKE_PASS")
           print("charging", len(charging["items"]), charging.get("status"), charging.get("updatedAt"))
+          print("charging diagnostics", "detailed_location", detailed_location, "numeric_operator", numeric_operator, "normalized_connector", normalized_connector)
           print("traffic", sum(len(v) for v in traffic["highways"].values()), traffic.get("status"), traffic.get("updatedAt"))
           print("tunnel", len(tunnel.get("south",[])), len(tunnel.get("north",[])), tunnel.get("status"), tunnel.get("updatedAt"))
           print("cctv", len(cctv["items"]), cctv.get("updatedAt"))
