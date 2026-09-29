@@ -266,6 +266,10 @@ def sync_evalue(fetch_details=True):
         html_text = fetch_text(page_url)
         parser = EvalueListParser()
         parser.feed(html_text)
+        if not parser.stations:
+            hrefs = re.findall(r'href\s*=\s*["\\']([^"\\']+)["\\']', html_text, re.I)
+            candidates = [x for x in hrefs if "find" in x.lower() or re.search(r"\d{2,}/?$", x)]
+            print("EVALUE_DEBUG city=", city_name, "select=", select_name, "value=", value, "hrefs=", candidates[:30], file=sys.stderr)
         total = parser.total_count()
         pages = max(1, (total + 23) // 24)
         for page in range(1, pages + 1):
