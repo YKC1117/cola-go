@@ -537,3 +537,6 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .charging-operator-links { gap:6px; }
 .charging-operator-links a { min-height:38px;padding:8px 10px; }
 .charging-operator-links a:first-child { border-color:#34536a;background:#10202a;color:#9bd7ff; }
+
+.charging-coverage-grid button.is-degraded { border-color:#6a5225;background:#1d170d; }
+.charging-coverage-grid button.is-degraded .charging-coverage-brand small { color:#e7bd69; }
