@@ -240,6 +240,7 @@ const ICHARGING_PLUG_AND_CHARGE=[
   ["富邦遼寧",["富邦遼寧"]],
   ["港墘站",["港墘站","港墘"]],
   ["嘉義水牛站",["嘉義水牛站","嘉義水牛"]]
+];
 function chargingNameKey(value){
   return String(value||"").toLowerCase().replace(/臺/g,"台").replace(/[^\p{L}\p{N}]+/gu,"");
 }
