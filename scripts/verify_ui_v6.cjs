@@ -68,6 +68,16 @@ let browser;
         };
         return Promise.resolve(new Response(JSON.stringify(tail),{status:200,headers:{'Content-Type':'application/json'}}));
       }
+      if(String(url).includes('/data/operators/evalue.json')||String(url).includes('./data/operators/evalue.json')){
+        const evalue={
+          schema:1,source:'EVALUE 官方充電站',updatedAt:new Date().toISOString(),count:2,
+          items:[
+            {id:'official-evalue-partner-dup',road:'operator',city:'Tainan',cityName:'臺南市',name:'台南統一精工速邁樂新營二站',location:'',operator:'華城電能科技股份有限公司',operatorId:'90807408',networkKey:'evalue',operatorWebURL:'https://www.evalue.com.tw/find',officialSourceURL:'https://www.evalue.com.tw/find/9991',officialSupplemental:true,sitePowerKw:180,maxPowerKw:180,power:'DC 180kW',spaces:1,connectorCount:1,connectors:['CCS1','CCS2'],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''},
+            {id:'official-evalue-extra',road:'operator',city:'Tainan',cityName:'臺南市',name:'EVALUE 測試官方補站',location:'',operator:'華城電能科技股份有限公司',operatorId:'90807408',networkKey:'evalue',operatorWebURL:'https://www.evalue.com.tw/find',officialSourceURL:'https://www.evalue.com.tw/find/9992',officialSupplemental:true,sitePowerKw:180,maxPowerKw:180,power:'DC 180kW',spaces:1,connectorCount:1,connectors:['CCS2'],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''}
+          ]
+        };
+        return Promise.resolve(new Response(JSON.stringify(evalue),{status:200,headers:{'Content-Type':'application/json'}}));
+      }
       return nativeFetch(input,init);
     };
   });
@@ -175,6 +185,8 @@ let browser;
   check('Charging driver-first controls are visible',await page.locator('#chargingFindNow').isVisible()&&await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingAvailableOnly').isVisible()&&await page.locator('#chargingCity').isVisible()&&await page.locator('#chargingSearch').isVisible());
   check('Six primary charging networks are first-layer controls',await page.locator('#chargingMajorFilter [data-charge-major]').evaluateAll(nodes=>nodes.map(n=>n.dataset.chargeMajor).join(',')==='all,evoasis,upower,tail,evalue,icharging,tesla'));
   await page.waitForFunction(()=>document.querySelectorAll('#chargingCoverageGrid [data-coverage-major]').length===6);
+  await page.waitForFunction(()=>state.charging.some(x=>x.officialSupplemental&&x.networkKey==='evalue'),{timeout:12000}).catch(()=>{});
+  check('EVALUE official source is loaded when available',await page.evaluate(()=>state.charging.some(x=>x.networkKey==='evalue')));
   check('Coverage panel reports all six primary networks',await page.locator('#chargingCoverageGrid [data-coverage-major]').evaluateAll(nodes=>nodes.map(n=>n.dataset.coverageMajor).join(',')==='evoasis,upower,tail,evalue,icharging,tesla'));
   check('Coverage panel explains live and official supplemental semantics',await page.locator('#chargingCoverage').textContent().then(x=>x.includes('即時')&&x.includes('官方補')));
   check('Charging cards expose decision-first availability',await page.locator('#chargingList .charging-availability-main').first().isVisible());
@@ -184,6 +196,7 @@ let browser;
   check('Missing official ConnectorType is shown explicitly',await page.evaluate(()=>chargingConnectors({road:'tdx',connectors:[]}).join(',')==='接頭類型未提供'));
   check('EV2 operator maps TDX legal identity to consumer brand',await page.evaluate(()=>chargingOperatorLabel({operatorId:'58430020',operator:'程豐資通股份有限公司'})==='電小二 EV2'));
   check('U-POWER operator maps TDX legal identity to consumer brand',await page.evaluate(()=>chargingOperatorLabel({operatorId:'83235398',operator:'旭電馳科研'})==='U-POWER'));
+  check('Network key can classify partner-operated stations into EVALUE',await page.evaluate(()=>chargingOperatorProfile({operator:'聯永物業股份有限公司',networkKey:'evalue'})?.key==='evalue'));
   check('Primary charging network list is the six requested providers',await page.evaluate(()=>CHARGING_MAJOR_KEYS.join(',')==='evoasis,upower,tail,evalue,icharging,tesla'));
   check('EV2 aliases are searchable',await page.evaluate(()=>chargingOperatorSearchText({operatorId:'58430020',operator:'程豐資通股份有限公司',name:'測試站'}).includes('電小二')));
   check('ConnectorStatus 1/2/3/0 compatibility is available/occupied/fault/unknown',await page.evaluate(()=>{
@@ -356,7 +369,7 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-31');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-32');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
   await context.setOffline(true);

@@ -7,6 +7,7 @@ import re
 import sys
 import urllib.error
 import urllib.request
+import urllib.parse
 from datetime import datetime, timezone
 from html.parser import HTMLParser
 from pathlib import Path
@@ -15,6 +16,7 @@ OUT = Path("data/operators")
 UPOWER_URL = "https://www.u-power.com.tw/"
 EVOASIS_URL = "https://www.evoasis.com.tw/charging-station"
 TAIL_URL = "https://www.evtail.com.tw/locations"
+EVALUE_URL = "https://www.evalue.com.tw/find"
 
 CITY_PREFIXES = [
     ("臺北市", "Taipei", "臺北市"), ("台北市", "Taipei", "臺北市"),
@@ -107,6 +109,255 @@ class TextNodeParser(HTMLParser):
         value = clean_text(data)
         if value:
             self.nodes.append(value)
+
+
+class EvalueListParser(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.current_select = None
+        self.current_option = None
+        self.option_parts = []
+        self.select_options = {}
+        self.current_href = ""
+        self.anchor_parts = []
+        self.stations = []
+        self.total_text = []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        tag = tag.lower()
+        if tag == "select":
+            self.current_select = attrs.get("name") or attrs.get("id") or ""
+            self.select_options.setdefault(self.current_select, [])
+        elif tag == "option" and self.current_select is not None:
+            self.current_option = attrs.get("value", "")
+            self.option_parts = []
+        elif tag == "a":
+            href = attrs.get("href") or ""
+            if re.search(r"(?:^|/)find/\d+/?(?:[?#].*)?$", href):
+                self.current_href = href
+                self.anchor_parts = []
+
+    def handle_endtag(self, tag):
+        tag = tag.lower()
+        if tag == "option" and self.current_option is not None:
+            text = clean_text(" ".join(self.option_parts))
+            self.select_options.setdefault(self.current_select or "", []).append((self.current_option, text))
+            self.current_option = None
+            self.option_parts = []
+        elif tag == "select":
+            self.current_select = None
+        elif tag == "a" and self.current_href:
+            name = clean_text(" ".join(self.anchor_parts))
+            if name:
+                self.stations.append((self.current_href, name))
+            self.current_href = ""
+            self.anchor_parts = []
+
+    def handle_data(self, data):
+        value = clean_text(data)
+        if not value:
+            return
+        self.total_text.append(value)
+        if self.current_option is not None:
+            self.option_parts.append(value)
+        if self.current_href:
+            self.anchor_parts.append(value)
+
+    def total_count(self):
+        text = " ".join(self.total_text)
+        m = re.search(r"全部共\s*(\d+)\s*筆", text)
+        return int(m.group(1)) if m else 0
+
+
+def normalize_station_name(value):
+    return re.sub(r"[^0-9a-zA-Z一-龥]+", "", clean_text(value).replace("臺", "台")).lower()
+
+
+def evalue_city_select(parser):
+    best = None
+    best_rows = []
+    for name, options in parser.select_options.items():
+        rows = []
+        for value, label in options:
+            city, city_name = city_from_address(label)
+            if city:
+                rows.append((value, city, city_name))
+        if len(rows) > len(best_rows):
+            best = name
+            best_rows = rows
+    return best, best_rows
+
+
+def parse_evalue_detail(html_text, item):
+    parser = TextNodeParser()
+    parser.feed(html_text)
+    text = "\n".join(parser.nodes)
+    power_match = re.search(r"功率[:：]\s*([^\n]+)", text)
+    count_match = re.search(r"充電樁數[:：]\s*([^\n]+)", text)
+    connector_match = re.search(r"介面規格[:：]\s*([^\n]+)", text)
+
+    power_text = clean_text(power_match.group(1)) if power_match else ""
+    count_text = clean_text(count_match.group(1)) if count_match else ""
+    connector_text = clean_text(connector_match.group(1)) if connector_match else ""
+
+    kw_values = [float(x) for x in re.findall(r"(\d+(?:\.\d+)?)\s*kW", power_text, re.I)]
+    max_power = max(kw_values) if kw_values else None
+    spaces = sum(int(x) for x in re.findall(r"(\d+)\s*座", count_text))
+
+    connectors = []
+    aliases = [
+        (r"CCS\s*1", "CCS1"),
+        (r"CCS\s*2", "CCS2"),
+        (r"CHAdeMO", "CHAdeMO"),
+        (r"J1772|Type\s*1", "J1772"),
+        (r"Type\s*2|Mennekes", "Type2"),
+    ]
+    for pattern, label in aliases:
+        if re.search(pattern, connector_text, re.I) and label not in connectors:
+            connectors.append(label)
+
+    item = dict(item)
+    item.update({
+        "sitePowerKw": max_power or 0,
+        "maxPowerKw": max_power,
+        "power": power_text,
+        "spaces": spaces,
+        "connectorCount": spaces,
+        "connectors": connectors,
+        "description": "EVALUE 官方站點" + ((" · " + count_text) if count_text else ""),
+    })
+    return item
+
+
+def load_tdx_evalue_names():
+    path = Path("data/tdx/charging.json")
+    if not path.exists():
+        return set()
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return set()
+    names = set()
+    for row in data.get("items") or []:
+        text = " ".join(str(row.get(k) or "") for k in ("operator", "name", "description", "operatorWebURL")).lower()
+        if "華城電能" in text or "華城電機" in text or "evalue" in text:
+            city = str(row.get("city") or "")
+            name = normalize_station_name(row.get("name"))
+            if city and name:
+                names.add((city, name))
+    return names
+
+
+def sync_evalue(fetch_details=True):
+    first = fetch_text(EVALUE_URL)
+    first_parser = EvalueListParser()
+    first_parser.feed(first)
+    select_name, cities = evalue_city_select(first_parser)
+    if not select_name or len(cities) < 10:
+        raise RuntimeError("unable to discover EVALUE city filter")
+
+    collected = {}
+    for value, city, city_name in cities:
+        if not value:
+            continue
+        if str(value).startswith(("http://", "https://", "/find")):
+            page_url = urllib.parse.urljoin(EVALUE_URL, value)
+        else:
+            query = urllib.parse.urlencode({select_name: value})
+            page_url = EVALUE_URL + "?" + query
+
+        html_text = fetch_text(page_url)
+        parser = EvalueListParser()
+        parser.feed(html_text)
+        total = parser.total_count()
+        pages = max(1, (total + 23) // 24)
+        for page in range(1, pages + 1):
+            if page > 1:
+                parsed = urllib.parse.urlsplit(page_url)
+                params = dict(urllib.parse.parse_qsl(parsed.query, keep_blank_values=True))
+                params["page"] = str(page)
+                next_url = urllib.parse.urlunsplit((
+                    parsed.scheme,
+                    parsed.netloc,
+                    parsed.path,
+                    urllib.parse.urlencode(params),
+                    parsed.fragment,
+                ))
+                html_text = fetch_text(next_url)
+                parser = EvalueListParser()
+                parser.feed(html_text)
+            for href, name in parser.stations:
+                detail_url = urllib.parse.urljoin(EVALUE_URL, href)
+                key = (city, normalize_station_name(name))
+                if not key[1]:
+                    continue
+                collected[key] = {
+                    "id": stable_id("evalue", name, detail_url),
+                    "road": "operator",
+                    "city": city,
+                    "cityName": city_name,
+                    "name": name,
+                    "location": "",
+                    "operator": "華城電能科技股份有限公司",
+                    "operatorId": "90807408",
+                    "networkKey": "evalue",
+                    "operatorWebURL": EVALUE_URL,
+                    "officialSource": "EVALUE 官方充電站",
+                    "officialSourceURL": detail_url,
+                    "officialSupplemental": True,
+                    "officialStationType": "",
+                    "sitePowerKw": 0,
+                    "maxPowerKw": None,
+                    "power": "",
+                    "spaces": 0,
+                    "connectorCount": 0,
+                    "connectors": [],
+                    "liveStateCount": 0,
+                    "availableConnectors": 0,
+                    "occupiedConnectors": 0,
+                    "faultedConnectors": 0,
+                    "unavailableConnectors": 0,
+                    "unknownConnectors": 0,
+                    "liveStatusKnown": False,
+                    "liveStale": False,
+                    "statusUpdatedAt": None,
+                    "lat": None,
+                    "lon": None,
+                    "direction": "",
+                    "serviceTime": "",
+                    "chargingRate": "",
+                    "parkingRate": "",
+                    "telephone": "",
+                    "operatorTelephone": "",
+                    "description": "EVALUE 官方站點",
+                }
+
+    items = list(collected.values())
+    if fetch_details:
+        tdx_names = load_tdx_evalue_names()
+        for index, item in enumerate(items):
+            key = (item.get("city") or "", normalize_station_name(item.get("name")))
+            if key in tdx_names:
+                continue
+            try:
+                detail = fetch_text(item["officialSourceURL"])
+                items[index] = parse_evalue_detail(detail, item)
+            except Exception as error:
+                print(f"EVALUE_DETAIL_WARN {item.get('name')} {error}", file=sys.stderr)
+    return items
+
+
+def validate_evalue(items):
+    errors = []
+    if len(items) < 700:
+        errors.append(f"expected at least 700 EVALUE stations, got {len(items)}")
+    if len({x.get("city") for x in items if x.get("city")}) < 15:
+        errors.append("EVALUE official list covers too few cities")
+    if any(not x.get("name") or not x.get("city") or not x.get("officialSourceURL") for x in items):
+        errors.append("one or more EVALUE rows are missing name/city/officialSourceURL")
+    if errors:
+        raise RuntimeError("; ".join(errors))
 
 
 def split_station_cell(value):
@@ -468,10 +719,18 @@ def main():
         print(f"TAIL_SYNC_ERROR {error}", file=sys.stderr)
         raise
 
+    try:
+        evalue_items = sync_evalue(fetch_details=not args.check_online)
+        validate_evalue(evalue_items)
+    except Exception as error:
+        print(f"EVALUE_SYNC_ERROR {error}", file=sys.stderr)
+        raise
+
     total_seats = sum(int(x.get("ccs1Seats") or 0) + int(x.get("ccs2Seats") or 0) for x in upower_items)
     print(f"UPOWER_OK stations={len(upower_items)} seats={total_seats}")
     print(f"EVOASIS_OK stations={len(evoasis_items)}")
     print(f"TAIL_OK stations={len(tail_items)}")
+    print(f"EVALUE_OK stations={len(evalue_items)}")
 
     if args.check_online:
         return 0
@@ -503,6 +762,14 @@ def main():
             "updatedAt": generated_at,
             "count": len(tail_items),
             "items": sorted(tail_items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
+        },
+        "evalue.json": {
+            "schema": 1,
+            "source": "EVALUE 官方充電站",
+            "sourceUrl": EVALUE_URL,
+            "updatedAt": generated_at,
+            "count": len(evalue_items),
+            "items": sorted(evalue_items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
         },
     }
     for filename, payload in payloads.items():
