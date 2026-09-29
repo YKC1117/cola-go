@@ -424,6 +424,30 @@ function chargingDisplayText(value){
     .replace(/\s*·\s*/g," · ")
     .trim();
 }
+function chargingRateSummary(value){
+  const text=chargingDisplayText(value);
+  if(!text)return "";
+  const values=[];
+  const patterns=[
+    /(?:每度|每1度|每度電)\s*([0-9]+(?:\.[0-9]+)?)\s*元/gi,
+    /([0-9]+(?:\.[0-9]+)?)\s*元\s*(?:每度|\/度|每度電)/gi,
+    /(?:NT\$|NTD\s*)?([0-9]+(?:\.[0-9]+)?)\s*\/\s*(?:kWh|度)/gi
+  ];
+  for(const re of patterns){
+    let match;
+    while((match=re.exec(text))){
+      const n=Number(match[1]);
+      if(Number.isFinite(n)&&n>0&&n<=50)values.push(n);
+    }
+  }
+  const unique=[...new Set(values.map(v=>Math.round(v*100)/100))].sort((a,b)=>a-b);
+  const fmt=v=>Number.isInteger(v)?String(v):String(v).replace(/0+$/,"").replace(/\.$/,"");
+  if(unique.length===1)return fmt(unique[0])+" 元/度";
+  if(unique.length>1)return fmt(unique[0])+"–"+fmt(unique.at(-1))+" 元/度";
+  if(/(?:每分|每分鐘|元\/分|元每\d*分|計時|計分)/i.test(text))return "計時制";
+  if(/費用詳情|依.*app|依.*公告|浮動/i.test(text))return "依官方";
+  return "";
+}
 function chargingDetailMarkup(x){
   const profile=chargingOperatorProfile(x);
   const official=x.officialSourceURL||profile?.stationMap||profile?.official||x.operatorWebURL||"";
@@ -564,6 +588,7 @@ function renderCharging(){
         (distance!=null?'<span class="charging-distance">'+esc(distance<10?distance.toFixed(1):Math.round(distance))+' km</span>':"")+
         (supplemental&&Number(x.spaces)<=0?'<span>席次未提供</span>':'<span>'+esc(x.spaces)+(supplemental?' 席':(tdx?' 充電點':' 車位'))+'</span>')+
         '<span class="charging-power">'+esc(chargingPowerLabel(x))+'</span>'+
+        (chargingRateSummary(x.chargingRate)?'<span class="charging-rate">'+esc(chargingRateSummary(x.chargingRate))+'</span>':"")+
         chargingConnectors(x).map(c=>'<span class="charging-connector">'+esc(c)+'</span>').join("")+
         chargingCapabilities(x).map(c=>'<span class="charging-capability">'+esc(c.label)+'</span>').join("")+
       '</div>'+
