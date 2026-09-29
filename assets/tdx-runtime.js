@@ -21,6 +21,7 @@
   let officialChargingAll=[];
   let operatorChargingAll=[];
   let operatorUpdatedAt=null;
+  let operatorSourceHealth={};
   let curatedCharging=[];
   let chargingUpdatedAt=null;
   let chargingStatus="official";
@@ -142,15 +143,17 @@
       const live=tdxBrand.filter(x=>!x.liveStale&&Number(x.liveStateCount)>0).length;
       const merged=tdxBrand.length+supplementBrand.length;
       const ratio=tdxBrand.length?Math.round(live/tdxBrand.length*100):0;
-      const source=supplementBrand.length?"TDX＋業者官方":(live?"TDX 即時":"TDX");
-      return {profile,tdx:tdxBrand.length,supplement:supplementBrand.length,live,merged,ratio,source};
+      const health=operatorSourceHealth[profile.key]||null;
+      const degraded=health?.syncStatus==="degraded";
+      const source=supplementBrand.length?(degraded?"TDX＋官方舊資料":"TDX＋業者官方"):(live?"TDX 即時":"TDX");
+      return {profile,tdx:tdxBrand.length,supplement:supplementBrand.length,live,merged,ratio,source,degraded};
     });
 
     const mergedTotal=rows.reduce((sum,x)=>sum+x.merged,0);
     const liveTotal=rows.reduce((sum,x)=>sum+x.live,0);
     summary.textContent=(city==="all"?"全台":"目前縣市")+" · "+mergedTotal+" 站 · "+liveTotal+" 站有即時槍況";
     grid.innerHTML=rows.map(row=>
-      '<button type="button" data-coverage-major="'+row.profile.key+'">'+
+      '<button type="button" class="'+(row.degraded?'is-degraded':'')+'" data-coverage-major="'+row.profile.key+'">'+
         '<span class="charging-coverage-brand"><b>'+esc(row.profile.brand)+'</b><small>'+esc(row.source)+'</small></span>'+
         '<span class="charging-coverage-stats">'+
           '<strong>'+row.merged+'</strong><small>站</small>'+
@@ -262,10 +265,16 @@
     const datasets=results.map((result,index)=>({result,source:sources[index]}))
       .filter(x=>x.result.status==="fulfilled"&&Array.isArray(x.result.value?.items)&&x.result.value.items.length);
     if(!datasets.length)return;
+    operatorSourceHealth=Object.fromEntries(datasets.map(({result,source})=>[source.key,{
+      syncStatus:result.value.syncStatus||"ok",
+      updatedAt:result.value.updatedAt||null,
+      lastSuccessAt:result.value.lastSuccessAt||result.value.updatedAt||null,
+      lastAttemptAt:result.value.lastAttemptAt||result.value.updatedAt||null
+    }]));
     operatorChargingAll=datasets.flatMap(({result,source})=>
-      result.value.items.map(x=>({...x,officialSupplemental:true,networkKey:x.networkKey||source.key}))
+      result.value.items.map(x=>({...x,officialSupplemental:true,networkKey:x.networkKey||source.key,officialSyncStatus:result.value.syncStatus||"ok"}))
     );
-    operatorUpdatedAt=datasets.map(x=>x.result.value.updatedAt).filter(Boolean).sort().at(-1)||null;
+    operatorUpdatedAt=datasets.map(x=>x.result.value.lastSuccessAt||x.result.value.updatedAt).filter(Boolean).sort().at(-1)||null;
     syncChargingOperatorOptions();
     renderCharging();
   }
