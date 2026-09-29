@@ -42,7 +42,7 @@ jobs:
           python3 - <<'PY'
           from scripts.sync_tdx import (
               classify_live_state, connector_type_name, normalize_cached_charging_row,
-              power_mode_name, power_rating_kw, station_location,
+              normalize_station, power_mode_name, power_rating_kw, station_location,
           )
           assert classify_live_state(1) == "available"
           assert classify_live_state(2) == "occupied"
@@ -73,6 +73,18 @@ jobs:
           assert station_location({"Location":{"Place":{"POI":"臺南轉運站"}}},"臺南市") == "臺南轉運站"
           assert station_location({"Location":{"Freeway":{"RoadName":"國道1號","Direction":"北上","Milepost":"319K"}}},"臺南市") == "國道1號北上319K"
           assert station_location({"Address":"臺南市","Location":{"CityRoad":{"City":"臺南市","Town":"永康區","Road":"中正北路"}}},"臺南市") == "臺南市永康區中正北路"
+          station=normalize_station(
+              {"StationID":"S1","StationName":{"Zh_tw":"唯一同名停車場"},"Address":"臺南市"},
+              "Tainan","臺南市",{},{"唯一同名停車場":"臺南市永康區中正北路100號"}
+          )
+          assert station["location"] == "臺南市永康區中正北路100號"
+          assert station["locationSource"] == "TDX parking"
+          direct=normalize_station(
+              {"StationID":"S2","StationName":{"Zh_tw":"原生地址站"},"Address":"臺南市東區大同路1號"},
+              "Tainan","臺南市",{},{"原生地址站":"不應覆蓋"}
+          )
+          assert direct["location"] == "臺南市東區大同路1號"
+          assert direct["locationSource"] == "TDX charging"
           PY
       - name: JavaScript syntax
         run: |
