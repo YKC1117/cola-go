@@ -218,6 +218,11 @@ const CHARGING_OPERATOR_PROFILES=[
 const CHARGING_MAJOR_KEYS=["evoasis","upower","tail","evalue","icharging","tesla"];
 function chargingOperatorProfile(value){
   const x=typeof value==="string"?{operator:value}:(value||{});
+  const networkKey=String(x.networkKey||"").trim();
+  if(networkKey){
+    const networkProfile=CHARGING_OPERATOR_PROFILES.find(profile=>profile.key===networkKey);
+    if(networkProfile)return networkProfile;
+  }
   const operator=String(x.operator||"").trim();
   const operatorId=String(x.operatorId||"").trim();
   return CHARGING_OPERATOR_PROFILES.find(profile=>
