@@ -50,6 +50,8 @@ jobs:
           curl -fsSL "$base/assets/tdx-runtime.js" -o "$work/tdx-runtime.js"
           curl -fsSL "$base/manifest.webmanifest" -o "$work/manifest.webmanifest"
           curl -fsSL "$base/sw.js" -o "$work/sw.js"
+          curl -fsSL "$base/downloads/oil-driver.shortcut" -o "$work/oil-driver.shortcut"
+          curl -fsSL "$base/downloads/tesla-driver.shortcut" -o "$work/tesla-driver.shortcut"
           curl -fsSL "$base/data/tdx/charging.json" -o "$work/charging.json"
           curl -fsSL "$base/data/tdx/traffic.json" -o "$work/traffic.json"
           curl -fsSL "$base/data/tdx/tunnel.json" -o "$work/tunnel.json"
@@ -57,6 +59,13 @@ jobs:
           curl -fsSL "$base/data/tdx/parking/Tainan.json" -o "$work/tainan.json"
 
           grep -Fq 'assets/tdx-runtime.js' "$work/index.html"
+          grep -Fq './downloads/oil-driver.shortcut' "$work/index.html"
+          grep -Fq './downloads/tesla-driver.shortcut' "$work/index.html"
+          grep -Fq '下載油車助手 v1.3（正式檔）' "$work/index.html"
+          grep -Fq '下載特斯拉助手 v1.6（正式檔）' "$work/index.html"
+          grep -Fq '既有 iCloud 分享' "$work/index.html"
+          printf '%s  %s\n' '5c93e0962c98fae03e5590608332e6571912406b98d021ed87ad5e10d1ec836b' "$work/oil-driver.shortcut" | sha256sum -c -
+          printf '%s  %s\n' '9288fe2d90db62258d43a10ba6b007b766bd94d848d15ced2b5a917bb6179438' "$work/tesla-driver.shortcut" | sha256sum -c -
           grep -Fq 'id="chargingNearby"' "$work/index.html"
           grep -Fq 'id="chargingAvailableOnly"' "$work/index.html"
           grep -Fq 'id="chargingCity"' "$work/index.html"
@@ -64,7 +73,7 @@ jobs:
           grep -Fq 'chargingAvailableOnly' "$work/app.js"
           grep -Fq 'const TAIWAN_CITIES=' "$work/app.js"
           grep -Fq 'chargingOperatorLabel(name)' "$work/tdx-runtime.js"
-          grep -Fq 'cola-go-ui-v6-22' "$work/sw.js"
+          grep -Fq 'cola-go-ui-v6-23' "$work/sw.js"
           grep -Fq 'https://www.icloud.com/shortcuts/fc68c6a436e347408b342607b4e0b377' "$work/index.html"
           grep -Fq 'https://www.icloud.com/shortcuts/87aad0f93e5e473ba01401f4e80fd43e' "$work/index.html"
           ! grep -Eqi 'waze\.com|data-map="waze"' "$work/index.html" "$work/app.js"
