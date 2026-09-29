@@ -531,3 +531,9 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 @media(max-width:359px){
   .charging-coverage-grid { grid-template-columns:1fr; }
 }
+
+/* Charging V10: official action handoff */
+.charging-source-note { margin-top:9px;padding:8px 10px;border-radius:10px;background:#0e1518;border:1px solid #263239;font-size:9px;line-height:1.5;color:#839198; }
+.charging-operator-links { gap:6px; }
+.charging-operator-links a { min-height:38px;padding:8px 10px; }
+.charging-operator-links a:first-child { border-color:#34536a;background:#10202a;color:#9bd7ff; }
