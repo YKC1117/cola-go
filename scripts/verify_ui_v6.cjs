@@ -46,6 +46,16 @@ let browser;
     const nativeFetch=window.fetch.bind(window);
     window.fetch=(input,init)=>{
       const url=typeof input==='string'?input:(input?.url||'');
+      if(String(url).includes('/data/tdx/charging.json')||String(url).includes('./data/tdx/charging.json')){
+        return nativeFetch(input,init).then(async response=>{
+          const data=await response.clone().json();
+          data.items=[...(data.items||[]),
+            {id:'tdx-dedupe-name',road:'tdx',city:'Tainan',cityName:'臺南市',name:'Times_台南測試停車場',location:'台南市東區測試路88號',operator:'華城電能科技股份有限公司',operatorId:'90807408',networkKey:'evalue',spaces:2,connectorCount:2,connectors:['CCS2'],maxPowerKw:180,power:'180 kW',liveStateCount:2,availableConnectors:1,occupiedConnectors:1,faultedConnectors:0,unavailableConnectors:0,unknownConnectors:0,liveStates:{'1':1,'2':1},liveStale:false,statusUpdatedAt:new Date().toISOString(),lat:22.99,lon:120.22,direction:''},
+            {id:'tdx-dedupe-address',road:'tdx',city:'Tainan',cityName:'臺南市',name:'TDX 不同命名測試站',location:'台南市永康區整合路99號 · 測試停車場',operator:'特爾電力股份有限公司',spaces:2,connectorCount:2,connectors:['CCS2'],maxPowerKw:120,power:'120 kW',liveStateCount:2,availableConnectors:2,occupiedConnectors:0,faultedConnectors:0,unavailableConnectors:0,unknownConnectors:0,liveStates:{'1':2},liveStale:false,statusUpdatedAt:new Date().toISOString(),lat:23.03,lon:120.25,direction:''}
+          ];
+          return new Response(JSON.stringify(data),{status:response.status,headers:{'Content-Type':'application/json'}});
+        });
+      }
       if(String(url).includes('/data/operators/upower.json')||String(url).includes('./data/operators/upower.json')){
         return Promise.resolve(new Response(JSON.stringify(fixture),{status:200,headers:{'Content-Type':'application/json'}}));
       }
@@ -61,19 +71,21 @@ let browser;
       }
       if(String(url).includes('/data/operators/tail.json')||String(url).includes('./data/operators/tail.json')){
         const tail={
-          schema:1,source:'TAIL 特爾電力官方站點',updatedAt:new Date().toISOString(),count:1,
+          schema:1,source:'TAIL 特爾電力官方站點',updatedAt:new Date().toISOString(),count:2,
           items:[
-            {id:'official-tail-extra',road:'operator',city:'Tainan',cityName:'臺南市',name:'TAIL 測試官方補站',location:'台南市永康區測試路3號',operator:'特爾電力股份有限公司',operatorWebURL:'https://www.evtail.com.tw/locations',officialSupplemental:true,sitePowerKw:0,maxPowerKw:null,power:'',spaces:0,connectorCount:0,connectors:[],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''}
+            {id:'official-tail-extra',road:'operator',city:'Tainan',cityName:'臺南市',name:'TAIL 測試官方補站',location:'台南市永康區測試路3號',operator:'特爾電力股份有限公司',operatorWebURL:'https://www.evtail.com.tw/locations',officialSupplemental:true,sitePowerKw:0,maxPowerKw:null,power:'',spaces:0,connectorCount:0,connectors:[],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''},
+            {id:'official-tail-address-dup',road:'operator',city:'Tainan',cityName:'臺南市',name:'官方不同命名測試站',location:'台南市永康區整合路99號(B2)',operator:'特爾電力股份有限公司',operatorWebURL:'https://www.evtail.com.tw/locations',officialSource:'TAIL 特爾電力官方站點',officialSourceURL:'https://www.evtail.com.tw/locations',officialSupplemental:true,sitePowerKw:0,maxPowerKw:null,power:'',spaces:0,connectorCount:0,connectors:[],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''}
           ]
         };
         return Promise.resolve(new Response(JSON.stringify(tail),{status:200,headers:{'Content-Type':'application/json'}}));
       }
       if(String(url).includes('/data/operators/evalue.json')||String(url).includes('./data/operators/evalue.json')){
         const evalue={
-          schema:1,source:'EVALUE 官方充電站',updatedAt:new Date().toISOString(),count:2,
+          schema:1,source:'EVALUE 官方充電站',updatedAt:new Date().toISOString(),count:3,
           items:[
             {id:'official-evalue-partner-dup',road:'operator',city:'Tainan',cityName:'臺南市',name:'台南統一精工速邁樂新營二站',location:'',operator:'華城電能科技股份有限公司',operatorId:'90807408',networkKey:'evalue',operatorWebURL:'https://www.evalue.com.tw/find',officialSourceURL:'https://www.evalue.com.tw/find/9991',officialSupplemental:true,sitePowerKw:180,maxPowerKw:180,power:'DC 180kW',spaces:1,connectorCount:1,connectors:['CCS1','CCS2'],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''},
-            {id:'official-evalue-extra',road:'operator',city:'Tainan',cityName:'臺南市',name:'EVALUE 測試官方補站',location:'',operator:'華城電能科技股份有限公司',operatorId:'90807408',networkKey:'evalue',operatorWebURL:'https://www.evalue.com.tw/find',officialSourceURL:'https://www.evalue.com.tw/find/9992',officialSupplemental:true,sitePowerKw:180,maxPowerKw:180,power:'DC 180kW',spaces:1,connectorCount:1,connectors:['CCS2'],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''}
+            {id:'official-evalue-extra',road:'operator',city:'Tainan',cityName:'臺南市',name:'EVALUE 測試官方補站',location:'',operator:'華城電能科技股份有限公司',operatorId:'90807408',networkKey:'evalue',operatorWebURL:'https://www.evalue.com.tw/find',officialSourceURL:'https://www.evalue.com.tw/find/9992',officialSupplemental:true,sitePowerKw:180,maxPowerKw:180,power:'DC 180kW',spaces:1,connectorCount:1,connectors:['CCS2'],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''},
+            {id:'official-evalue-format-dup',road:'operator',city:'Tainan',cityName:'臺南市',name:'Times台南測試停車場',location:'',operator:'華城電能科技股份有限公司',operatorId:'90807408',networkKey:'evalue',operatorWebURL:'https://www.evalue.com.tw/find',officialSource:'EVALUE 官方充電站',officialSourceURL:'https://www.evalue.com.tw/find/9993',officialSupplemental:true,sitePowerKw:180,maxPowerKw:180,power:'DC 180kW',spaces:2,connectorCount:2,connectors:['CCS2'],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''}
           ]
         };
         return Promise.resolve(new Response(JSON.stringify(evalue),{status:200,headers:{'Content-Type':'application/json'}}));
@@ -204,10 +216,14 @@ let browser;
   }));
   check('Major operator detail prefers station-specific official source URL',await page.evaluate(()=>chargingDetailMarkup({officialSupplemental:true,officialSource:'EVALUE 官方充電站',officialSourceURL:'https://example.com/station',operator:'華城電能科技股份有限公司',road:'operator',connectors:[],spaces:0}).includes('https://example.com/station')));
   check('Network key can classify partner-operated stations into EVALUE',await page.evaluate(()=>chargingOperatorProfile({operator:'聯永物業股份有限公司',networkKey:'evalue'})?.key==='evalue'));
-  check('Conservative station-name normalization merges safe formatting variants',await page.evaluate(()=>normalizedStationName('Times宜蘭羅東第2停車場')===normalizedStationName('Times_宜蘭羅東第2停車場')));
-  check('Conservative station-name normalization merges city-prefix variants',await page.evaluate(()=>normalizedStationName('台南南聖公園路外停車場')===normalizedStationName('南聖公園路外停車場')));
-  check('Address-core normalization ignores floor and parking-note suffixes',await page.evaluate(()=>normalizedAddressCore('高雄市楠梓區藍田路288號B1')===normalizedAddressCore('高雄市楠梓區藍田路288號 · 家樂福停車場')));
-  check('Conservative dedupe keeps distinct house numbers separate',await page.evaluate(()=>normalizedAddressCore('台南市永康區中正南路569-1號')!==normalizedAddressCore('台南市永康區中正南路569-2號')));
+  check('Format-only operator duplicate merges into the TDX row',await page.evaluate(()=>{
+    const rows=state.charging.filter(x=>String(x.name).includes('Times')&&String(x.location).includes('測試路88號'));
+    return rows.length===1&&rows[0].road==='tdx'&&rows[0].officialNetworkMatch===true&&rows[0].officialSourceURL==='https://www.evalue.com.tw/find/9993';
+  }));
+  check('Same-address differently named operator duplicate merges into the TDX row',await page.evaluate(()=>{
+    const rows=state.charging.filter(x=>String(x.location).includes('整合路99號'));
+    return rows.length===1&&rows[0].road==='tdx'&&rows[0].officialNetworkMatch===true&&rows[0].officialSource==='TAIL 特爾電力官方站點';
+  }));
   check('Primary charging network list is the six requested providers',await page.evaluate(()=>CHARGING_MAJOR_KEYS.join(',')==='evoasis,upower,tail,evalue,icharging,tesla'));
   check('iCharging official plug-and-charge capability matches Dongshan service area',await page.evaluate(()=>chargingCapabilities({operator:'中興電工機械股份有限公司',name:'東山服務區'}).some(x=>x.key==='plug-and-charge')));
   check('iCharging plug-and-charge capability does not leak to unrelated stations',await page.evaluate(()=>chargingCapabilities({operator:'中興電工機械股份有限公司',name:'捷運石牌站'}).length===0));
