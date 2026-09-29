@@ -157,7 +157,16 @@ let browser;
     text:card.textContent.replace(/\s+/g,' ').trim().slice(0,220)
   })));
   const oneTapBad=oneTapCards.filter(card=>!card.cls.split(/\s+/).includes('is-available'));
-  if(oneTapBad.length)console.log('ONE_TAP_NON_AVAILABLE',JSON.stringify(oneTapBad.slice(0,6)));
+  if(oneTapBad.length){
+    console.log('ONE_TAP_NON_AVAILABLE',JSON.stringify(oneTapBad.slice(0,6)));
+    console.log('ONE_TAP_STATE',JSON.stringify(await page.evaluate(()=>({
+      availableOnly:state.chargingAvailableOnly,
+      sort:state.chargingSort,
+      summary:document.querySelector('#chargingResultSummary')?.textContent,
+      findNow:document.querySelector('#chargingFindNow')?.getAttribute('aria-pressed')
+    }))));
+    console.log('ONE_TAP_PAGE_ERRORS',JSON.stringify(errors));
+  }
   check('One-tap nearby available never shows a non-available card',oneTapBad.length===0);
   await page.locator('#resetChargingFilters').click();
   await page.locator('#chargingNearby').click();
