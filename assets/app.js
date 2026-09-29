@@ -208,27 +208,38 @@ const CHARGING_OPERATOR_PROFILES=[
   {key:"evoasis",brand:"EVOASIS",names:["源點科技股份有限公司"],aliases:["OASIS","源點科技"],official:"https://www.evoasis.com.tw/",stationMap:"https://www.evoasis.com.tw/charging-station",chargeGuide:"https://www.evoasis.com.tw/chargingapp",chargeHint:"EVOASIS App・掃碼／隨插即充"},
   {key:"upower",brand:"U-POWER",ids:["83235398"],names:["旭電馳科研","旭電馳科研股份有限公司"],aliases:["U POWER","UPOWER","旭電馳","旭電馳科研"],official:"https://www.u-power.com.tw/",stationMap:"https://www.u-power.com.tw/",chargeGuide:"https://www.u-power.com.tw/service/",chargeHint:"U-POWER App・掃碼／自動充電"},
   {key:"evalue",brand:"EVALUE 華城電機",names:["華城電能科技股份有限公司","華城電機股份有限公司"],aliases:["E-Value","華城電能","華城電機"],official:"https://www.evalue.com.tw/",stationMap:"https://www.evalue.com.tw/find",chargeGuide:"https://www.evalue.com.tw/app",chargeHint:"EVALUE App・即時狀態／預約充電"},
-  {key:"icharging",brand:"iCharging 中興電工",names:["中興電工機械股份有限公司"],aliases:["iCharging","中興電工"],official:"https://www.icharging.com.tw/tw",stationMap:"https://www.icharging.com.tw/tw/map/index.aspx",chargeGuide:"https://www.icharging.com.tw/tw/about/%E5%B8%B8%E8%A6%8B%E5%95%8F%E9%A1%8C",rateGuide:"https://www.icharging.com.tw/tw/about/%E8%B2%BB%E7%8E%87%E8%AA%AA%E6%98%8E",chargeHint:"iParking／AmpGO／EVOASIS・依站點支援"},
+  {key:"icharging",brand:"iCharging 中興電工",names:["中興電工機械股份有限公司"],aliases:["iCharging","中興電工"],official:"https://www.icharging.com.tw/tw",stationMap:"https://www.icharging.com.tw/tw/map/index.aspx",chargeGuide:"https://www.icharging.com.tw/tw/about/%E5%B8%B8%E8%A6%8B%E5%95%8F%E9%A1%8C",rateGuide:"https://www.icharging.com.tw/tw/about/%E8%B2%BB%E7%8E%87%E8%AA%AA%E6%98%8E",chargeHint:"iParking App・依站點支援",rateHint:"公告原價 12 元/度；iParking 高速 9.2–10 元/度、市區 8 元/度，部分市區站採每分鐘 7 元，實際依站點公告",networkHint:"官方網站可依區域、槍種搜尋；主要提供 CCS1、CCS2"},
   {key:"starcharger",brand:"星舟快充",names:["星舟快充"],aliases:["StarCharger","星舟"],official:"https://starcharger.com.tw/"},
   {key:"tail",brand:"TAIL 特爾電力",names:["特爾電力股份有限公司"],aliases:["TAIL","特爾"],official:"https://www.evtail.com.tw/",stationMap:"https://www.evtail.com.tw/locations"},
   {key:"acon",brand:"Acon-eco",names:["連展電能科技股份有限公司"],aliases:["Acon","連展電能"],official:"https://www.acon-eco.com/"},
   {key:"noodoe",brand:"Noodoe",names:["拓廣科技","拓廣科技股份有限公司"],aliases:["拓廣","Noodoe EV"],official:"https://www.noodoe.com.tw/"},
-  {key:"tesla",brand:"Tesla 超級充電",names:["台灣特斯拉汽車有限公司"],aliases:["特斯拉","Tesla","Tesla Supercharger"],official:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",stationMap:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",chargeGuide:"https://www.tesla.com/zh_tw/support/charging/supercharging",chargeHint:"Tesla App・插槍自動充電"}
+  {key:"tesla",brand:"Tesla 超級充電",names:["台灣特斯拉汽車有限公司"],aliases:["特斯拉","Tesla","Tesla Supercharger"],official:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",stationMap:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",chargeGuide:"https://www.tesla.com/zh_tw/support/charging/supercharging",chargeHint:"Tesla App・插槍自動充電",networkHint:"Tesla App 可查看可用超級充電座與充電狀態；COLA GO 不把官方網站清單假裝成即時空槍"}
 ];
 const CHARGING_MAJOR_KEYS=["evoasis","upower","tail","evalue","icharging","tesla"];
 const ICHARGING_PLUG_AND_CHARGE=[
-  ["湖口服務區南向",["湖口服務區南向","湖口南向"]],
-  ["湖口服務區北向",["湖口服務區北向","湖口北向"]],
-  ["清水服務區",["清水服務區"]],
-  ["東山服務區",["東山服務區"]],
+  ["湖口服務區南向",["湖口服務區南向","湖口南向","湖口南"]],
+  ["湖口服務區北向",["湖口服務區北向","湖口北向","湖口北"]],
+  ["清水服務區",["清水服務區","清水"]],
+  ["東山服務區",["東山服務區","東山"]],
+  ["關西服務區",["關西服務區","關西"]],
+  ["泰安服務區北向",["泰安服務區北向","泰安北向","泰安北"]],
+  ["泰安服務區南向",["泰安服務區南向","泰安南向","泰安南"]],
+  ["仁德服務區北向",["仁德服務區北向","仁德北向","仁德北"]],
+  ["仁德服務區南向",["仁德服務區南向","仁德南向","仁德南"]],
+  ["蘇澳服務區",["蘇澳服務區","蘇澳"]],
+  ["石碇服務區",["石碇服務區","石碇"]],
+  ["西螺服務區北向",["西螺服務區北向","西螺北向","西螺北"]],
+  ["西螺服務區南向",["西螺服務區南向","西螺南向","西螺南"]],
+  ["新營服務區北向",["新營服務區北向","新營北向","新營北"]],
+  ["新營服務區南向",["新營服務區南向","新營南向","新營南"]],
+  ["古坑服務區",["古坑服務區","古坑"]],
   ["汐止遠東世界中心",["汐止遠東世界中心"]],
-  ["內湖污水處理廠附屬公園停車場",["內湖污水處理廠附屬公園停車場","內湖汙水處理廠附屬公園停車場"]],
-  ["新生高架(南京長安)",["新生高架南京長安","新生高架南京街長安"]],
-  ["新生高架(錦州民權)",["新生高架錦州民權","新生高架錦州街民權東路"]],
+  ["內湖污水處理廠附屬公園停車場",["內湖污水處理廠附屬公園停車場","內湖汙水處理廠附屬公園停車場","內湖污水廠站"]],
+  ["新生高架(南京長安)",["新生高架南京長安","新生高架南京街長安","新生高架南京長安站"]],
+  ["新生高架(錦州民權)",["新生高架錦州民權","新生高架錦州街民權東路","新生高架錦州民權站"]],
   ["富邦遼寧",["富邦遼寧"]],
-  ["港墘站",["港墘站"]],
-  ["嘉義水牛站",["嘉義水牛站"]]
-];
+  ["港墘站",["港墘站","港墘"]],
+  ["嘉義水牛站",["嘉義水牛站","嘉義水牛"]]
 function chargingNameKey(value){
   return String(value||"").toLowerCase().replace(/臺/g,"台").replace(/[^\p{L}\p{N}]+/gu,"");
 }
@@ -460,6 +471,8 @@ function chargingDetailMarkup(x){
     [profile&&x.operator&&profile.brand!==x.operator?"TDX 登記業者":"",profile&&x.operator&&profile.brand!==x.operator?x.operator:""],
     ["狀態更新",x.statusUpdatedAt?formatTime(x.statusUpdatedAt):""],
     [profile?.chargeHint?"官方充電方式":"",profile?.chargeHint||""],
+    [profile?.rateHint?"官方費率提示":"",profile?.rateHint||""],
+    [profile?.networkHint?"官方服務提示":"",profile?.networkHint||""],
     [chargingCapabilities(x).length?"官方支援功能":"",chargingCapabilities(x).map(c=>c.label).join("、")]
   ].filter(row=>row[0]&&row[1]);
   if(!rows.length&&!official&&!x.description)return "";
