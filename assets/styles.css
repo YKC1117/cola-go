@@ -279,6 +279,71 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .charging-more a { display:inline-block;margin-top:10px;font-size:12px }
 .charging-nav-actions { margin-top:13px }
 .charging-map-secondary { margin-top:22px }
+/* Charging V2: decision-first mobile UI */
+.page-icon.charging { --accent:#39df8a; }
+.charging-primary { gap:11px; }
+.charging-find-now { width:100%;min-height:84px;display:grid;grid-template-columns:46px minmax(0,1fr) 20px;align-items:center;gap:12px;padding:14px;border:1px solid #2f7452;border-radius:18px;background:linear-gradient(135deg,#123a29,#0b1912 72%);box-shadow:inset 0 1px #ffffff12,0 8px 22px #0004;text-align:left; }
+.charging-find-now-icon { width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:#36df8b18;color:#53f3a0; }
+.charging-find-now-icon svg { width:28px;height:28px; }
+.charging-find-now-copy b { display:block;font-size:18px;font-weight:850;letter-spacing:-.02em;color:#f4fff8; }
+.charging-find-now-copy small { display:block;margin-top:4px;font-size:11px;line-height:1.5;color:#b8d8c6; }
+.charging-find-now-arrow { width:18px;height:18px;color:#83efb5; }
+.charging-find-now[aria-pressed="true"] { border-color:#55ef9d;background:linear-gradient(135deg,#155136,#0b2117);box-shadow:0 0 0 1px #55ef9d22,0 8px 24px #0005; }
+.charging-primary-actions { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.charging-primary-action,.charging-city-primary { min-height:68px;border-radius:15px;background:linear-gradient(145deg,#12181b,#0d1113); }
+.charging-primary-action { align-items:center;padding:10px 9px; }
+.charging-primary-action>svg { color:#8f9ca4; }
+.charging-primary-action b { font-size:12px; }
+.charging-primary-action small { font-size:9px; }
+.charging-nearby[aria-pressed="true"]>svg { color:#ff6d7f; }
+.charging-main-search { min-height:48px;border-radius:15px;background:#11171a; }
+.charging-quick-filter { padding:1px 0 2px; }
+.charging-quick-filter button { min-height:36px;background:#0f1417;border-color:#273036; }
+.charging-quick-filter button.active { background:#f5f7f8;color:#101315;border-color:#f5f7f8; }
+.charging-result-summary { min-height:18px;font-size:11px;font-weight:600;color:#9ca8ae;padding:0 2px; }
+.charging-item { position:relative;padding:16px;border-radius:18px;background:linear-gradient(145deg,#131a1d,#0c1113);box-shadow:0 10px 26px #0002; }
+.charging-item.is-available { border-color:#2f7653;background:linear-gradient(145deg,#11231a,#0c1410 58%,#0d1214);box-shadow:inset 3px 0 #3ce891,0 10px 28px #0003; }
+.charging-item .list-head { gap:10px; }
+.charging-item .list-head h3 { font-size:16px;line-height:1.35;letter-spacing:-.01em; }
+.charging-item .route-tag { border-radius:99px;background:#182126;color:#9eb0b9;padding:5px 8px;font-weight:700; }
+.charging-item.is-available .route-tag { background:#153525;color:#73efad; }
+.charging-status-block { margin-top:12px;gap:7px; }
+.charging-availability-row { display:flex;align-items:center;gap:12px;min-height:66px;padding:10px 12px;border:1px solid #273137;border-radius:14px;background:#0e1417; }
+.charging-availability-row.is-open { border-color:#2e6348;background:linear-gradient(105deg,#123320,#0d1812); }
+.charging-availability-row.is-full { background:linear-gradient(105deg,#251b0e,#15120d);border-color:#4c3a1e; }
+.charging-availability-row.is-stale { background:#191317;border-color:#432831; }
+.charging-availability-main { min-width:72px;display:flex;align-items:baseline;gap:5px; }
+.charging-availability-main strong { font-size:32px;line-height:1;font-weight:850;letter-spacing:-.05em;font-variant-numeric:tabular-nums;color:#c8d1d5; }
+.charging-availability-main span { font-size:11px;font-weight:750;color:#839097; }
+.charging-availability-row.is-open .charging-availability-main strong { color:#54f29f; }
+.charging-availability-row.is-full .charging-availability-main strong { color:#f2b85e; }
+.charging-availability-copy { min-width:0; }
+.charging-availability-copy b { display:block;font-size:13px;font-weight:800; }
+.charging-availability-row.is-open .charging-availability-copy b { color:#69efa9; }
+.charging-availability-copy small { display:block;margin-top:4px;font-size:10px;line-height:1.45;color:#87949a;overflow-wrap:anywhere; }
+.charging-live-badges { margin-top:0; }
+.charging-live-badges span { padding:4px 7px;font-size:10px; }
+.charging-facts { gap:7px;margin-top:11px; }
+.charging-facts span { border-radius:8px;padding:5px 8px;background:#161e22;color:#aebbc1; }
+.charging-facts .charging-distance { color:#fff;background:#293139;font-weight:800; }
+.charging-facts .charging-power { color:#ffc76e;background:#302511;font-weight:750; }
+.charging-facts .charging-connector { color:#86cfff;background:#122536; }
+.charging-item .location-line { margin-top:11px;padding:0 2px;color:#9ba7ad; }
+.charging-nav-actions { display:grid;grid-template-columns:1.25fr .9fr .8fr;gap:7px;margin-top:14px; }
+.charging-nav-actions button { width:100%;min-width:0;padding:9px 8px;font-size:12px; }
+.charging-nav-actions .charging-go-primary { color:#07140d;border-color:#4beb98;background:linear-gradient(135deg,#58f2a2,#2fdc82);font-weight:850;box-shadow:0 5px 14px #2cdc8030; }
+.charging-nav-actions .charging-map-choice { background:#151c20; }
+.charging-nav-menu { margin-top:7px;padding:8px;border:1px solid #273137;border-radius:12px;background:#0c1113; }
+.charging-nav-menu button { background:#151d21; }
+@media(max-width:359px){
+  .charging-find-now { grid-template-columns:40px minmax(0,1fr) 16px;padding:12px; }
+  .charging-find-now-icon { width:40px;height:40px; }
+  .charging-find-now-copy b { font-size:16px; }
+  .charging-primary-actions { gap:6px; }
+  .charging-nav-actions { grid-template-columns:1.2fr .9fr .8fr;gap:5px; }
+  .charging-nav-actions button { font-size:11px;padding-inline:6px; }
+}
+
 .parking-actions { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 0; }
 .parking-actions button { min-height:64px;padding:12px 13px;border:1px solid var(--line);border-radius:14px;background:var(--card);display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left }
 .parking-actions b { display:block;font-size:13px;font-weight:650 }
