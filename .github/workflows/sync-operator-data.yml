@@ -1,0 +1,63 @@
+name: Sync charging operator sources
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "18 3 * * *"
+  push:
+    branches: ["main"]
+    paths:
+      - "scripts/sync_operator_sources.py"
+      - ".github/workflows/sync-operator-data.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cola-go-operator-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync public operator station sources
+        run: python3 scripts/sync_operator_sources.py
+      - name: Commit refreshed operator cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "COLA GO Bot"
+          git config user.email "actions@users.noreply.github.com"
+
+          snapshot="$(mktemp -d)"
+          trap 'rm -rf "$snapshot"' EXIT
+          mkdir -p "$snapshot/operators"
+          cp -a data/operators/. "$snapshot/operators/"
+
+          for attempt in 1 2 3; do
+            echo "Publish attempt $attempt"
+            git fetch origin main
+            git reset --hard origin/main
+            rm -rf data/operators
+            mkdir -p data/operators
+            cp -a "$snapshot/operators/." data/operators/
+
+            git add data/operators/
+            if git diff --cached --quiet; then
+              echo "No operator data changes."
+              exit 0
+            fi
+
+            git commit -m "data: refresh charging operator sources"
+            if git push origin HEAD:main; then
+              echo "Operator cache published."
+              exit 0
+            fi
+            echo "Main changed during publish; retrying on latest main." >&2
+          done
+
+          echo "Unable to publish operator cache after 3 attempts." >&2
+          exit 1
