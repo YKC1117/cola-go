@@ -152,11 +152,13 @@ let browser;
   await page.locator('#chargingFindNow').click();
   await page.waitForFunction(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&Boolean(state.chargingOrigin));
   check('One-tap nearby available action combines location, distance sorting, and live availability',await page.evaluate(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&state.chargingCity==='all'));
-  await page.waitForFunction(()=>{
-    const cards=[...document.querySelectorAll('#chargingList .charging-item')];
-    return cards.length===0||cards.every(card=>card.classList.contains('is-available'));
-  });
-  check('One-tap nearby available never shows a non-available card',await page.evaluate(()=>[...document.querySelectorAll('#chargingList .charging-item')].every(card=>card.classList.contains('is-available'))));
+  const oneTapCards=await page.evaluate(()=>[...document.querySelectorAll('#chargingList .charging-item')].map(card=>({
+    cls:card.className,
+    text:card.textContent.replace(/\s+/g,' ').trim().slice(0,220)
+  })));
+  const oneTapBad=oneTapCards.filter(card=>!card.cls.split(/\s+/).includes('is-available'));
+  if(oneTapBad.length)console.log('ONE_TAP_NON_AVAILABLE',JSON.stringify(oneTapBad.slice(0,6)));
+  check('One-tap nearby available never shows a non-available card',oneTapBad.length===0);
   await page.locator('#resetChargingFilters').click();
   await page.locator('#chargingNearby').click();
   await page.waitForFunction(()=>state.chargingSort==='nearby'&&Boolean(state.chargingOrigin));
