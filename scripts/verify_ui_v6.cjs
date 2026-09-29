@@ -35,17 +35,23 @@ let browser;
   const errors=[];
   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
   await context.route('**/*',route=>new URL(route.request().url()).origin===base?route.continue():route.abort());
-  await context.route('**/data/operators/upower.json',route=>route.fulfill({
-    status:200,
-    contentType:'application/json',
-    body:JSON.stringify({
+  await context.addInitScript(()=>{
+    const fixture={
       schema:1,source:'U-POWER 官方網站',updatedAt:new Date().toISOString(),count:2,totalSeats:12,
       items:[
         {id:'official-upower-dup',road:'operator',city:'Taichung',cityName:'臺中市',name:'臺中 北屯軍福站',location:'臺中市北屯區軍福十三路 270 號',operator:'旭電馳科研',operatorId:'83235398',operatorWebURL:'https://www.u-power.com.tw/',officialSupplemental:true,sitePowerKw:360,maxPowerKw:null,power:'',spaces:4,connectorCount:4,connectors:['CCS1','CCS2'],ccs1Seats:2,ccs2Seats:2,liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''},
         {id:'official-upower-extra',road:'operator',city:'Tainan',cityName:'臺南市',name:'臺南 測試官方補站',location:'臺南市東區測試路 1 號',operator:'旭電馳科研',operatorId:'83235398',operatorWebURL:'https://www.u-power.com.tw/',officialSupplemental:true,sitePowerKw:720,maxPowerKw:null,power:'',spaces:8,connectorCount:8,connectors:['CCS1','CCS2'],ccs1Seats:4,ccs2Seats:4,liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''}
       ]
-    })
-  }));
+    };
+    const nativeFetch=window.fetch.bind(window);
+    window.fetch=(input,init)=>{
+      const url=typeof input==='string'?input:(input?.url||'');
+      if(String(url).includes('/data/operators/upower.json')||String(url).includes('./data/operators/upower.json')){
+        return Promise.resolve(new Response(JSON.stringify(fixture),{status:200,headers:{'Content-Type':'application/json'}}));
+      }
+      return nativeFetch(input,init);
+    };
+  });
   const page=await context.newPage();
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto(base);
