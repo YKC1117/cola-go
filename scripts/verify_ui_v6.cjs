@@ -201,7 +201,7 @@ let browser;
   await page.locator('[data-charge-quick="ev2"]').click();
   check('EV2 quick filter selects only mapped EV2 operator rows',await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>chargingOperatorProfile(x)?.key==='ev2')));
   await page.locator('[data-charge-quick="all"]').click();
-  await page.locator('#chargingCoverage').open().catch(()=>{});
+  await page.locator('#chargingCoverage').evaluate(el=>{el.open=true;});
   await page.locator('#chargingCoverageGrid [data-coverage-major="upower"]').click();
   check('Coverage row acts as a network filter shortcut',await page.evaluate(()=>state.chargingMajor==='upower'));
   await page.locator('[data-charge-major="all"]').click();
