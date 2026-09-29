@@ -476,15 +476,15 @@ function renderCharging(){
     menus.forEach(menu=>{if(menu!==target)menu.hidden=true;});
     if(target)target.hidden=!target.hidden;
   });
-  $("[data-charge-go]",root).forEach(b=>b.onclick=()=>{
+  $$("[data-charge-go]",root).forEach(b=>b.onclick=()=>{
     const apple=/iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent||"");
     const url=apple
       ?"https://maps.apple.com/?daddr="+b.dataset.chargeGo+"&dirflg=d"
       :"https://www.google.com/maps/dir/?api=1&destination="+b.dataset.chargeGo+"&travelmode=driving";
     window.open(url,"_blank","noopener");
   });
-  $("[data-charge-google]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/dir/?api=1&destination="+b.dataset.chargeGoogle+"&travelmode=driving","_blank","noopener"));
-  $("[data-charge-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?daddr="+b.dataset.chargeApple+"&dirflg=d","_blank","noopener"));
+  $$("[data-charge-google]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/dir/?api=1&destination="+b.dataset.chargeGoogle+"&travelmode=driving","_blank","noopener"));
+  $$("[data-charge-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?daddr="+b.dataset.chargeApple+"&dirflg=d","_blank","noopener"));
   $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
 }
 
@@ -1390,7 +1390,7 @@ function bindChargingTools(){
         state.chargingFavoritesOnly=false;
         if($("#chargingCity"))$("#chargingCity").value="all";
         if($("#chargingDirection"))$("#chargingDirection").value="all";
-        $("#roadFilter button").forEach((b,i)=>b.classList.toggle("active",i===0));
+        $$("#roadFilter button").forEach((b,i)=>b.classList.toggle("active",i===0));
       }
       renderCharging();
       toast(availableOnly?"已顯示附近可確認的空槍":"已依距離排序充電站");
