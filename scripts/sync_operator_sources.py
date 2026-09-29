@@ -261,20 +261,30 @@ def sync_evalue(fetch_details=True):
     for value, city, city_name in cities:
         if not value:
             continue
-        query = urllib.parse.urlencode({select_name: value})
-        page_url = EVALUE_URL + "?" + query
+        if str(value).startswith(("http://", "https://", "/find")):
+            page_url = urllib.parse.urljoin(EVALUE_URL, value)
+        else:
+            query = urllib.parse.urlencode({select_name: value})
+            page_url = EVALUE_URL + "?" + query
+
         html_text = fetch_text(page_url)
         parser = EvalueListParser()
         parser.feed(html_text)
-        if not parser.stations:
-            hrefs = re.findall(r"href\\s*=\\s*[\\\"']([^\\\"']+)[\\\"']", html_text, re.I)
-            candidates = [x for x in hrefs if "find" in x.lower() or re.search(r"\d{2,}/?$", x)]
-            print("EVALUE_DEBUG city=", city_name, "select=", select_name, "value=", value, "hrefs=", candidates[:30], file=sys.stderr)
         total = parser.total_count()
         pages = max(1, (total + 23) // 24)
         for page in range(1, pages + 1):
             if page > 1:
-                html_text = fetch_text(page_url + "&page=" + str(page))
+                parsed = urllib.parse.urlsplit(page_url)
+                params = dict(urllib.parse.parse_qsl(parsed.query, keep_blank_values=True))
+                params["page"] = str(page)
+                next_url = urllib.parse.urlunsplit((
+                    parsed.scheme,
+                    parsed.netloc,
+                    parsed.path,
+                    urllib.parse.urlencode(params),
+                    parsed.fragment,
+                ))
+                html_text = fetch_text(next_url)
                 parser = EvalueListParser()
                 parser.feed(html_text)
             for href, name in parser.stations:
