@@ -151,6 +151,9 @@
 
     const mergedTotal=rows.reduce((sum,x)=>sum+x.merged,0);
     const liveTotal=rows.reduce((sum,x)=>sum+x.live,0);
+    const healthKeys=Object.keys(operatorSourceHealth).sort();
+    grid.dataset.sourceHealth=healthKeys.join(",");
+    grid.dataset.degradedSources=rows.filter(x=>x.degraded).map(x=>x.profile.key).join(",");
     summary.textContent=(city==="all"?"全台":"目前縣市")+" · "+mergedTotal+" 站 · "+liveTotal+" 站有即時槍況";
     grid.innerHTML=rows.map(row=>
       '<button type="button" class="'+(row.degraded?'is-degraded':'')+'" data-coverage-major="'+row.profile.key+'">'+
