@@ -2,12 +2,12 @@
   "schema": 1,
   "source": "U-POWER 官方網站",
   "sourceUrl": "https://www.u-power.com.tw/",
-  "updatedAt": "2026-09-29T03:27:30.083117Z",
+  "updatedAt": "2026-09-29T03:33:14.478631Z",
   "count": 66,
   "totalSeats": 446,
   "items": [
     {
-      "id": "official-upower-a1e91a66eaae85",
+      "id": "official-upower-18b8b9e90a44c0",
       "road": "operator",
       "city": "NantouCounty",
       "cityName": "南投縣",
@@ -50,7 +50,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-32df00b68cb7eb",
+      "id": "official-upower-9c99abd51282d1",
       "road": "operator",
       "city": "Chiayi",
       "cityName": "嘉義市",
@@ -93,7 +93,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-6e096b7d848c1b",
+      "id": "official-upower-44f956885210e8",
       "road": "operator",
       "city": "ChiayiCounty",
       "cityName": "嘉義縣",
@@ -136,7 +136,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-781307ca51cfb3",
+      "id": "official-upower-2d3282974d2eb9",
       "road": "operator",
       "city": "Keelung",
       "cityName": "基隆市",
@@ -179,7 +179,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-0adfa7fd08e0a8",
+      "id": "official-upower-6b740dfcb77bdc",
       "road": "operator",
       "city": "YilanCounty",
       "cityName": "宜蘭縣",
@@ -222,7 +222,7 @@
       "description": "全站共 6 個充電車格 / 2 車格提供「一席雙槍」雙規格"
     },
     {
-      "id": "official-upower-0d68cc579b8ff5",
+      "id": "official-upower-e4158733958892",
       "road": "operator",
       "city": "YilanCounty",
       "cityName": "宜蘭縣",
@@ -265,7 +265,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-892e05967252b2",
+      "id": "official-upower-264d47ded41bda",
       "road": "operator",
       "city": "PingtungCounty",
       "cityName": "屏東縣",
@@ -308,7 +308,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-60ebf4dbc91198",
+      "id": "official-upower-b8d48b44f9b197",
       "road": "operator",
       "city": "PingtungCounty",
       "cityName": "屏東縣",
@@ -351,7 +351,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-23564806c04dd3",
+      "id": "official-upower-f01dc33f800bb0",
       "road": "operator",
       "city": "ChanghuaCounty",
       "cityName": "彰化縣",
@@ -394,7 +394,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-8a9e047bf46a15",
+      "id": "official-upower-610755e5e3689d",
       "road": "operator",
       "city": "ChanghuaCounty",
       "cityName": "彰化縣",
@@ -437,7 +437,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-6fb21aea065ae8",
+      "id": "official-upower-4700f9ee4c53ea",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -480,7 +480,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-00d3dfcab55d8c",
+      "id": "official-upower-e5fc2039f1332f",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -523,7 +523,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-556eb608d0b623",
+      "id": "official-upower-1a48906e2a2ef2",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -566,7 +566,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-5828d14d1a11f6",
+      "id": "official-upower-6bcb9b9364b558",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -609,7 +609,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-4ca43291f726cd",
+      "id": "official-upower-0146200fd1ea42",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -652,7 +652,7 @@
       "description": "試營運"
     },
     {
-      "id": "official-upower-39c9f7b776e7cf",
+      "id": "official-upower-a640baf3d8e39c",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -695,7 +695,7 @@
       "description": "試營運"
     },
     {
-      "id": "official-upower-fe2c7bed0c9db6",
+      "id": "official-upower-efa73a2467b5fb",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -738,7 +738,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-64e3ff74ecead7",
+      "id": "official-upower-cbe514bc83bfb8",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -781,7 +781,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-7b763a367afab8",
+      "id": "official-upower-cf109f6b44f207",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -824,7 +824,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-daf6b0ceda0242",
+      "id": "official-upower-d55d89f5fb5821",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -867,7 +867,7 @@
       "description": "試營運"
     },
     {
-      "id": "official-upower-2a34ef4bb34e04",
+      "id": "official-upower-4c5cdedf5eaf2c",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -910,7 +910,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-c351abe789df6e",
+      "id": "official-upower-e03e94a82b9ebb",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -953,7 +953,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-5318056b8b6e66",
+      "id": "official-upower-729672a110d5d4",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -996,7 +996,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-96d22a486dc6e2",
+      "id": "official-upower-22b5d553e60c6c",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -1039,7 +1039,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-e15e86736d8108",
+      "id": "official-upower-3afea7309bad15",
       "road": "operator",
       "city": "NewTaipei",
       "cityName": "新北市",
@@ -1082,7 +1082,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-9431434195997c",
+      "id": "official-upower-ced93c8b0a5c5d",
       "road": "operator",
       "city": "Hsinchu",
       "cityName": "新竹市",
@@ -1125,7 +1125,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-0f54f4c7e18a57",
+      "id": "official-upower-fc6d4fef2c7efb",
       "road": "operator",
       "city": "Hsinchu",
       "cityName": "新竹市",
@@ -1168,7 +1168,7 @@
       "description": "試營運"
     },
     {
-      "id": "official-upower-395765654b9a22",
+      "id": "official-upower-620c9a6038aa38",
       "road": "operator",
       "city": "Hsinchu",
       "cityName": "新竹市",
@@ -1211,7 +1211,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-fa5d332ed441cd",
+      "id": "official-upower-41c751e4387529",
       "road": "operator",
       "city": "HsinchuCounty",
       "cityName": "新竹縣",
@@ -1254,7 +1254,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-8bc60a3e89a225",
+      "id": "official-upower-e76cd4e880702d",
       "road": "operator",
       "city": "Taoyuan",
       "cityName": "桃園市",
@@ -1297,7 +1297,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-47de42a50988f7",
+      "id": "official-upower-1a6fbcba6b97d6",
       "road": "operator",
       "city": "Taoyuan",
       "cityName": "桃園市",
@@ -1340,7 +1340,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-904f31e28b4e77",
+      "id": "official-upower-30661534a8838e",
       "road": "operator",
       "city": "Taoyuan",
       "cityName": "桃園市",
@@ -1383,7 +1383,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-6f89cf5ab298e9",
+      "id": "official-upower-b95bfa5ca8352a",
       "road": "operator",
       "city": "Taoyuan",
       "cityName": "桃園市",
@@ -1426,7 +1426,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-a0fb832b938127",
+      "id": "official-upower-646319e925e5a6",
       "road": "operator",
       "city": "Taoyuan",
       "cityName": "桃園市",
@@ -1469,7 +1469,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-eda683d66c888f",
+      "id": "official-upower-2bf6a32d65151e",
       "road": "operator",
       "city": "Taoyuan",
       "cityName": "桃園市",
@@ -1512,7 +1512,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-2ac37efad498aa",
+      "id": "official-upower-00c4fa7a37de22",
       "road": "operator",
       "city": "Taoyuan",
       "cityName": "桃園市",
@@ -1555,7 +1555,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-eb4148a77a9413",
+      "id": "official-upower-d62266685c8b50",
       "road": "operator",
       "city": "Taichung",
       "cityName": "臺中市",
@@ -1598,7 +1598,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-11b5fee15ffc34",
+      "id": "official-upower-53e6730b88272a",
       "road": "operator",
       "city": "Taichung",
       "cityName": "臺中市",
@@ -1641,7 +1641,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-8e5d23fa805943",
+      "id": "official-upower-a5f1a8a522788e",
       "road": "operator",
       "city": "Taichung",
       "cityName": "臺中市",
@@ -1684,7 +1684,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-322d2e4e5fd35c",
+      "id": "official-upower-fd07e8ed7ec648",
       "road": "operator",
       "city": "Taichung",
       "cityName": "臺中市",
@@ -1727,7 +1727,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-e6fd305dd7982c",
+      "id": "official-upower-4152ec4adbdebd",
       "road": "operator",
       "city": "Taichung",
       "cityName": "臺中市",
@@ -1770,7 +1770,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-92cf7c7c66d15b",
+      "id": "official-upower-5f2cdb43b3e781",
       "road": "operator",
       "city": "Taichung",
       "cityName": "臺中市",
@@ -1813,7 +1813,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-4501aaa2f37c42",
+      "id": "official-upower-371cf28fcc2882",
       "road": "operator",
       "city": "Taichung",
       "cityName": "臺中市",
@@ -1856,7 +1856,7 @@
       "description": "試營運"
     },
     {
-      "id": "official-upower-3af869ffae700e",
+      "id": "official-upower-e17ab04f72d0aa",
       "road": "operator",
       "city": "Taichung",
       "cityName": "臺中市",
@@ -1899,7 +1899,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-d6a078e5392695",
+      "id": "official-upower-ecbb35838f41b7",
       "road": "operator",
       "city": "Taichung",
       "cityName": "臺中市",
@@ -1942,7 +1942,7 @@
       "description": "全站共8個充電車格 / 4車格提供「一席雙槍」雙規格"
     },
     {
-      "id": "official-upower-e75f87e8711659",
+      "id": "official-upower-5168ca1ecb5632",
       "road": "operator",
       "city": "Taichung",
       "cityName": "臺中市",
@@ -1985,7 +1985,7 @@
       "description": "試營運"
     },
     {
-      "id": "official-upower-5a4dbbc11cf4af",
+      "id": "official-upower-df7d518b464ed8",
       "road": "operator",
       "city": "Taichung",
       "cityName": "臺中市",
@@ -2028,7 +2028,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-ed2c0ad46361fd",
+      "id": "official-upower-7f2f421170e1ae",
       "road": "operator",
       "city": "Taipei",
       "cityName": "臺北市",
@@ -2071,7 +2071,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-80d552a5a2c2bd",
+      "id": "official-upower-1cd840832cb658",
       "road": "operator",
       "city": "Taipei",
       "cityName": "臺北市",
@@ -2114,7 +2114,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-34273c25b2216b",
+      "id": "official-upower-782cf5deb609de",
       "road": "operator",
       "city": "Taipei",
       "cityName": "臺北市",
@@ -2157,7 +2157,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-52d1e6cc34af3a",
+      "id": "official-upower-35aedc0075e7df",
       "road": "operator",
       "city": "Taipei",
       "cityName": "臺北市",
@@ -2200,7 +2200,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-406cbf62db6034",
+      "id": "official-upower-9ed4d283c35261",
       "road": "operator",
       "city": "Taipei",
       "cityName": "臺北市",
@@ -2243,7 +2243,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-37751eea0cfd8f",
+      "id": "official-upower-3dfe5761924782",
       "road": "operator",
       "city": "Taipei",
       "cityName": "臺北市",
@@ -2286,7 +2286,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-67f3a44074ab24",
+      "id": "official-upower-c0e61f46d100e6",
       "road": "operator",
       "city": "Taipei",
       "cityName": "臺北市",
@@ -2329,7 +2329,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-e591ed438de1f0",
+      "id": "official-upower-663bc7cede3135",
       "road": "operator",
       "city": "Tainan",
       "cityName": "臺南市",
@@ -2372,7 +2372,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-1b54802e246da7",
+      "id": "official-upower-a9f554b52369da",
       "road": "operator",
       "city": "Tainan",
       "cityName": "臺南市",
@@ -2415,7 +2415,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-78a326cc4ce0c9",
+      "id": "official-upower-658332e3d95289",
       "road": "operator",
       "city": "Tainan",
       "cityName": "臺南市",
@@ -2458,7 +2458,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-b723b27ebe0717",
+      "id": "official-upower-6b32be24a6272a",
       "road": "operator",
       "city": "TaitungCounty",
       "cityName": "臺東縣",
@@ -2501,7 +2501,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-b232f5ba2a1683",
+      "id": "official-upower-2842119e0954ac",
       "road": "operator",
       "city": "HualienCounty",
       "cityName": "花蓮縣",
@@ -2544,7 +2544,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-8aae4b987b36f4",
+      "id": "official-upower-9b3eec0726617a",
       "road": "operator",
       "city": "MiaoliCounty",
       "cityName": "苗栗縣",
@@ -2587,7 +2587,7 @@
       "description": "試營運"
     },
     {
-      "id": "official-upower-a3b807937f56e6",
+      "id": "official-upower-1bb4c30fdeb8b2",
       "road": "operator",
       "city": "MiaoliCounty",
       "cityName": "苗栗縣",
@@ -2630,7 +2630,7 @@
       "description": "試營運"
     },
     {
-      "id": "official-upower-4368b54339aa75",
+      "id": "official-upower-c0a1833b8c86f8",
       "road": "operator",
       "city": "Kaohsiung",
       "cityName": "高雄市",
@@ -2673,7 +2673,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-bdbd71a9209f85",
+      "id": "official-upower-dc4c574e8544d2",
       "road": "operator",
       "city": "Kaohsiung",
       "cityName": "高雄市",
@@ -2716,7 +2716,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-ee15191c5596a0",
+      "id": "official-upower-813f4de6bb7841",
       "road": "operator",
       "city": "Kaohsiung",
       "cityName": "高雄市",
@@ -2759,7 +2759,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-e4d2a27a2a3ad6",
+      "id": "official-upower-18a5a5a2a70feb",
       "road": "operator",
       "city": "Kaohsiung",
       "cityName": "高雄市",
@@ -2802,7 +2802,7 @@
       "description": ""
     },
     {
-      "id": "official-upower-1acda6e2ffe4ca",
+      "id": "official-upower-7ce3144895b4cb",
       "road": "operator",
       "city": "Kaohsiung",
       "cityName": "高雄市",
