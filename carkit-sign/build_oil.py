@@ -3,10 +3,11 @@ from pathlib import Path
 
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
-VERSION="1.2"
+VERSION="1.3"
 
 APP_NAMES={
  "tw.com.ainvest.outpack":"神盾測速照相",
+ "com.chaiche.drivesafe":"極行",
  "tw.gov.freeway1968Ver2.Freeway1968HD":"高速公路1968",
  "com.waze.iphone":"Waze",
  "com.alfred.parkinglot":"停車大聲公",
@@ -206,9 +207,10 @@ fuel_center=menu("加油 / eTag",[
  "eTag / 通行費":[app("fetci.eTagGO.PRD","menu-etag")]
 },"fuel-center")
 
-items=["神盾","導航","路況","停車 / 找車","加油 / eTag","音樂","先不用"]
+items=["神盾","極行","導航","路況","停車 / 找車","加油 / eTag","音樂","先不用"]
 branches={
  "神盾":[app("tw.com.ainvest.outpack","menu-start-shield")],
+ "極行":[app("com.chaiche.drivesafe","menu-start-jixing")],
  "導航":nav,
  "路況":traffic,
  "停車 / 找車":parking_center,

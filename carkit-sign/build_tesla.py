@@ -4,9 +4,10 @@ from pathlib import Path
 OUT=Path("carkit-sign/generated")
 OUT.mkdir(parents=True, exist_ok=True)
 
-VERSION="1.5"
+VERSION="1.6"
 APP_NAMES={
  "tw.com.ainvest.outpack":"神盾測速照相",
+ "com.chaiche.drivesafe":"極行",
  "com.teslamotors.TeslaApp":"Tesla",
  "tw.gov.freeway1968Ver2.Freeway1968HD":"高速公路1968",
  "com.xatori.plugshare":"PlugShare",
@@ -485,8 +486,9 @@ quick_nav_menu=menu("快速出發｜選擇導航",["Apple 地圖","Google Maps",
     "Waze":navigate_to("Waze","quick-nav-waze"),
 },"quick-nav-menu")
 
-driving_tools_menu=menu("行車工具",["神盾測速照相","高速公路1968","Tesla App"],{
+driving_tools_menu=menu("行車工具",["神盾測速照相","極行","高速公路1968","Tesla App"],{
     "神盾測速照相":[app("tw.com.ainvest.outpack","menu-shield"),exit_shortcut()],
+    "極行":[app("com.chaiche.drivesafe","menu-jixing"),exit_shortcut()],
     "高速公路1968":[app("tw.gov.freeway1968Ver2.Freeway1968HD","menu-1968"),exit_shortcut()],
     "Tesla App":[app(BUNDLE,"menu-tesla-app-tools"),exit_shortcut()],
 },"driving-tools-menu")
