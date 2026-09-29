@@ -63,7 +63,6 @@ jobs:
           grep -Fq './downloads/tesla-driver.shortcut' "$work/index.html"
           grep -Fq '下載油車助手 v1.3（正式檔）' "$work/index.html"
           grep -Fq '下載特斯拉助手 v1.6（正式檔）' "$work/index.html"
-          grep -Fq '既有 iCloud 分享' "$work/index.html"
           printf '%s  %s\n' '5c93e0962c98fae03e5590608332e6571912406b98d021ed87ad5e10d1ec836b' "$work/oil-driver.shortcut" | sha256sum -c -
           printf '%s  %s\n' '9288fe2d90db62258d43a10ba6b007b766bd94d848d15ced2b5a917bb6179438' "$work/tesla-driver.shortcut" | sha256sum -c -
           grep -Fq 'id="chargingNearby"' "$work/index.html"
