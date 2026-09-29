@@ -221,11 +221,14 @@ Siri「特斯拉助手」：
 <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"></use></svg></button><span class="page-icon charging"><svg><use href="#i-bolt"></use></svg></span><div><h1>找充電站</h1><p class="page-subtitle">先看哪裡有空槍，再決定去哪一站</p></div></div>
 
 <div class="charging-primary">
-<label class="inline-search charging-main-search"><svg><use href="#i-search"></use></svg><input id="chargingSearch" placeholder="搜尋站名、地區、業者、接頭" type="search"/></label>
-<button class="charging-nearby" id="chargingNearby" aria-pressed="false"><span><svg><use href="#i-pin"></use></svg><b>離我最近</b><small>只在你按下後才使用定位</small></span><svg><use href="#i-arrow"></use></svg></button>
+<div class="charging-primary-actions">
+<button class="charging-nearby charging-primary-action" id="chargingNearby" aria-pressed="false"><svg><use href="#i-pin"></use></svg><span><b>找我附近</b><small>按下才定位</small></span></button>
+<button class="charging-available charging-primary-action" id="chargingAvailableOnly" aria-pressed="false"><svg><use href="#i-bolt"></use></svg><span><b>只看有空槍</b><small>逾時不算可用</small></span></button>
+<label class="charging-city-primary"><span>縣市</span><select id="chargingCity"><option value="all">全台</option><option value="Taipei">臺北</option><option value="NewTaipei">新北</option><option value="Taoyuan">桃園</option><option value="Taichung">臺中</option><option value="Tainan">臺南</option><option value="Kaohsiung">高雄</option><option value="Keelung">基隆</option><option value="Hsinchu">新竹市</option><option value="HsinchuCounty">新竹縣</option><option value="MiaoliCounty">苗栗</option><option value="ChanghuaCounty">彰化</option><option value="NantouCounty">南投</option><option value="YunlinCounty">雲林</option><option value="Chiayi">嘉義市</option><option value="ChiayiCounty">嘉義縣</option><option value="PingtungCounty">屏東</option><option value="YilanCounty">宜蘭</option><option value="HualienCounty">花蓮</option><option value="TaitungCounty">臺東</option><option value="PenghuCounty">澎湖</option><option value="KinmenCounty">金門</option></select></label>
+</div>
+<label class="inline-search charging-main-search"><svg><use href="#i-search"></use></svg><input id="chargingSearch" placeholder="搜尋站名、地址、業者" type="search"/></label>
 <div class="charging-quick-filter" id="chargingQuickFilter">
 <button class="active" data-charge-quick="all">全部</button>
-<button data-charge-quick="available">現在可用</button>
 <button data-charge-quick="fast">100 kW+</button>
 <button data-charge-quick="ccs2">CCS2</button>
 <button data-charge-quick="tesla">Tesla</button>
@@ -233,11 +236,10 @@ Siri「特斯拉助手」：
 <div class="charging-result-summary" id="chargingResultSummary">讀取充電站資料中</div>
 </div>
 
-<details class="advanced-filters charging-advanced"><summary>更多篩選<span>縣市・國道・方向・接頭・功率・業者</span></summary>
+<details class="advanced-filters charging-advanced"><summary>更多篩選<span>國道・方向・接頭・功率・業者</span></summary>
 <div class="charging-filter-grid">
-<label><span>縣市</span><select id="chargingCity"><option value="all">全台灣</option><option value="Taipei">臺北市</option><option value="NewTaipei">新北市</option><option value="Taoyuan">桃園市</option><option value="Taichung">臺中市</option><option value="Tainan">臺南市</option><option value="Kaohsiung">高雄市</option><option value="Keelung">基隆市</option><option value="Hsinchu">新竹市</option><option value="HsinchuCounty">新竹縣</option><option value="MiaoliCounty">苗栗縣</option><option value="ChanghuaCounty">彰化縣</option><option value="NantouCounty">南投縣</option><option value="YunlinCounty">雲林縣</option><option value="Chiayi">嘉義市</option><option value="ChiayiCounty">嘉義縣</option><option value="PingtungCounty">屏東縣</option><option value="YilanCounty">宜蘭縣</option><option value="HualienCounty">花蓮縣</option><option value="TaitungCounty">臺東縣</option><option value="PenghuCounty">澎湖縣</option><option value="KinmenCounty">金門縣</option></select></label>
 <label><span>方向</span><select id="chargingDirection"><option value="all">全部</option><option value="south">南下</option><option value="north">北上</option><option value="shared">雙向共用</option></select></label>
-<label><span>接頭</span><select id="chargingConnector"><option value="all">全部</option><option value="CCS2">CCS2</option><option value="CCS1">CCS1</option><option value="CHAdeMO">CHAdeMO</option><option value="Tesla TPC">Tesla TPC</option><option value="J1772(Type1)">J1772</option><option value="Mennekes(Type2)">Type 2</option></select></label>
+<label><span>接頭</span><select id="chargingConnector"><option value="all">全部</option><option value="CCS2">CCS2</option><option value="CCS1">CCS1</option><option value="CHAdeMO">CHAdeMO</option><option value="Tesla TPC">Tesla TPC</option><option value="J1772">J1772</option><option value="Type2">Type 2</option></select></label>
 <label><span>最低功率</span><select id="chargingPower"><option value="0">不限</option><option value="50">50 kW+</option><option value="100">100 kW+</option><option value="200">200 kW+</option><option value="300">300 kW+</option></select></label>
 <label><span>業者</span><select id="chargingOperator"><option value="all">全部業者</option><option value="iCharging">iCharging</option><option value="EVOASIS">EVOASIS</option></select></label>
 </div>
@@ -246,12 +248,12 @@ Siri「特斯拉助手」：
 <button aria-pressed="false" id="chargingFavoritesOnly"><span>只看收藏</span><b id="chargingFavoriteCount">0</b></button>
 <button id="resetChargingFilters">清除篩選</button>
 </div>
-<p class="notice">資料來源為交通部 TDX。COLA GO 約每 15 分鐘嘗試同步即時槍況；請留意各站顯示的更新時間。來源逾時或狀態未知時，不會把它當成「現在可用」。</p>
+<p class="notice">交通部 TDX 即時資料。COLA GO 約每 15 分鐘同步；最後同步時間以站點與上方資料狀態為準。超過 45 分鐘會標示逾時，且不列入「有空槍」。</p>
 <button class="external-btn" data-url="https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan"><span><b>Tesla 台灣超充官方清單</b><small>Tesla 官方來源，適合再確認站點規格與開放資訊</small></span><svg><use href="#i-external"></use></svg></button>
 </details>
 
 <div class="charging-source">
-<div><b>TDX 全台官方充電站</b><small>充電槍狀態、接頭、站點資料與更新時間</small></div>
+<div><b>TDX 全台官方充電站</b><small>交通部 TDX 即時資料 · COLA GO 約每 15 分鐘同步</small></div>
 <span class="charging-source-chip">交通部官方資料</span>
 </div>
 <div class="list" id="chargingList"></div>

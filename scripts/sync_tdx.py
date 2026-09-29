@@ -409,7 +409,7 @@ def sync_parking_live(tok):
 
 CONNECTOR_TYPES = {
     1: "CCS1", 2: "CCS2", 3: "CHAdeMO", 4: "Tesla TPC",
-    5: "J1772(Type1)", 6: "Mennekes(Type2)", 254: "其他", 255: "未知",
+    5: "J1772", 6: "Type2", 254: "其他", 255: "其他",
 }
 POWER_MODES = {1: "AC", 2: "DC"}
 
@@ -446,33 +446,50 @@ def power_rating_kw(value):
     return number(match.group(1)) if match else None
 
 
+def location_text(value):
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value.strip()
+    if not isinstance(value, dict):
+        return str(value).strip()
+
+    translated = zh(value)
+    if translated:
+        return translated.strip()
+
+    ordered = (
+        "City", "Town", "Village", "Road", "Section", "Lane", "Alley", "No", "Floor",
+        "POI", "Name", "RoadName", "Freeway", "Direction", "Milepost", "Mile", "Km",
+        "Description",
+    )
+    parts = []
+    for key in ordered:
+        item = value.get(key)
+        text = zh(item) if isinstance(item, dict) else str(item or "").strip()
+        if text and text not in parts:
+            parts.append(text)
+    return "".join(parts).strip()
+
+
 def station_location(record, city_name):
     location = record.get("Location")
-    if isinstance(location, str) and location.strip():
-        return location.strip()
-    pieces = []
-    poi = ""
+    candidates = [location_text(record.get("Address"))]
+
     if isinstance(location, dict):
-        node = location.get("Address") or location.get("CityRoad")
-        if isinstance(node, dict):
-            ordered = (
-                "City", "Town", "Village", "Road", "Section", "Lane",
-                "Alley", "No", "Floor",
-            )
-            address = "".join(str(node.get(key) or "") for key in ordered).strip()
-            if address:
-                pieces.append(address)
-        place = location.get("Place")
-        if isinstance(place, dict):
-            poi = str(place.get("POI") or place.get("Name") or "").strip()
-        elif isinstance(place, str):
-            poi = place.strip()
-    fallback = str(record.get("Address") or "").strip()
-    if fallback and fallback not in pieces:
-        pieces.append(fallback)
-    if poi:
-        pieces.append(poi)
-    return " · ".join(pieces) or city_name
+        candidates.extend([
+            location_text(location.get("Address")),
+            location_text(location.get("Place")),
+            location_text(location.get("Freeway")),
+            location_text(location.get("CityRoad")),
+        ])
+    else:
+        candidates.append(location_text(location))
+
+    for candidate in candidates:
+        if candidate and candidate != city_name:
+            return candidate
+    return city_name
 
 
 def inline_connector_summary(record):
@@ -508,7 +525,7 @@ def operator_map(rows):
         if not operator_id:
             continue
         out[operator_id] = {
-            "name": zh(record.get("OperatorName")) or operator_id,
+            "name": zh(record.get("OperatorName")) or f"TDX 業者 {operator_id}",
             "telephone": str(record.get("Telephone") or ""),
             "webURL": str(record.get("WebURL") or ""),
         }
@@ -530,7 +547,7 @@ def normalize_station(record, city, city_name, operators=None):
         "cityName": city_name,
         "name": zh(record.get("StationName")) or zh(record.get("Name")) or source_id,
         "location": station_location(record, city_name),
-        "operator": operator.get("name") or operator_id or "TDX",
+        "operator": operator.get("name") or (f"TDX 業者 {operator_id}" if operator_id else "TDX 官方站點"),
         "operatorId": operator_id,
         "operatorWebURL": operator.get("webURL") or "",
         "operatorTelephone": operator.get("telephone") or "",

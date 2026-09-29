@@ -18,6 +18,7 @@ const state={
   chargingOperator:"all",
   chargingCity:"all",
   chargingQuick:"all",
+  chargingAvailableOnly:false,
   chargingSort:"smart",
   chargingOrigin:null,
   chargingFavoritesOnly:false,
@@ -200,7 +201,7 @@ function parseChargingPower(value){
   const m=String(value||"").match(/\d+(?:\.\d+)?/);
   return m?Number(m[0]):0;
 }
-const LEGACY_TDX_CONNECTOR_TYPES={"1":"CCS1","2":"CCS2","3":"CHAdeMO","4":"Tesla TPC","5":"J1772(Type1)","6":"Mennekes(Type2)","254":"其他","255":"未知"};
+const LEGACY_TDX_CONNECTOR_TYPES={"1":"CCS1","2":"CCS2","3":"CHAdeMO","4":"Tesla TPC","5":"J1772","6":"Type2","254":"其他","255":"其他","J1772(Type1)":"J1772","Mennekes(Type2)":"Type2"};
 function chargingConnectors(x){
   return (x?.connectors||[]).map(value=>LEGACY_TDX_CONNECTOR_TYPES[String(value)]||String(value)).filter(Boolean);
 }
@@ -254,7 +255,7 @@ function chargingLiveCounts(x){
 function chargingOperatorLabel(x){
   const value=String(x?.operator||"").trim();
   if(!value||value==="TDX")return "TDX 官方站點";
-  if(/^\d{8}$/.test(value))return "營運商名稱待同步";
+  if(/^\d{8}$/.test(value))return "TDX 業者 "+value;
   return value;
 }
 function chargingDirectionMatch(x){
@@ -307,27 +308,20 @@ function loadChargingFavorites(){
 }
 function chargingStatusMarkup(x){
   const tdx=x.road==="tdx";
-  if(!tdx)return '<div class="charging-status-line static"><span>設備資料</span><small>此筆未提供即時空槍</small></div>';
+  if(!tdx)return '<div class="charging-status-block static"><div class="charging-live-badges"><span class="unknown">即時狀態未知</span></div><small>此筆未提供即時空槍</small></div>';
   const updated=x.statusUpdatedAt?formatTime(x.statusUpdatedAt):"更新時間未提供";
-  if(x.liveStale)return '<div class="charging-status-line stale"><span>狀態逾時</span><small>顯示最後可用資料 · '+esc(updated)+'</small></div>';
+  if(x.liveStale)return '<div class="charging-status-block stale"><div class="charging-live-badges"><span class="fault">狀態逾時</span></div><small>不列入「有空槍」 · '+esc(updated)+'</small></div>';
   const counts=chargingLiveCounts(x);
-  if(!counts.total)return '<div class="charging-status-line static"><span>設備資料</span><small>此站目前沒有可用的即時槍況</small></div>';
+  if(!counts.total)return '<div class="charging-status-block static"><div class="charging-live-badges"><span class="unknown">即時狀態未知</span></div><small>此站目前沒有可安全判讀的槍況 · '+esc(updated)+'</small></div>';
 
-  const parts=[];
-  if(counts.occupied)parts.push("使用中 "+counts.occupied);
-  if(counts.fault)parts.push("故障 "+counts.fault);
-  if(counts.unavailable)parts.push("其他不可用 "+counts.unavailable);
-  if(counts.unknown)parts.push("未知 "+counts.unknown);
-  parts.push(updated);
-
-  if(counts.available>0){
-    const label=(counts.unknown?"至少 ":"")+counts.available+" 槍可用";
-    return '<div class="charging-status-line available"><span>'+label+'</span><small>'+esc(parts.join(" · "))+'</small></div>';
-  }
-  if(counts.unknown===0){
-    return '<div class="charging-status-line busy"><span>目前無空槍</span><small>'+esc(parts.join(" · "))+'</small></div>';
-  }
-  return '<div class="charging-status-line partial"><span>即時狀態部分未知</span><small>'+esc(parts.join(" · "))+'</small></div>';
+  const badges=[
+    '<span class="available">可用 '+counts.available+'</span>',
+    counts.occupied?'<span class="occupied">使用中 '+counts.occupied+'</span>':"",
+    counts.fault?'<span class="fault">故障 '+counts.fault+'</span>':"",
+    counts.unavailable?'<span class="unknown">其他不可用 '+counts.unavailable+'</span>':"",
+    counts.unknown?'<span class="unknown">未知 '+counts.unknown+'</span>':""
+  ].join("");
+  return '<div class="charging-status-block"><div class="charging-live-badges">'+badges+'</div><small>'+esc(updated)+'</small></div>';
 }
 function chargingDisplayText(value){
   return String(value??"")
@@ -365,6 +359,7 @@ function renderCharging(){
     .filter(x=>state.chargingConnector==="all"||chargingConnectors(x).includes(state.chargingConnector))
     .filter(x=>chargingPowerKw(x)>=Number(state.chargingPower||0))
     .filter(x=>state.chargingOperator==="all"||x.operator===state.chargingOperator)
+    .filter(x=>!state.chargingAvailableOnly||(x.road==="tdx"&&!x.liveStale&&chargingLiveCounts(x).available>0))
     .filter(chargingQuickMatch)
     .filter(x=>!state.chargingFavoritesOnly||state.chargingFavorites.includes(chargingKey(x)))
     .filter(x=>!q||JSON.stringify(x).toLowerCase().includes(q));
@@ -394,10 +389,15 @@ function renderCharging(){
   const favCount=state.chargingFavorites.length;
   if($("#chargingFavoriteCount"))$("#chargingFavoriteCount").textContent=favCount;
   if($("#chargingFavoritesOnly"))$("#chargingFavoritesOnly").setAttribute("aria-pressed",String(state.chargingFavoritesOnly));
+  if($("#chargingAvailableOnly")){
+    $("#chargingAvailableOnly").setAttribute("aria-pressed",String(state.chargingAvailableOnly));
+    const label=$("#chargingAvailableOnly").querySelector("b");
+    if(label)label.textContent=state.chargingAvailableOnly?"只顯示有空槍":"只看有空槍";
+  }
   if($("#chargingNearby")){
     $("#chargingNearby").setAttribute("aria-pressed",String(state.chargingSort==="nearby"));
     const label=$("#chargingNearby").querySelector("b");
-    if(label)label.textContent=state.chargingSort==="nearby"?"距離排序中":"離我最近";
+    if(label)label.textContent=state.chargingSort==="nearby"?"附近排序中":"找我附近";
   }
   $$("[data-charge-quick]").forEach(b=>b.classList.toggle("active",b.dataset.chargeQuick===state.chargingQuick));
   if($("#chargingResultSummary")){
@@ -415,9 +415,10 @@ function renderCharging(){
     const distance=chargingDistanceKm(x);
     const meta=[tdx?x.cityName:x.direction,chargingOperatorLabel(x)].filter(Boolean).join(" · ");
     const routeTag=tdx?"TDX":("國 "+x.road);
-    return '<article class="list-item charging-item">'+
+    const availableNow=tdx&&!x.liveStale&&chargingLiveCounts(x).available>0;
+    return '<article class="list-item charging-item '+(availableNow?'is-available':'')+'">'+
       '<div class="list-head">'+
-        '<div><div class="charging-title-line"><h3>'+esc(x.name)+'</h3><button class="favorite-btn '+(favorite?'active':'')+'" data-charge-favorite="'+esc(key)+'" aria-label="'+(favorite?'取消收藏':'加入收藏')+'" aria-pressed="'+favorite+'">★</button></div><div class="meta">'+esc(meta)+'</div></div>'+
+        '<div><div class="charging-title-line"><h3>'+esc(x.name)+'</h3></div><div class="meta">'+esc(meta)+'</div></div>'+
         '<span class="route-tag">'+esc(routeTag)+'</span>'+
       '</div>'+
       chargingStatusMarkup(x)+
@@ -430,14 +431,18 @@ function renderCharging(){
       '<div class="location-line"><svg><use href="#i-pin"/></svg><span>'+esc(x.location)+(x.note&&!tdx?" · "+esc(x.note):"")+'</span></div>'+
       chargingDetailMarkup(x)+
       '<div class="item-actions charging-nav-actions">'+
-        '<button class="go" data-charge-google="'+destination+'">Google 導航</button>'+
-        '<button data-charge-apple="'+destination+'">Apple 導航</button>'+
+        '<button class="go" data-charge-nav-toggle="'+esc(key)+'">導航</button>'+
+        '<button class="favorite-action '+(favorite?'active':'')+'" data-charge-favorite="'+esc(key)+'" aria-pressed="'+favorite+'">'+(favorite?'已收藏':'收藏')+'</button>'+
         (!tdx?'<button data-camera-road="'+esc(x.road)+'">CCTV</button>':"")+
       '</div>'+
+      '<div class="charging-nav-menu" data-charge-nav-menu="'+esc(key)+'" hidden>'+
+        '<button data-charge-google="'+destination+'">Google Maps</button>'+
+        '<button data-charge-apple="'+destination+'">Apple 地圖</button>'+
+      '</div>'+
     '</article>';
-  }).join(""):(state.chargingQuick==="available"
+  }).join(""):(state.chargingAvailableOnly
     ? '<div class="empty"><b>目前沒有可確認的即時空槍</b><p>可能是目前沒有空槍，或 TDX 快取已逾時。COLA GO 不會把過期狀態當成「現在可用」。</p></div>'
-    : '<div class="empty"><b>沒有符合的充電站</b><p>可以切回「全部」、清除進階篩選，或改用搜尋站名／地區。</p></div>');
+    : '<div class="empty"><b>沒有符合的充電站</b><p>可以清除篩選，或改用搜尋站名、地址、業者。</p></div>');
 
   $$("[data-charge-favorite]",root).forEach(b=>b.onclick=()=>{
     const key=b.dataset.chargeFavorite;
@@ -446,16 +451,22 @@ function renderCharging(){
     saveChargingFavorites();
     renderCharging();
   });
+  $$("[data-charge-nav-toggle]",root).forEach(b=>b.onclick=()=>{
+    const menus=$$("[data-charge-nav-menu]",root);
+    const target=menus.find(menu=>menu.dataset.chargeNavMenu===b.dataset.chargeNavToggle);
+    menus.forEach(menu=>{if(menu!==target)menu.hidden=true;});
+    if(target)target.hidden=!target.hidden;
+  });
   $$("[data-charge-google]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/dir/?api=1&destination="+b.dataset.chargeGoogle+"&travelmode=driving","_blank","noopener"));
   $$("[data-charge-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?daddr="+b.dataset.chargeApple+"&dirflg=d","_blank","noopener"));
   $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
 }
 
-const TAIWAN_PARKING_CITIES=[{"code":"Taipei","name":"臺北市"},{"code":"NewTaipei","name":"新北市"},{"code":"Taoyuan","name":"桃園市"},{"code":"Taichung","name":"臺中市"},{"code":"Tainan","name":"臺南市"},{"code":"Kaohsiung","name":"高雄市"},{"code":"Keelung","name":"基隆市"},{"code":"Hsinchu","name":"新竹市"},{"code":"HsinchuCounty","name":"新竹縣"},{"code":"MiaoliCounty","name":"苗栗縣"},{"code":"ChanghuaCounty","name":"彰化縣"},{"code":"NantouCounty","name":"南投縣"},{"code":"YunlinCounty","name":"雲林縣"},{"code":"Chiayi","name":"嘉義市"},{"code":"ChiayiCounty","name":"嘉義縣"},{"code":"PingtungCounty","name":"屏東縣"},{"code":"YilanCounty","name":"宜蘭縣"},{"code":"HualienCounty","name":"花蓮縣"},{"code":"TaitungCounty","name":"臺東縣"},{"code":"PenghuCounty","name":"澎湖縣"},{"code":"KinmenCounty","name":"金門縣"},{"code":"LienchiangCounty","name":"連江縣"}];
+const TAIWAN_CITIES=[{"code":"Taipei","name":"臺北市"},{"code":"NewTaipei","name":"新北市"},{"code":"Taoyuan","name":"桃園市"},{"code":"Taichung","name":"臺中市"},{"code":"Tainan","name":"臺南市"},{"code":"Kaohsiung","name":"高雄市"},{"code":"Keelung","name":"基隆市"},{"code":"Hsinchu","name":"新竹市"},{"code":"HsinchuCounty","name":"新竹縣"},{"code":"MiaoliCounty","name":"苗栗縣"},{"code":"ChanghuaCounty","name":"彰化縣"},{"code":"NantouCounty","name":"南投縣"},{"code":"YunlinCounty","name":"雲林縣"},{"code":"Chiayi","name":"嘉義市"},{"code":"ChiayiCounty","name":"嘉義縣"},{"code":"PingtungCounty","name":"屏東縣"},{"code":"YilanCounty","name":"宜蘭縣"},{"code":"HualienCounty","name":"花蓮縣"},{"code":"TaitungCounty","name":"臺東縣"},{"code":"PenghuCounty","name":"澎湖縣"},{"code":"KinmenCounty","name":"金門縣"},{"code":"LienchiangCounty","name":"連江縣"}];
 const TDX_PARKING_BASE="https://tdx.transportdata.tw/api/basic/v1/Parking/OffStreet/CarPark";
 
 function parkingCityName(code){
-  return TAIWAN_PARKING_CITIES.find(x=>x.code===code)?.name||"全台灣";
+  return TAIWAN_CITIES.find(x=>x.code===code)?.name||"全台灣";
 }
 
 function parkingName(value){
@@ -655,7 +666,7 @@ function renderParking(){
   if($("#parkingScopeTitle"))$("#parkingScopeTitle").textContent=city==="all"?"全台灣":cityName;
   if($("#parkingResultTitle"))$("#parkingResultTitle").textContent=city==="all"?"全台停車":cityName+"停車";
 
-  grid.innerHTML=TAIWAN_PARKING_CITIES.map(x=>
+  grid.innerHTML=TAIWAN_CITIES.map(x=>
     '<button class="'+(city===x.code?"active":"")+'" data-parking-city="'+x.code+'">'+esc(x.name)+'</button>'
   ).join("");
 
@@ -1358,6 +1369,11 @@ function bindChargingTools(){
     });
   });
 
+  $("#chargingAvailableOnly")?.addEventListener("click",()=>{
+    state.chargingAvailableOnly=!state.chargingAvailableOnly;
+    renderCharging();
+  });
+
   $("#chargingFavoritesOnly")?.addEventListener("click",()=>{
     state.chargingFavoritesOnly=!state.chargingFavoritesOnly;
     renderCharging();
@@ -1371,6 +1387,7 @@ function bindChargingTools(){
     state.chargingPower=0;
     state.chargingOperator="all";
     state.chargingQuick="all";
+    state.chargingAvailableOnly=false;
     state.chargingSort="smart";
     state.chargingOrigin=null;
     state.chargingFavoritesOnly=false;
