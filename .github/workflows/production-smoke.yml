@@ -72,7 +72,7 @@ jobs:
           grep -Fq 'chargingAvailableOnly' "$work/app.js"
           grep -Fq 'const TAIWAN_CITIES=' "$work/app.js"
           grep -Fq 'chargingOperatorLabel(name)' "$work/tdx-runtime.js"
-          grep -Fq 'cola-go-ui-v6-24' "$work/sw.js"
+          grep -Fq 'cola-go-ui-v6-25' "$work/sw.js"
           ! grep -Fq 'www.icloud.com/shortcuts/' "$work/index.html"
           ! grep -Eqi 'waze\.com|data-map="waze"' "$work/index.html" "$work/app.js"
           grep -Fq 'el.hasAttribute("data-home-reload")' "$work/app.js"
