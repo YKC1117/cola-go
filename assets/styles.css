@@ -544,3 +544,70 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .charging-facts .charging-capability { color:#72f0ad;background:#113121;border:1px solid #285b42;font-weight:800; }
 
 .charging-facts .charging-rate { color:#ffe19a;background:#302813;border:1px solid #5e4c1f;font-weight:800; }
+
+
+/* Charging V15: glanceable six-network cockpit */
+.charging-major-filter {
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:7px;
+  overflow:visible;
+  padding:0;
+}
+.charging-major-filter button {
+  min-width:0;
+  min-height:56px;
+  padding:8px 9px;
+  border-radius:13px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+  gap:3px;
+  text-align:left;
+  white-space:normal;
+}
+.charging-major-filter button:first-child {
+  grid-column:1 / -1;
+  min-height:42px;
+  flex-direction:row;
+  align-items:center;
+  justify-content:space-between;
+  padding:8px 11px;
+}
+.charging-major-filter button span {
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:11px;
+  line-height:1.15;
+  font-weight:800;
+}
+.charging-major-filter button small {
+  display:block;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:8px;
+  line-height:1.2;
+  font-weight:700;
+  color:#829098;
+  font-variant-numeric:tabular-nums;
+}
+.charging-major-filter button.has-live:not(.active) small { color:#63d99a; }
+.charging-major-filter button.has-official-supplement:not(.active) { border-color:#315061; }
+.charging-major-filter button.active small { color:#46565f; }
+.charging-network-legend {
+  margin:-2px 2px 0;
+  font-size:9px;
+  line-height:1.45;
+  color:#75838a;
+}
+@media(max-width:380px){
+  .charging-major-filter { gap:6px; }
+  .charging-major-filter button { min-height:53px;padding:7px 8px; }
+  .charging-major-filter button span { font-size:10px; }
+  .charging-major-filter button small { font-size:7.5px; }
+}
