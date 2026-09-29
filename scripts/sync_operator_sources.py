@@ -690,92 +690,96 @@ def validate_upower(items):
         raise RuntimeError("; ".join(errors))
 
 
+def read_existing_payload(filename):
+    target = OUT / filename
+    if not target.exists():
+        return None
+    try:
+        data = json.loads(target.read_text(encoding="utf-8"))
+        if isinstance(data.get("items"), list) and data["items"]:
+            return data
+    except Exception:
+        pass
+    return None
+
+
+def source_result(key, filename, source_name, source_url, loader, validator, extra=None):
+    attempted_at = now()
+    try:
+        items = loader()
+        validator(items)
+        payload = {
+            "schema": 2,
+            "source": source_name,
+            "sourceUrl": source_url,
+            "updatedAt": attempted_at,
+            "lastSuccessAt": attempted_at,
+            "lastAttemptAt": attempted_at,
+            "syncStatus": "ok",
+            "count": len(items),
+            "items": sorted(items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
+        }
+        if extra:
+            payload.update(extra(items))
+        print(f"{key.upper()}_OK stations={len(items)}")
+        return payload, None
+    except Exception as error:
+        print(f"{key.upper()}_SYNC_ERROR {error}", file=sys.stderr)
+        existing = read_existing_payload(filename)
+        if existing:
+            existing["schema"] = max(int(existing.get("schema") or 1), 2)
+            existing["lastAttemptAt"] = attempted_at
+            existing["lastSuccessAt"] = existing.get("lastSuccessAt") or existing.get("updatedAt")
+            existing["syncStatus"] = "degraded"
+            existing["syncError"] = clean_text(error)[:180]
+            print(f"{key.upper()}_KEEP_LAST_GOOD stations={len(existing.get('items') or [])}")
+            return existing, error
+        return None, error
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--check-online", action="store_true", help="fetch and validate without writing data")
     args = parser.parse_args()
 
-    try:
-        upower_source = fetch_text(UPOWER_URL)
-        upower_items = parse_upower(upower_source)
-        validate_upower(upower_items)
-    except Exception as error:
-        print(f"UPOWER_SYNC_ERROR {error}", file=sys.stderr)
-        raise
+    OUT.mkdir(parents=True, exist_ok=True)
 
-    try:
-        evoasis_source = fetch_text(EVOASIS_URL)
-        evoasis_items = parse_evoasis(evoasis_source)
-        validate_evoasis(evoasis_items)
-    except Exception as error:
-        print(f"EVOASIS_SYNC_ERROR {error}", file=sys.stderr)
-        raise
+    sources = [
+        ("upower", "upower.json", "U-POWER 官方網站", UPOWER_URL,
+         lambda: parse_upower(fetch_text(UPOWER_URL)), validate_upower,
+         lambda items: {"totalSeats": sum(int(x.get("ccs1Seats") or 0) + int(x.get("ccs2Seats") or 0) for x in items)}),
+        ("evoasis", "evoasis.json", "EVOASIS 官方 DC 站點", EVOASIS_URL,
+         lambda: parse_evoasis(fetch_text(EVOASIS_URL)), validate_evoasis, None),
+        ("tail", "tail.json", "TAIL 特爾電力官方站點", TAIL_URL,
+         lambda: parse_tail(fetch_text(TAIL_URL)), validate_tail, None),
+        ("evalue", "evalue.json", "EVALUE 官方充電站", EVALUE_URL,
+         lambda: sync_evalue(fetch_details=not args.check_online), validate_evalue, None),
+    ]
 
-    try:
-        tail_source = fetch_text(TAIL_URL)
-        tail_items = parse_tail(tail_source)
-        validate_tail(tail_items)
-    except Exception as error:
-        print(f"TAIL_SYNC_ERROR {error}", file=sys.stderr)
-        raise
-
-    try:
-        evalue_items = sync_evalue(fetch_details=not args.check_online)
-        validate_evalue(evalue_items)
-    except Exception as error:
-        print(f"EVALUE_SYNC_ERROR {error}", file=sys.stderr)
-        raise
-
-    total_seats = sum(int(x.get("ccs1Seats") or 0) + int(x.get("ccs2Seats") or 0) for x in upower_items)
-    print(f"UPOWER_OK stations={len(upower_items)} seats={total_seats}")
-    print(f"EVOASIS_OK stations={len(evoasis_items)}")
-    print(f"TAIL_OK stations={len(tail_items)}")
-    print(f"EVALUE_OK stations={len(evalue_items)}")
+    failures = []
+    payloads = {}
+    for key, filename, source_name, source_url, loader, validator, extra in sources:
+        payload, error = source_result(key, filename, source_name, source_url, loader, validator, extra)
+        if error:
+            failures.append((key, error))
+        if payload:
+            payloads[filename] = payload
 
     if args.check_online:
+        if failures:
+            raise RuntimeError("; ".join(f"{key}: {error}" for key, error in failures))
         return 0
 
-    OUT.mkdir(parents=True, exist_ok=True)
-    generated_at = now()
-    payloads = {
-        "upower.json": {
-            "schema": 1,
-            "source": "U-POWER 官方網站",
-            "sourceUrl": UPOWER_URL,
-            "updatedAt": generated_at,
-            "count": len(upower_items),
-            "totalSeats": total_seats,
-            "items": sorted(upower_items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
-        },
-        "evoasis.json": {
-            "schema": 1,
-            "source": "EVOASIS 官方 DC 站點",
-            "sourceUrl": EVOASIS_URL,
-            "updatedAt": generated_at,
-            "count": len(evoasis_items),
-            "items": sorted(evoasis_items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
-        },
-        "tail.json": {
-            "schema": 1,
-            "source": "TAIL 特爾電力官方站點",
-            "sourceUrl": TAIL_URL,
-            "updatedAt": generated_at,
-            "count": len(tail_items),
-            "items": sorted(tail_items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
-        },
-        "evalue.json": {
-            "schema": 1,
-            "source": "EVALUE 官方充電站",
-            "sourceUrl": EVALUE_URL,
-            "updatedAt": generated_at,
-            "count": len(evalue_items),
-            "items": sorted(evalue_items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
-        },
-    }
+    if not payloads:
+        raise RuntimeError("no operator source has usable data")
+
     for filename, payload in payloads.items():
         target = OUT / filename
         target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        print(f"WROTE {target} {len(payload['items'])} stations")
+        print(f"WROTE {target} {len(payload['items'])} stations status={payload.get('syncStatus')}")
+
+    if failures:
+        print("PARTIAL_OPERATOR_SYNC " + ",".join(key for key, _ in failures), file=sys.stderr)
     return 0
 
 

@@ -90,6 +90,8 @@ jobs:
           grep -Fq 'chargingAvailableOnly' "$work/app.js"
           grep -Fq 'chargingCoverageGrid' "$work/index.html"
           grep -Fq 'renderChargingCoverage' "$work/tdx-runtime.js"
+          grep -Fq 'operatorSourceHealth' "$work/tdx-runtime.js"
+          grep -Fq 'syncStatus' "$work/tdx-runtime.js"
           grep -Fq './data/operators/evalue.json' "$work/tdx-runtime.js"
           grep -Fq 'EVALUE_URL' "$work/../scripts/sync_operator_sources.py" || true
           grep -Fq '電小二 EV2' "$work/app.js"
@@ -107,7 +109,7 @@ jobs:
           grep -Fq 'data-charge-major="tesla"' "$work/index.html"
           grep -Fq 'const TAIWAN_CITIES=' "$work/app.js"
           grep -Fq 'chargingOperatorLabel(name)' "$work/tdx-runtime.js"
-          grep -Fq 'cola-go-ui-v6-33' "$work/sw.js"
+          grep -Fq 'cola-go-ui-v6-34' "$work/sw.js"
           ! grep -Fq 'www.icloud.com/shortcuts/' "$work/index.html"
           ! grep -Eqi 'waze\.com|data-map="waze"' "$work/index.html" "$work/app.js"
           grep -Fq 'el.hasAttribute("data-home-reload")' "$work/app.js"
