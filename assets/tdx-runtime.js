@@ -77,10 +77,13 @@
   function stationIdentityKeys(x){
     const brand=chargingOperatorProfile(x)?.key||String(x?.operator||"").toLowerCase();
     const city=String(x?.city||"");
-    const normalize=value=>String(value||"").toLowerCase().replace(/[\s\-_.·・()（）,，。號]/g,"");
+    const normalize=value=>String(value||"").toLowerCase().replace(/台/g,"臺").replace(/[\s\-_.·・()（）,，。號]/g,"");
+    const normalizeAddress=value=>normalize(String(value||"").replace(/^\s*\d{3,6}\s*/,""))
+      .replace(/^(臺北市?|新北市?|桃園市?|臺中市?|臺南市?|高雄市?|基隆市?|新竹市?|新竹縣|苗栗縣|彰化縣|南投縣|雲林縣|嘉義市?|嘉義縣|屏東縣|宜蘭縣|花蓮縣|臺東縣|澎湖縣|金門縣|連江縣)/,"");
+    const normalizeName=value=>normalize(value).replace(/tesla|超級充電站|超充站/g,"");
     const keys=[];
-    const name=normalize(x?.name);
-    const address=normalize(x?.location);
+    const name=normalizeName(x?.name);
+    const address=normalizeAddress(x?.location);
     if(name)keys.push([brand,city,"n",name].join("|"));
     if(address)keys.push([brand,city,"a",address].join("|"));
     return keys;
@@ -172,7 +175,7 @@
   }
 
   async function loadOperatorCharging(){
-    const paths=["./data/operators/upower.json","./data/operators/evoasis.json","./data/operators/tail.json"];
+    const paths=["./data/operators/upower.json","./data/operators/evoasis.json","./data/operators/tail.json","./data/operators/tesla-superchargers.json"];
     const results=await Promise.allSettled(paths.map(path=>officialGet(path)));
     const datasets=results.filter(x=>x.status==="fulfilled"&&Array.isArray(x.value?.items)&&x.value.items.length).map(x=>x.value);
     if(!datasets.length)return;
