@@ -75,6 +75,12 @@ jobs:
             rm -f "$work/tail.json"
             echo "TAIL official cache not published yet; operator sync will deploy it separately"
           fi
+          if curl -fsSL "$base/data/operators/tesla-superchargers.json" -o "$work/tesla-superchargers.json"; then
+            echo "Tesla Supercharger official cache present"
+          else
+            rm -f "$work/tesla-superchargers.json"
+            echo "Tesla Supercharger official cache not published yet; operator sync will deploy it separately"
+          fi
 
           grep -Fq 'assets/tdx-runtime.js' "$work/index.html"
           grep -Fq './downloads/oil-driver.shortcut' "$work/index.html"
@@ -100,7 +106,7 @@ jobs:
           grep -Fq 'data-charge-major="tesla"' "$work/index.html"
           grep -Fq 'const TAIWAN_CITIES=' "$work/app.js"
           grep -Fq 'chargingOperatorLabel(name)' "$work/tdx-runtime.js"
-          grep -Fq 'cola-go-ui-v6-30' "$work/sw.js"
+          grep -Fq 'cola-go-ui-v6-31' "$work/sw.js"
           ! grep -Fq 'www.icloud.com/shortcuts/' "$work/index.html"
           ! grep -Eqi 'waze\.com|data-map="waze"' "$work/index.html" "$work/app.js"
           grep -Fq 'el.hasAttribute("data-home-reload")' "$work/app.js"
@@ -112,6 +118,7 @@ jobs:
           grep -Fq './data/operators/upower.json' "$work/tdx-runtime.js"
           grep -Fq './data/operators/evoasis.json' "$work/tdx-runtime.js"
           grep -Fq './data/operators/tail.json' "$work/tdx-runtime.js"
+          grep -Fq './data/operators/tesla-superchargers.json' "$work/tdx-runtime.js"
           grep -Fq 'u.pathname.includes("/data/operators/")' "$work/sw.js"
           grep -Fq 'u.pathname.includes("/data/tdx/")' "$work/sw.js"
 
@@ -130,6 +137,8 @@ jobs:
           evoasis=json.load(open(evoasis_path, encoding="utf-8")) if evoasis_path.exists() else None
           tail_path=root/"tail.json"
           tail=json.load(open(tail_path, encoding="utf-8")) if tail_path.exists() else None
+          tesla_path=root/"tesla-superchargers.json"
+          tesla=json.load(open(tesla_path, encoding="utf-8")) if tesla_path.exists() else None
 
           assert status["source"] == "TDX／交通部"
           assert status["datasets"]["charging"]["count"] > 0
@@ -171,6 +180,10 @@ jobs:
               assert tail.get("source") == "TAIL 特爾電力官方站點"
               assert len(tail.get("items",[])) >= 70
               assert all(x.get("officialSupplemental") for x in tail.get("items",[]))
+          if tesla is not None:
+              assert tesla.get("source") == "Tesla 台灣官方超級充電站"
+              assert len(tesla.get("items",[])) >= 90
+              assert all(x.get("officialSupplemental") for x in tesla.get("items",[]))
 
           print("PRODUCTION_SMOKE_PASS")
           print("charging", len(charging["items"]), charging.get("status"), charging.get("updatedAt"))
