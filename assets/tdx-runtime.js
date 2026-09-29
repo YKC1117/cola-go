@@ -51,7 +51,10 @@
     const operators=[...new Set([
       ...curatedCharging.map(x=>x.operator),
       ...officialChargingAll.map(x=>x.operator)
-    ].filter(Boolean))].sort((a,b)=>chargingOperatorLabel(a).localeCompare(chargingOperatorLabel(b),"zh-Hant"));
+    ].filter(Boolean))].sort((a,b)=>{
+      const major=chargingMajorRank({operator:a})-chargingMajorRank({operator:b});
+      return major||chargingOperatorLabel(a).localeCompare(chargingOperatorLabel(b),"zh-Hant");
+    });
     select.innerHTML='<option value="all">全部業者</option>'+operators.map(name=>{
       const value=String(name).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
       const label=chargingOperatorLabel(name).replace(/&/g,"&amp;").replace(/</g,"&lt;");
@@ -96,9 +99,10 @@
       const total=scope.length;
       const liveCount=scope.filter(x=>!x.liveStale&&Number(x.liveStateCount)>0).length;
       const brandCount=scope.filter(x=>Boolean(chargingOperatorProfile(x))).length;
+      const majorCount=scope.filter(x=>CHARGING_MAJOR_KEYS.includes(chargingOperatorProfile(x)?.key||"")).length;
       const syncTime=chargingUpdatedAt?formatTime(chargingUpdatedAt).replace(" 更新",""):"";
       if(chip)chip.textContent=total+" 站 · "+liveCount+" 站有即時槍況";
-      if(sourceNote)sourceNote.textContent="交通部 TDX 站點與槍況 · "+brandCount+" 站已辨識常用充電品牌"+(syncTime?" · "+syncTime+" 同步":"");
+      if(sourceNote)sourceNote.textContent="交通部 TDX 站點與槍況 · 六大主力 "+majorCount+" 站 · 已辨識品牌 "+brandCount+" 站"+(syncTime?" · "+syncTime+" 同步":"");
     }
     const totalCount=officialChargingAll.length+curatedCharging.length;
     if(document.querySelector("#chargeQuick"))document.querySelector("#chargeQuick").textContent=totalCount?totalCount+" 站":"充電站";
