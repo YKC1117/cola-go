@@ -68,6 +68,15 @@ let browser;
         };
         return Promise.resolve(new Response(JSON.stringify(tail),{status:200,headers:{'Content-Type':'application/json'}}));
       }
+      if(String(url).includes('/data/operators/tesla-superchargers.json')||String(url).includes('./data/operators/tesla-superchargers.json')){
+        const tesla={
+          schema:1,source:'Tesla 台灣官方超級充電站',updatedAt:new Date().toISOString(),count:1,
+          items:[
+            {id:'official-tesla-extra',road:'operator',city:'Tainan',cityName:'臺南市',name:'臺南－Tesla 測試官方超充',location:'710 臺南中正南路 999號',operator:'台灣特斯拉汽車有限公司',operatorWebURL:'https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan',officialSupplemental:true,officialStationType:'Supercharger',sitePowerKw:0,maxPowerKw:null,power:'Tesla Supercharger',spaces:0,connectorCount:0,connectors:[],liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''}
+          ]
+        };
+        return Promise.resolve(new Response(JSON.stringify(tesla),{status:200,headers:{'Content-Type':'application/json'}}));
+      }
       return nativeFetch(input,init);
     };
   });
@@ -171,6 +180,10 @@ let browser;
   check('TAIL official cache supplements TDX without inventing seat or power data',await page.evaluate(()=>{
     const row=state.charging.find(x=>x.name==='TAIL 測試官方補站');
     return row&&row.officialSupplemental===true&&chargingOperatorProfile(row)?.key==='tail'&&chargingPowerKw(row)===0&&Number(row.spaces)===0;
+  }));
+  check('Tesla official Supercharger cache supplements TDX without fabricating live or power data',await page.evaluate(()=>{
+    const row=state.charging.find(x=>x.name==='臺南－Tesla 測試官方超充');
+    return row&&row.officialSupplemental===true&&row.officialStationType==='Supercharger'&&chargingOperatorProfile(row)?.key==='tesla'&&chargingPowerKw(row)===0&&Number(row.spaces)===0;
   }));
   check('Charging driver-first controls are visible',await page.locator('#chargingFindNow').isVisible()&&await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingAvailableOnly').isVisible()&&await page.locator('#chargingCity').isVisible()&&await page.locator('#chargingSearch').isVisible());
   check('Six primary charging networks are first-layer controls',await page.locator('#chargingMajorFilter [data-charge-major]').evaluateAll(nodes=>nodes.map(n=>n.dataset.chargeMajor).join(',')==='all,evoasis,upower,tail,evalue,icharging,tesla'));
@@ -349,7 +362,7 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-30');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-31');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
   await context.setOffline(true);
