@@ -159,7 +159,15 @@
     });
   }
 
+  async function waitForBaseTraffic(){
+    for(let i=0;i<30;i++){
+      if(state.traffic!==null&&state.tunnel!==null)return;
+      await new Promise(resolve=>setTimeout(resolve,100));
+    }
+  }
+
   async function loadOfficialTraffic(){
+    await waitForBaseTraffic();
     const [trafficResult,tunnelResult]=await Promise.allSettled([
       officialGet("./data/tdx/traffic.json"),
       officialGet("./data/tdx/tunnel.json")
