@@ -3,7 +3,7 @@ on:
   push:
     branches: ["main"]
   workflow_run:
-    workflows: ["Sync TDX official data", "Normalize charging cache maintenance"]
+    workflows: ["Sync TDX official data", "Normalize charging cache maintenance", "Sync charging operator sources"]
     types: [completed]
   workflow_dispatch:
 permissions:
