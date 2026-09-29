@@ -1,0 +1,27 @@
+name: Validate charging operator sources
+
+on:
+  pull_request:
+    paths:
+      - "scripts/sync_operator_sources.py"
+      - ".github/workflows/sync-operator-data.yml"
+      - ".github/workflows/validate-operator-sources.yml"
+      - "assets/app.js"
+      - "assets/tdx-runtime.js"
+      - "index.html"
+      - "scripts/verify_ui_v6.cjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python syntax
+        run: python3 -m py_compile scripts/sync_operator_sources.py
+      - name: Fetch and validate U-POWER official stations
+        run: python3 scripts/sync_operator_sources.py --check-online
