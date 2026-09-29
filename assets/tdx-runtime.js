@@ -19,6 +19,8 @@
   const cityOptions=[["all","全台灣"],...TAIWAN_CITIES.filter(x=>x.code!=="LienchiangCounty").map(x=>[x.code,x.name])];
 
   let officialChargingAll=[];
+  let operatorChargingAll=[];
+  let operatorUpdatedAt=null;
   let curatedCharging=[];
   let chargingUpdatedAt=null;
   let chargingStatus="official";
@@ -50,7 +52,8 @@
     const current=select.value||"all";
     const operators=[...new Set([
       ...curatedCharging.map(x=>x.operator),
-      ...officialChargingAll.map(x=>x.operator)
+      ...officialChargingAll.map(x=>x.operator),
+      ...operatorChargingAll.map(x=>x.operator)
     ].filter(Boolean))].sort((a,b)=>{
       const major=chargingMajorRank({operator:a})-chargingMajorRank({operator:b});
       return major||chargingOperatorLabel(a).localeCompare(chargingOperatorLabel(b),"zh-Hant");
@@ -71,6 +74,19 @@
     return rows;
   }
 
+  function stationIdentity(x){
+    const brand=chargingOperatorProfile(x)?.key||String(x?.operator||"").toLowerCase();
+    const city=String(x?.city||"");
+    const name=String(x?.name||"").toLowerCase().replace(/[\s\-_.·・()（）]/g,"");
+    return [brand,city,name].join("|");
+  }
+
+  function operatorSupplementRows(officialRows){
+    const city=document.querySelector("#chargingCity")?.value||"all";
+    const officialKeys=new Set((officialRows||[]).map(stationIdentity));
+    return operatorChargingAll.filter(x=>(city==="all"||x.city===city)&&!officialKeys.has(stationIdentity(x)));
+  }
+
   renderCharging=function(){
     ensureChargingCityFilter();
     const currentCurated=(state.charging||[]).filter(x=>x.road!=="tdx");
@@ -80,7 +96,8 @@
       return;
     }
     const official=state.road==="all"?chargingSubset():[];
-    state.charging=[...official,...curatedCharging];
+    const supplemental=state.road==="all"?operatorSupplementRows(official):[];
+    state.charging=[...official,...supplemental,...curatedCharging];
     originalRenderCharging();
     document.querySelectorAll("#chargingList .charging-item").forEach(card=>{
       const tag=card.querySelector(".route-tag");
@@ -96,15 +113,17 @@
     if(chip||sourceNote){
       const city=document.querySelector("#chargingCity")?.value||"all";
       const scope=city==="all"?officialChargingAll:officialChargingAll.filter(x=>x.city===city);
-      const total=scope.length;
+      const supplement=operatorSupplementRows(scope);
+      const total=scope.length+supplement.length;
       const liveCount=scope.filter(x=>!x.liveStale&&Number(x.liveStateCount)>0).length;
-      const brandCount=scope.filter(x=>Boolean(chargingOperatorProfile(x))).length;
-      const majorCount=scope.filter(x=>CHARGING_MAJOR_KEYS.includes(chargingOperatorProfile(x)?.key||"")).length;
+      const brandCount=scope.filter(x=>Boolean(chargingOperatorProfile(x))).length+supplement.length;
+      const majorCount=scope.filter(x=>CHARGING_MAJOR_KEYS.includes(chargingOperatorProfile(x)?.key||"")).length+supplement.filter(x=>CHARGING_MAJOR_KEYS.includes(chargingOperatorProfile(x)?.key||"")).length;
       const syncTime=chargingUpdatedAt?formatTime(chargingUpdatedAt).replace(" 更新",""):"";
-      if(chip)chip.textContent=total+" 站 · "+liveCount+" 站有即時槍況";
-      if(sourceNote)sourceNote.textContent="交通部 TDX 站點與槍況 · 六大主力 "+majorCount+" 站 · 已辨識品牌 "+brandCount+" 站"+(syncTime?" · "+syncTime+" 同步":"");
+      const operatorTime=operatorUpdatedAt?formatTime(operatorUpdatedAt).replace(" 更新",""):"";
+      if(chip)chip.textContent=total+" 站 · "+liveCount+" 站有即時槍況 · 官方補 "+supplement.length;
+      if(sourceNote)sourceNote.textContent="交通部 TDX＋業者公開官方站點 · 六大主力 "+majorCount+" 站 · 已辨識品牌 "+brandCount+" 站"+(syncTime?" · TDX "+syncTime:"")+(operatorTime?" · 業者 "+operatorTime:"");
     }
-    const totalCount=officialChargingAll.length+curatedCharging.length;
+    const totalCount=officialChargingAll.length+operatorSupplementRows(officialChargingAll).length+curatedCharging.length;
     if(document.querySelector("#chargeQuick"))document.querySelector("#chargeQuick").textContent=totalCount?totalCount+" 站":"充電站";
     if(document.querySelector("#chargeValue"))document.querySelector("#chargeValue").textContent=totalCount||"—";
   };
@@ -136,13 +155,24 @@
       const data=withFreshness(await officialGet("./data/tdx/charging.json"),true);
       if(!Array.isArray(data?.items)||!data.items.length)return;
       await waitForBaseCharging();
-      curatedCharging=(state.charging||[]).filter(x=>x.road!=="tdx");
+      curatedCharging=(state.charging||[]).filter(x=>x.road!=="tdx"&&!x.officialSupplemental);
       officialChargingAll=data.items.map(x=>data.stale?{...x,liveStale:true}:x);
       chargingUpdatedAt=data.liveUpdatedAt||data.updatedAt||null;
       chargingStatus=data.status||"official";
       syncChargingOperatorOptions();
       const search=document.querySelector("#chargingSearch");
       if(search)search.oninput=()=>renderCharging();
+      renderCharging();
+    }catch{}
+  }
+
+  async function loadOperatorCharging(){
+    try{
+      const data=await officialGet("./data/operators/upower.json");
+      if(!Array.isArray(data?.items)||!data.items.length)return;
+      operatorChargingAll=data.items.map(x=>({...x,officialSupplemental:true}));
+      operatorUpdatedAt=data.updatedAt||null;
+      syncChargingOperatorOptions();
       renderCharging();
     }catch{}
   }
@@ -237,6 +267,7 @@
 
   ensureChargingCityFilter();
   Promise.resolve().then(loadOfficialCharging);
+  Promise.resolve().then(loadOperatorCharging);
   Promise.resolve().then(loadOfficialCCTV);
   Promise.resolve().then(loadOfficialTraffic);
 })();
