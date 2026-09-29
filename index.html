@@ -238,11 +238,21 @@ Siri「特斯拉助手」：
 <label class="charging-city-primary"><span>縣市</span><select id="chargingCity"><option value="all">全台</option><option value="Taipei">臺北</option><option value="NewTaipei">新北</option><option value="Taoyuan">桃園</option><option value="Taichung">臺中</option><option value="Tainan">臺南</option><option value="Kaohsiung">高雄</option><option value="Keelung">基隆</option><option value="Hsinchu">新竹市</option><option value="HsinchuCounty">新竹縣</option><option value="MiaoliCounty">苗栗</option><option value="ChanghuaCounty">彰化</option><option value="NantouCounty">南投</option><option value="YunlinCounty">雲林</option><option value="Chiayi">嘉義市</option><option value="ChiayiCounty">嘉義縣</option><option value="PingtungCounty">屏東</option><option value="YilanCounty">宜蘭</option><option value="HualienCounty">花蓮</option><option value="TaitungCounty">臺東</option><option value="PenghuCounty">澎湖</option><option value="KinmenCounty">金門</option><option value="LienchiangCounty">連江</option></select></label>
 </div>
 <label class="inline-search charging-main-search"><svg><use href="#i-search"></use></svg><input id="chargingSearch" placeholder="搜尋站名、地址、業者" type="search"/></label>
+<div class="charging-filter-label"><span>主力充電網</span><small>常用業者快速切換</small></div>
+<div class="charging-quick-filter charging-major-filter" id="chargingMajorFilter">
+<button class="active" data-charge-major="all">全部主力</button>
+<button data-charge-major="evoasis">EVOASIS</button>
+<button data-charge-major="upower">U-POWER</button>
+<button data-charge-major="tail">TAIL</button>
+<button data-charge-major="evalue">EVALUE</button>
+<button data-charge-major="icharging">iCharging</button>
+<button data-charge-major="tesla">Tesla</button>
+</div>
+<div class="charging-filter-label charging-filter-label-secondary"><span>快速條件</span><small>可和主力業者一起使用</small></div>
 <div class="charging-quick-filter" id="chargingQuickFilter">
-<button class="active" data-charge-quick="all">全部</button>
+<button class="active" data-charge-quick="all">全部條件</button>
 <button data-charge-quick="fast">100 kW+</button>
 <button data-charge-quick="ccs2">CCS2</button>
-<button data-charge-quick="tesla">Tesla</button>
 <button data-charge-quick="ev2">電小二</button>
 </div>
 <div class="charging-result-summary" id="chargingResultSummary">讀取充電站資料中</div>
@@ -260,7 +270,7 @@ Siri「特斯拉助手」：
 <button aria-pressed="false" id="chargingFavoritesOnly"><span>只看收藏</span><b id="chargingFavoriteCount">0</b></button>
 <button id="resetChargingFilters">清除篩選</button>
 </div>
-<p class="notice">交通部 TDX 為站點與即時槍況主來源，COLA GO 約每 15 分鐘同步；另把法人業者名稱轉成車友熟悉的品牌並提供官方入口。沒有 TDX 即時槍況不代表站點不存在或不能充，這類站點請再以業者官方資訊確認。</p>
+<p class="notice">交通部 TDX 為站點與即時槍況主來源，COLA GO 約每 15 分鐘同步；EVOASIS、U-POWER、TAIL、EVALUE、iCharging、Tesla 為第一層主力充電網，法人名稱會轉成車友熟悉品牌並提供官方入口。沒有 TDX 即時槍況不代表站點不存在或不能充，請再以業者官方資訊確認。</p>
 <button class="external-btn" data-url="https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan"><span><b>Tesla 台灣超充官方清單</b><small>Tesla 官方來源，適合再確認站點規格與開放資訊</small></span><svg><use href="#i-external"></use></svg></button>
 </details>
 
