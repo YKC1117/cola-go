@@ -38,7 +38,17 @@ let browser;
   const page=await context.newPage();
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto(base);
-  await page.waitForFunction(()=>document.querySelectorAll('#chargingList article').length>0);
+  try{
+    await page.waitForFunction(()=>document.querySelectorAll('#chargingList article').length>0,{timeout:8000});
+  }catch(error){
+    console.log('INITIAL_RENDER_ERRORS',JSON.stringify(errors));
+    console.log('INITIAL_RENDER_STATE',JSON.stringify(await page.evaluate(()=>({
+      charging:Array.isArray(state?.charging)?state.charging.length:null,
+      html:document.querySelector('#chargingList')?.innerHTML?.slice(0,600)||'',
+      body:document.body?.innerText?.slice(0,600)||''
+    })).catch(e=>({evaluateError:e.message}))));
+    throw error;
+  }
   await applyFonts(page);
   await page.evaluate(()=>{window.__opened=[];window.open=(url)=>{window.__opened.push(url);return null;};});
   const baseline=execFileSync('git',['show','9212eb9077a5576a56109fbe5a6e52ed866c0a29:index.html'],{cwd:root,encoding:'utf8'});
