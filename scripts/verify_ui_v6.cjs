@@ -138,7 +138,7 @@ let browser;
   check('Tainan EV2 stations are discoverable by consumer brand',await page.locator('#chargingList article').count()>0&&await page.locator('#chargingList article').evaluateAll(nodes=>nodes.every(el=>el.textContent.includes('電小二 EV2'))));
   check('EV2 cards expose an official operator source',await page.locator('#chargingList a[href="https://www.ev2.com.tw/"]').count()>0);
   check('Operator selector exposes EV2 brand instead of only the legal company name',await page.locator('#chargingOperator option').evaluateAll(opts=>opts.some(o=>o.textContent==='電小二 EV2'&&o.value==='程豐資通股份有限公司')));
-  await page.locator('#resetChargingFilters').click();
+  await page.locator('#chargingSearch').fill('');
   await page.locator('#chargingCity').selectOption('all');
   await page.locator('.charging-advanced > summary').click();
   await page.locator('#roadFilter [data-road="3"]').click();
