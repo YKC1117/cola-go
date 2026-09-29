@@ -480,8 +480,8 @@ jobs:
           cp "carkit-sign/out/特斯拉助手.shortcut" downloads/tesla-driver.shortcut
           git config user.name "COLA GO Bot"
           git config user.email "actions@users.noreply.github.com"
-          if ! git diff --quiet -- downloads/oil-driver.shortcut downloads/tesla-driver.shortcut; then
-            git add downloads/oil-driver.shortcut downloads/tesla-driver.shortcut
+          git add downloads/oil-driver.shortcut downloads/tesla-driver.shortcut
+          if ! git diff --cached --quiet; then
             git commit -m "build: refresh CarKit shortcuts with JiXing"
             git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
