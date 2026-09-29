@@ -107,23 +107,30 @@ let browser;
   await page.locator('.bottom-nav [data-go=charging]').click();
   await page.waitForFunction(()=>state.charging.some(x=>x.road==='tdx'));
   const all=await page.locator('#chargingList article').count();
-  check('Charging mobile-first controls are visible',await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingQuickFilter').isVisible()&&await page.locator('#chargingSearch').isVisible());
+  check('Charging driver-first controls are visible',await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingAvailableOnly').isVisible()&&await page.locator('#chargingCity').isVisible()&&await page.locator('#chargingSearch').isVisible());
+  check('Charging city control stays in the first layer',await page.locator('#chargingCity').evaluate(el=>!el.closest('.charging-advanced')));
   check('Charging source HTML formatting becomes readable text',await page.evaluate(()=>chargingDisplayText('尖峰<br>12.7元&nbsp;每度')==='尖峰 · 12.7元 每度'));
+  check('ConnectorType 2 and 5 normalize to CCS2 and J1772',await page.evaluate(()=>chargingConnectors({connectors:['2','5']}).join(',')==='CCS2,J1772'));
+  check('ConnectorStatus 1/2/3/0 compatibility is available/occupied/fault/unknown',await page.evaluate(()=>{
+    const counts=chargingLiveCounts({liveStateCount:4,liveStates:{'0':1,'1':1,'2':1,'3':1}});
+    return counts.available===1&&counts.occupied===1&&counts.fault===1&&counts.unknown===1;
+  }));
 
-  await page.locator('[data-charge-quick="available"]').click();
-  check('Available-now quick filter updates state',await page.evaluate(()=>state.chargingQuick==='available'));
-  check('Available-now filter decodes current TDX liveStates safely',await page.evaluate(()=>state.chargingQuick==='available'&&state.charging.filter(chargingQuickMatch).every(x=>x.road==='tdx'&&!x.liveStale&&chargingLiveCounts(x).available>0))&&((await page.locator('#chargingList article').count()>0)||((await page.locator('#chargingList .empty').textContent()).includes('即時空槍'))));
+  await page.locator('#chargingAvailableOnly').click();
+  check('Available-only toggle updates dedicated state',await page.evaluate(()=>state.chargingAvailableOnly===true));
+  check('Available-only never treats stale or unknown rows as available',await page.evaluate(()=>[...document.querySelectorAll('#chargingList .charging-item')].every(card=>card.classList.contains('is-available')))&&((await page.locator('#chargingList article').count()>0)||((await page.locator('#chargingList .empty').textContent()).includes('即時空槍'))));
+  await page.locator('#chargingAvailableOnly').click();
   await page.locator('[data-charge-quick="fast"]').click();
   check('100 kW quick filter only includes verified 100 kW+ rows',await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>chargingPowerKw(x)>=100)));
   await page.locator('[data-charge-quick="all"]').click();
 
-  await page.locator('.charging-advanced > summary').click();
   await page.locator('#chargingCity').selectOption('Tainan');
   check('Charging city selector filters actual TDX cards',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingCity==='Tainan'&&[...document.querySelectorAll('#chargingList article')].every(el=>el.textContent.includes('臺南市'))));
   await page.locator('#chargingCity').selectOption('all');
+  await page.locator('.charging-advanced > summary').click();
   await page.locator('#roadFilter [data-road="3"]').click();
   const filtered=await page.locator('#chargingList article').count();
-  check('Charging road filter changes actual results',filtered>0&&filtered<all);
+  check('Charging road filter stays available in advanced filters',filtered>0&&filtered<all);
   await page.locator('#chargingConnector').selectOption('CCS2');
   check('Connector filter decodes legacy numeric TDX connector types',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingConnector==='CCS2'));
   await page.locator('#resetChargingFilters').click();
@@ -132,7 +139,7 @@ let browser;
   check('Charging search empty state',await page.locator('#chargingList article').count()===0);
   await page.locator('#resetChargingFilters').click();
 
-  await page.locator('#chargingList .favorite-btn').first().click();
+  await page.locator('#chargingList [data-charge-favorite]').first().click();
   await page.locator('#chargingFavoritesOnly').click();
   check('Charging favorites persist and filter',await page.locator('#chargingList article').count()===1 && await page.evaluate(()=>JSON.parse(localStorage.getItem('cola-go-charging-favorites')||'[]').length===1));
   await page.locator('#resetChargingFilters').click();
@@ -143,11 +150,33 @@ let browser;
   await page.waitForFunction(()=>state.chargingSort==='nearby'&&Boolean(state.chargingOrigin));
   check('Nearby charging uses geolocation only after explicit tap',await page.evaluate(()=>state.chargingSort==='nearby'&&Math.abs(state.chargingOrigin.lat-22.993)<0.001));
   check('Nearby charging renders distance when coordinates exist',await page.locator('#chargingList .specs').first().textContent().then(x=>x.includes('km')));
+  check('Nearby charging is sorted by displayed distance',await page.evaluate(()=>{
+    const values=[...document.querySelectorAll('#chargingList .charging-item')].slice(0,20).map(card=>{
+      const node=[...card.querySelectorAll('.specs span')].find(x=>/ km$/.test(x.textContent.trim()));
+      return node?Number.parseFloat(node.textContent):NaN;
+    }).filter(Number.isFinite);
+    return values.length>=2&&values.every((value,index)=>index===0||value>=values[index-1]-0.11);
+  }));
   await page.locator('#chargingNearby').click();
   check('Nearby charging can return to smart sorting',await page.evaluate(()=>state.chargingSort==='smart'&&state.chargingOrigin===null));
 
+  await context.clearPermissions();
+  await page.evaluate(()=>Object.defineProperty(navigator,'geolocation',{configurable:true,value:{getCurrentPosition:(success,fail)=>fail({code:1,message:'denied'})}}));
+  await page.locator('#chargingNearby').click();
+  await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('無法取得位置'));
+  check('Denied geolocation leaves charging usable without storing an origin',await page.evaluate(()=>state.chargingOrigin===null&&state.chargingSort==='smart'));
+
+  const firstNav=page.locator('#chargingList [data-charge-nav-toggle]').first();
+  await firstNav.click();
   await page.locator('#chargingList [data-charge-google]').first().click();
-  check('Charging card Google action opens driving directions',await page.evaluate(()=>window.__opened.at(-1).startsWith('https://www.google.com/maps/dir/?api=1&destination=')));
+  check('Charging Google navigation prefers lat/lon coordinates',await page.evaluate(()=>{
+    const u=new URL(window.__opened.at(-1)); return /^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test(u.searchParams.get('destination')||'');
+  }));
+  await firstNav.click();
+  await page.locator('#chargingList [data-charge-apple]').first().click();
+  check('Charging Apple navigation prefers lat/lon coordinates',await page.evaluate(()=>{
+    const u=new URL(window.__opened.at(-1)); return /^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test(u.searchParams.get('daddr')||'');
+  }));
   await page.locator('#nearbyGoogle').click();
   check('Generic nearby charging search remains available',await page.evaluate(()=>window.__opened.at(-1).startsWith('https://www.google.com/maps/search/')));
   await page.locator('.bottom-nav [data-go=parking]').click();
@@ -214,7 +243,7 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-21');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-22');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
   await context.setOffline(true);
