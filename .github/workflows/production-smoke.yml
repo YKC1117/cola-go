@@ -57,6 +57,12 @@ jobs:
           curl -fsSL "$base/data/tdx/tunnel.json" -o "$work/tunnel.json"
           curl -fsSL "$base/data/tdx/cctv.json" -o "$work/cctv.json"
           curl -fsSL "$base/data/tdx/parking/Tainan.json" -o "$work/tainan.json"
+          if curl -fsSL "$base/data/operators/upower.json" -o "$work/upower.json"; then
+            echo "U-POWER official cache present"
+          else
+            rm -f "$work/upower.json"
+            echo "U-POWER official cache not published yet; operator sync will deploy it separately"
+          fi
 
           grep -Fq 'assets/tdx-runtime.js' "$work/index.html"
           grep -Fq './downloads/oil-driver.shortcut' "$work/index.html"
@@ -82,7 +88,7 @@ jobs:
           grep -Fq 'data-charge-major="tesla"' "$work/index.html"
           grep -Fq 'const TAIWAN_CITIES=' "$work/app.js"
           grep -Fq 'chargingOperatorLabel(name)' "$work/tdx-runtime.js"
-          grep -Fq 'cola-go-ui-v6-27' "$work/sw.js"
+          grep -Fq 'cola-go-ui-v6-28' "$work/sw.js"
           ! grep -Fq 'www.icloud.com/shortcuts/' "$work/index.html"
           ! grep -Eqi 'waze\.com|data-map="waze"' "$work/index.html" "$work/app.js"
           grep -Fq 'el.hasAttribute("data-home-reload")' "$work/app.js"
@@ -91,6 +97,8 @@ jobs:
           grep -Fq '$$("[data-go]").forEach' "$work/app.js"
           grep -Fq './data/tdx/traffic.json' "$work/tdx-runtime.js"
           grep -Fq './data/tdx/tunnel.json' "$work/tdx-runtime.js"
+          grep -Fq './data/operators/upower.json' "$work/tdx-runtime.js"
+          grep -Fq 'u.pathname.includes("/data/operators/")' "$work/sw.js"
           grep -Fq 'u.pathname.includes("/data/tdx/")' "$work/sw.js"
 
           python3 - "$work" <<'PY'
@@ -102,6 +110,8 @@ jobs:
           tunnel=json.load(open(root/"tunnel.json", encoding="utf-8"))
           cctv=json.load(open(root/"cctv.json", encoding="utf-8"))
           tainan=json.load(open(root/"tainan.json", encoding="utf-8"))
+          upower_path=root/"upower.json"
+          upower=json.load(open(upower_path, encoding="utf-8")) if upower_path.exists() else None
 
           assert status["source"] == "TDX／交通部"
           assert status["datasets"]["charging"]["count"] > 0
@@ -130,6 +140,11 @@ jobs:
           assert len(tunnel.get("south",[])) + len(tunnel.get("north",[])) > 0
           assert len(cctv.get("items",[])) > 0
           assert len(tainan.get("items",[])) > 0
+          if upower is not None:
+              assert upower.get("source") == "U-POWER 官方網站"
+              assert len(upower.get("items",[])) >= 50
+              assert upower.get("totalSeats",0) >= 300
+              assert all(x.get("officialSupplemental") for x in upower.get("items",[]))
 
           print("PRODUCTION_SMOKE_PASS")
           print("charging", len(charging["items"]), charging.get("status"), charging.get("updatedAt"))

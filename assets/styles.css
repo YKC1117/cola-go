@@ -502,3 +502,7 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
   .charging-filter-label small { display:none; }
   .charging-major-filter button { min-height:35px;padding:6px 10px;font-size:11px; }
 }
+
+/* Operator official station supplements */
+.charging-item .route-tag { white-space:nowrap; }
+.charging-item:has(.route-tag) .route-tag { letter-spacing:.01em; }

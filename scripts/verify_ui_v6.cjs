@@ -35,6 +35,23 @@ let browser;
   const errors=[];
   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
   await context.route('**/*',route=>new URL(route.request().url()).origin===base?route.continue():route.abort());
+  await context.addInitScript(()=>{
+    const fixture={
+      schema:1,source:'U-POWER 官方網站',updatedAt:new Date().toISOString(),count:2,totalSeats:12,
+      items:[
+        {id:'official-upower-dup',road:'operator',city:'Taichung',cityName:'臺中市',name:'臺中 北屯軍福站',location:'臺中市北屯區軍福十三路 270 號',operator:'旭電馳科研',operatorId:'83235398',operatorWebURL:'https://www.u-power.com.tw/',officialSupplemental:true,sitePowerKw:360,maxPowerKw:null,power:'',spaces:4,connectorCount:4,connectors:['CCS1','CCS2'],ccs1Seats:2,ccs2Seats:2,liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''},
+        {id:'official-upower-extra',road:'operator',city:'Tainan',cityName:'臺南市',name:'臺南 測試官方補站',location:'臺南市東區測試路 1 號',operator:'旭電馳科研',operatorId:'83235398',operatorWebURL:'https://www.u-power.com.tw/',officialSupplemental:true,sitePowerKw:720,maxPowerKw:null,power:'',spaces:8,connectorCount:8,connectors:['CCS1','CCS2'],ccs1Seats:4,ccs2Seats:4,liveStateCount:0,availableConnectors:0,liveStatusKnown:false,lat:null,lon:null,direction:''}
+      ]
+    };
+    const nativeFetch=window.fetch.bind(window);
+    window.fetch=(input,init)=>{
+      const url=typeof input==='string'?input:(input?.url||'');
+      if(String(url).includes('/data/operators/upower.json')||String(url).includes('./data/operators/upower.json')){
+        return Promise.resolve(new Response(JSON.stringify(fixture),{status:200,headers:{'Content-Type':'application/json'}}));
+      }
+      return nativeFetch(input,init);
+    };
+  });
   const page=await context.newPage();
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto(base);
@@ -117,7 +134,17 @@ let browser;
   check('Direct navigation options stay focused on Google and Apple',await page.locator('#tripResult [data-map]').evaluateAll(nodes=>nodes.map(n=>n.dataset.map).sort().join(',')==='apple,google'));
   await page.locator('.bottom-nav [data-go=charging]').click();
   await page.waitForFunction(()=>state.charging.some(x=>x.road==='tdx'));
+  await page.waitForFunction(()=>state.charging.some(x=>x.officialSupplemental));
   const all=await page.locator('#chargingList article').count();
+  check('Operator official cache supplements TDX without duplicating an existing U-POWER station',await page.evaluate(()=>{
+    const extra=state.charging.filter(x=>x.officialSupplemental);
+    const dup=state.charging.filter(x=>x.name==='臺中 北屯軍福站'&&chargingOperatorProfile(x)?.key==='upower');
+    return extra.some(x=>x.name==='臺南 測試官方補站')&&dup.length===1;
+  }));
+  check('Operator official site total power is not misused as per-connector fast-charge power',await page.evaluate(()=>{
+    const row=state.charging.find(x=>x.name==='臺南 測試官方補站');
+    return row&&chargingPowerKw(row)===0&&chargingPowerLabel(row).includes('站點總功率 720 kW');
+  }));
   check('Charging driver-first controls are visible',await page.locator('#chargingFindNow').isVisible()&&await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingAvailableOnly').isVisible()&&await page.locator('#chargingCity').isVisible()&&await page.locator('#chargingSearch').isVisible());
   check('Six primary charging networks are first-layer controls',await page.locator('#chargingMajorFilter [data-charge-major]').evaluateAll(nodes=>nodes.map(n=>n.dataset.chargeMajor).join(',')==='all,evoasis,upower,tail,evalue,icharging,tesla'));
   check('Charging cards expose decision-first availability',await page.locator('#chargingList .charging-availability-main').first().isVisible());
@@ -145,7 +172,8 @@ let browser;
   check('EV2 quick filter selects only mapped EV2 operator rows',await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>chargingOperatorProfile(x)?.key==='ev2')));
   await page.locator('[data-charge-quick="all"]').click();
   await page.locator('[data-charge-major="upower"]').click();
-  check('U-POWER major filter maps the TDX legal operator identity',await page.locator('#chargingList article').count()>0&&await page.locator('#chargingList article').evaluateAll(nodes=>nodes.every(el=>el.textContent.includes('U-POWER'))));
+  check('U-POWER major filter maps TDX and official supplemental station identities',await page.locator('#chargingList article').count()>0&&await page.locator('#chargingList article').evaluateAll(nodes=>nodes.every(el=>el.textContent.includes('U-POWER'))));
+  check('Official supplemental U-POWER card is visibly identified as operator official data',await page.locator('#chargingList article').filter({hasText:'臺南 測試官方補站'}).textContent().then(x=>x.includes('業者官方')&&x.includes('即時空槍尚未由 TDX 驗證')));
   await page.locator('[data-charge-quick="fast"]').click();
   check('Major operator and technical quick filters can be combined',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingMajor==='upower'&&state.chargingQuick==='fast'));
   await page.locator('[data-charge-quick="all"]').click();
@@ -294,7 +322,7 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-27');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-28');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
   await context.setOffline(true);
