@@ -411,16 +411,29 @@ CONNECTOR_TYPES = {
     1: "CCS1", 2: "CCS2", 3: "CHAdeMO", 4: "Tesla TPC",
     5: "J1772", 6: "Type2", 254: "其他", 255: "其他",
 }
+CONNECTOR_TYPE_ALIASES = {
+    "j1772(type1)": "J1772",
+    "j1772 / type1": "J1772",
+    "j1772/type1": "J1772",
+    "mennekes(type2)": "Type2",
+    "mennekes / type2": "Type2",
+    "mennekes/type2": "Type2",
+    "type 2": "Type2",
+}
 POWER_MODES = {1: "AC", 2: "DC"}
 
 
 def connector_type_name(value):
     if value is None or value == "":
         return ""
+    text = str(value).strip()
+    alias = CONNECTOR_TYPE_ALIASES.get(text.lower())
+    if alias:
+        return alias
     try:
-        key = int(str(value).strip())
+        key = int(text)
     except (TypeError, ValueError):
-        return str(value).strip()
+        return text
     return CONNECTOR_TYPES.get(key, str(key))
 
 
@@ -775,10 +788,32 @@ def classify_live_state(value):
     return "unknown"
 
 
+def normalize_cached_charging_row(row):
+    connectors = row.get("connectors")
+    if isinstance(connectors, list):
+        normalized = []
+        for value in connectors:
+            name = connector_type_name(value)
+            if name and name not in normalized:
+                normalized.append(name)
+        row["connectors"] = normalized
+
+    operator = str(row.get("operator") or "").strip()
+    operator_id = str(row.get("operatorId") or "").strip()
+    if re.fullmatch(r"\d{8}", operator):
+        row["operator"] = f"TDX 業者 {operator}"
+    elif not operator and operator_id:
+        row["operator"] = f"TDX 業者 {operator_id}"
+    return row
+
+
 def sync_charging_live(tok):
     path = OUT / "charging.json"
     old = load_old(path, {})
-    rows = [dict(x) for x in old.get("items", []) if isinstance(x, dict)]
+    rows = [
+        normalize_cached_charging_row(dict(x))
+        for x in old.get("items", []) if isinstance(x, dict)
+    ]
     if not rows:
         stale_or_unavailable(path, message="尚無可合併的充電站基本資料")
         return
