@@ -74,10 +74,17 @@
     return rows;
   }
 
+  function stationNameKey(x){
+    const city=String(x?.city||"");
+    const normalize=value=>String(value||"").replace(/臺/g,"台").toLowerCase().replace(/[\s\-_.·・()（）,，。號]/g,"");
+    const name=normalize(x?.name);
+    return city&&name?city+"|"+name:"";
+  }
+
   function stationIdentityKeys(x){
     const brand=chargingOperatorProfile(x)?.key||String(x?.operator||"").toLowerCase();
     const city=String(x?.city||"");
-    const normalize=value=>String(value||"").toLowerCase().replace(/[\s\-_.·・()（）,，。號]/g,"");
+    const normalize=value=>String(value||"").replace(/臺/g,"台").toLowerCase().replace(/[\s\-_.·・()（）,，。號]/g,"");
     const keys=[];
     const name=normalize(x?.name);
     const address=normalize(x?.location);
@@ -86,10 +93,37 @@
     return keys;
   }
 
+  function enrichOfficialRows(rows){
+    const byName=new Map();
+    operatorChargingAll.forEach(item=>{
+      const key=stationNameKey(item);
+      if(key&&!byName.has(key))byName.set(key,item);
+    });
+    return (rows||[]).map(row=>{
+      const match=byName.get(stationNameKey(row));
+      if(!match)return row;
+      return {
+        ...row,
+        networkKey:match.networkKey||chargingOperatorProfile(match)?.key||row.networkKey,
+        officialSource:match.officialSource||row.officialSource,
+        officialSourceURL:match.officialSourceURL||row.officialSourceURL,
+        officialNetworkMatch:true,
+        officialSitePowerKw:Number(match.sitePowerKw)||0,
+        officialConnectors:Array.isArray(match.connectors)?match.connectors:[],
+        officialSpaces:Number(match.spaces)||0
+      };
+    });
+  }
+
   function operatorSupplementRows(officialRows){
     const city=document.querySelector("#chargingCity")?.value||"all";
     const officialKeys=new Set((officialRows||[]).flatMap(stationIdentityKeys));
-    return operatorChargingAll.filter(x=>(city==="all"||x.city===city)&&!stationIdentityKeys(x).some(key=>officialKeys.has(key)));
+    const officialNames=new Set((officialRows||[]).map(stationNameKey).filter(Boolean));
+    return operatorChargingAll.filter(x=>
+      (city==="all"||x.city===city)&&
+      !officialNames.has(stationNameKey(x))&&
+      !stationIdentityKeys(x).some(key=>officialKeys.has(key))
+    );
   }
 
   function renderChargingCoverage(){
@@ -98,7 +132,8 @@
     if(!grid||!summary)return;
 
     const city=document.querySelector("#chargingCity")?.value||"all";
-    const tdxRows=city==="all"?officialChargingAll:officialChargingAll.filter(x=>x.city===city);
+    const baseTdxRows=city==="all"?officialChargingAll:officialChargingAll.filter(x=>x.city===city);
+    const tdxRows=enrichOfficialRows(baseTdxRows);
     const supplementRows=operatorSupplementRows(tdxRows);
     const majorProfiles=CHARGING_MAJOR_KEYS.map(key=>CHARGING_OPERATOR_PROFILES.find(x=>x.key===key)).filter(Boolean);
     const rows=majorProfiles.map(profile=>{
@@ -142,7 +177,8 @@
       originalRenderCharging();
       return;
     }
-    const official=state.road==="all"?chargingSubset():[];
+    const rawOfficial=state.road==="all"?chargingSubset():[];
+    const official=enrichOfficialRows(rawOfficial);
     const supplemental=state.road==="all"?operatorSupplementRows(official):[];
     state.charging=[...official,...supplemental,...curatedCharging];
     originalRenderCharging();
@@ -159,7 +195,8 @@
     if(title)title.textContent="TDX 全台官方充電站＋業者品牌";
     if(chip||sourceNote){
       const city=document.querySelector("#chargingCity")?.value||"all";
-      const scope=city==="all"?officialChargingAll:officialChargingAll.filter(x=>x.city===city);
+      const baseScope=city==="all"?officialChargingAll:officialChargingAll.filter(x=>x.city===city);
+      const scope=enrichOfficialRows(baseScope);
       const supplement=operatorSupplementRows(scope);
       const total=scope.length+supplement.length;
       const liveCount=scope.filter(x=>!x.liveStale&&Number(x.liveStateCount)>0).length;
@@ -215,12 +252,20 @@
   }
 
   async function loadOperatorCharging(){
-    const paths=["./data/operators/upower.json","./data/operators/evoasis.json","./data/operators/tail.json"];
-    const results=await Promise.allSettled(paths.map(path=>officialGet(path)));
-    const datasets=results.filter(x=>x.status==="fulfilled"&&Array.isArray(x.value?.items)&&x.value.items.length).map(x=>x.value);
+    const sources=[
+      {path:"./data/operators/upower.json",key:"upower"},
+      {path:"./data/operators/evoasis.json",key:"evoasis"},
+      {path:"./data/operators/tail.json",key:"tail"},
+      {path:"./data/operators/evalue.json",key:"evalue"}
+    ];
+    const results=await Promise.allSettled(sources.map(source=>officialGet(source.path)));
+    const datasets=results.map((result,index)=>({result,source:sources[index]}))
+      .filter(x=>x.result.status==="fulfilled"&&Array.isArray(x.result.value?.items)&&x.result.value.items.length);
     if(!datasets.length)return;
-    operatorChargingAll=datasets.flatMap(data=>data.items).map(x=>({...x,officialSupplemental:true}));
-    operatorUpdatedAt=datasets.map(x=>x.updatedAt).filter(Boolean).sort().at(-1)||null;
+    operatorChargingAll=datasets.flatMap(({result,source})=>
+      result.value.items.map(x=>({...x,officialSupplemental:true,networkKey:x.networkKey||source.key}))
+    );
+    operatorUpdatedAt=datasets.map(x=>x.result.value.updatedAt).filter(Boolean).sort().at(-1)||null;
     syncChargingOperatorOptions();
     renderCharging();
   }
