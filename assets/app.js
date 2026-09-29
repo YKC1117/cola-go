@@ -205,15 +205,15 @@ function parseChargingPower(value){
 const LEGACY_TDX_CONNECTOR_TYPES={"1":"CCS1","2":"CCS2","3":"CHAdeMO","4":"Tesla TPC","5":"J1772","6":"Type2","254":"其他","255":"其他","J1772(Type1)":"J1772","Mennekes(Type2)":"Type2"};
 const CHARGING_OPERATOR_PROFILES=[
   {key:"ev2",brand:"電小二 EV2",ids:["58430020"],names:["程豐資通股份有限公司"],aliases:["電小二","EV2","程豐"],official:"https://www.ev2.com.tw/",ios:"https://apps.apple.com/tw/app/%E9%9B%BB%E5%B0%8F%E4%BA%8C-%E9%9B%BB%E5%8B%95%E8%BB%8A%E5%85%85%E9%9B%BB%E7%AB%99/id6677032732",android:"https://play.google.com/store/apps/details?id=tw.delta.android"},
-  {key:"evoasis",brand:"EVOASIS",names:["源點科技股份有限公司"],aliases:["OASIS","源點科技"],official:"https://www.evoasis.com.tw/"},
-  {key:"upower",brand:"U-POWER",ids:["83235398"],names:["旭電馳科研","旭電馳科研股份有限公司"],aliases:["U POWER","UPOWER","旭電馳","旭電馳科研"],official:"https://www.u-power.com.tw/"},
-  {key:"evalue",brand:"EVALUE 華城電機",names:["華城電能科技股份有限公司","華城電機股份有限公司"],aliases:["E-Value","華城電能","華城電機"],official:"https://www.evalue.com.tw/"},
-  {key:"icharging",brand:"iCharging 中興電工",names:["中興電工機械股份有限公司"],aliases:["iCharging","中興電工"],official:"https://www.icharging.com.tw/tw"},
+  {key:"evoasis",brand:"EVOASIS",names:["源點科技股份有限公司"],aliases:["OASIS","源點科技"],official:"https://www.evoasis.com.tw/",stationMap:"https://www.evoasis.com.tw/charging-station",chargeGuide:"https://www.evoasis.com.tw/chargingapp",chargeHint:"EVOASIS App・掃碼／隨插即充"},
+  {key:"upower",brand:"U-POWER",ids:["83235398"],names:["旭電馳科研","旭電馳科研股份有限公司"],aliases:["U POWER","UPOWER","旭電馳","旭電馳科研"],official:"https://www.u-power.com.tw/",stationMap:"https://www.u-power.com.tw/",chargeGuide:"https://www.u-power.com.tw/service/",chargeHint:"U-POWER App・掃碼／自動充電"},
+  {key:"evalue",brand:"EVALUE 華城電機",names:["華城電能科技股份有限公司","華城電機股份有限公司"],aliases:["E-Value","華城電能","華城電機"],official:"https://www.evalue.com.tw/",stationMap:"https://www.evalue.com.tw/find",chargeGuide:"https://www.evalue.com.tw/app",chargeHint:"EVALUE App・即時狀態／預約充電"},
+  {key:"icharging",brand:"iCharging 中興電工",names:["中興電工機械股份有限公司"],aliases:["iCharging","中興電工"],official:"https://www.icharging.com.tw/tw",stationMap:"https://www.icharging.com.tw/tw/map/index.aspx",chargeGuide:"https://www.icharging.com.tw/tw/about/%E5%B8%B8%E8%A6%8B%E5%95%8F%E9%A1%8C",rateGuide:"https://www.icharging.com.tw/tw/about/%E8%B2%BB%E7%8E%87%E8%AA%AA%E6%98%8E",chargeHint:"iParking／AmpGO／EVOASIS・依站點支援"},
   {key:"starcharger",brand:"星舟快充",names:["星舟快充"],aliases:["StarCharger","星舟"],official:"https://starcharger.com.tw/"},
-  {key:"tail",brand:"TAIL 特爾電力",names:["特爾電力股份有限公司"],aliases:["TAIL","特爾"],official:"https://www.evtail.com.tw/"},
+  {key:"tail",brand:"TAIL 特爾電力",names:["特爾電力股份有限公司"],aliases:["TAIL","特爾"],official:"https://www.evtail.com.tw/",stationMap:"https://www.evtail.com.tw/locations"},
   {key:"acon",brand:"Acon-eco",names:["連展電能科技股份有限公司"],aliases:["Acon","連展電能"],official:"https://www.acon-eco.com/"},
   {key:"noodoe",brand:"Noodoe",names:["拓廣科技","拓廣科技股份有限公司"],aliases:["拓廣","Noodoe EV"],official:"https://www.noodoe.com.tw/"},
-  {key:"tesla",brand:"Tesla 超級充電",names:["台灣特斯拉汽車有限公司"],aliases:["特斯拉","Tesla","Tesla Supercharger"],official:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan"}
+  {key:"tesla",brand:"Tesla 超級充電",names:["台灣特斯拉汽車有限公司"],aliases:["特斯拉","Tesla","Tesla Supercharger"],official:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",stationMap:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",chargeGuide:"https://www.tesla.com/zh_tw/support/charging/supercharging",chargeHint:"Tesla App・插槍自動充電"}
 ];
 const CHARGING_MAJOR_KEYS=["evoasis","upower","tail","evalue","icharging","tesla"];
 function chargingOperatorProfile(value){
@@ -400,7 +400,7 @@ function chargingDisplayText(value){
 }
 function chargingDetailMarkup(x){
   const profile=chargingOperatorProfile(x);
-  const official=profile?.official||x.operatorWebURL||"";
+  const official=x.officialSourceURL||profile?.stationMap||profile?.official||x.operatorWebURL||"";
   const rows=[
     ["營業時間",x.serviceTime],
     ["充電費率",x.chargingRate],
@@ -408,17 +408,21 @@ function chargingDetailMarkup(x){
     [x.officialSupplemental&&Number(x.sitePowerKw)>0?"站點總設備功率":"",x.officialSupplemental&&Number(x.sitePowerKw)>0?Number(x.sitePowerKw).toLocaleString("zh-TW")+" kW":""],
     ["聯絡電話",x.telephone||x.operatorTelephone],
     [profile&&x.operator&&profile.brand!==x.operator?"TDX 登記業者":"",profile&&x.operator&&profile.brand!==x.operator?x.operator:""],
-    ["狀態更新",x.statusUpdatedAt?formatTime(x.statusUpdatedAt):""]
+    ["狀態更新",x.statusUpdatedAt?formatTime(x.statusUpdatedAt):""],
+    [profile?.chargeHint?"官方充電方式":"",profile?.chargeHint||""]
   ].filter(row=>row[0]&&row[1]);
   if(!rows.length&&!official&&!x.description)return "";
   const links=[
-    official?'<a href="'+esc(official)+'" target="_blank" rel="noopener noreferrer">'+esc(profile?.brand||"業者")+" 官方</a>":"",
+    official?'<a href="'+esc(official)+'" target="_blank" rel="noopener noreferrer">'+(x.officialSourceURL?'此站官方資料':'官方站點')+'</a>':"",
+    profile?.chargeGuide?'<a href="'+esc(profile.chargeGuide)+'" target="_blank" rel="noopener noreferrer">怎麼充</a>':"",
+    profile?.rateGuide?'<a href="'+esc(profile.rateGuide)+'" target="_blank" rel="noopener noreferrer">官方費率</a>':"",
     profile?.ios?'<a href="'+esc(profile.ios)+'" target="_blank" rel="noopener noreferrer">iPhone App</a>':"",
     profile?.android?'<a href="'+esc(profile.android)+'" target="_blank" rel="noopener noreferrer">Android App</a>':""
   ].filter(Boolean).join("");
   return '<details class="charging-more"><summary>站點詳細資訊</summary>'+
     (rows.length?'<div class="charging-detail-grid">'+rows.map(row=>'<div><small>'+esc(row[0])+'</small><b>'+esc(chargingDisplayText(row[1]))+'</b></div>').join("")+'</div>':"")+
     (x.description?'<p>'+esc(x.description)+'</p>':"")+
+    (x.officialSource?'<div class="charging-source-note">'+esc(x.officialSource)+(x.officialSupplemental?' · 靜態站點資料，不代表即時空槍':'')+'</div>':"")+
     (links?'<div class="charging-operator-links">'+links+'</div>':"")+
     '</details>';
 }

@@ -196,6 +196,11 @@ let browser;
   check('Missing official ConnectorType is shown explicitly',await page.evaluate(()=>chargingConnectors({road:'tdx',connectors:[]}).join(',')==='接頭類型未提供'));
   check('EV2 operator maps TDX legal identity to consumer brand',await page.evaluate(()=>chargingOperatorLabel({operatorId:'58430020',operator:'程豐資通股份有限公司'})==='電小二 EV2'));
   check('U-POWER operator maps TDX legal identity to consumer brand',await page.evaluate(()=>chargingOperatorLabel({operatorId:'83235398',operator:'旭電馳科研'})==='U-POWER'));
+  check('iCharging profile exposes official map, charging guide, and fee source',await page.evaluate(()=>{
+    const p=CHARGING_OPERATOR_PROFILES.find(x=>x.key==='icharging');
+    return Boolean(p?.stationMap&&p?.chargeGuide&&p?.rateGuide&&p?.chargeHint?.includes('iParking'));
+  }));
+  check('Major operator detail prefers station-specific official source URL',await page.evaluate(()=>chargingDetailMarkup({officialSupplemental:true,officialSource:'EVALUE 官方充電站',officialSourceURL:'https://example.com/station',operator:'華城電能科技股份有限公司',road:'operator',connectors:[],spaces:0}).includes('https://example.com/station')));
   check('Network key can classify partner-operated stations into EVALUE',await page.evaluate(()=>chargingOperatorProfile({operator:'聯永物業股份有限公司',networkKey:'evalue'})?.key==='evalue'));
   check('Primary charging network list is the six requested providers',await page.evaluate(()=>CHARGING_MAJOR_KEYS.join(',')==='evoasis,upower,tail,evalue,icharging,tesla'));
   check('EV2 aliases are searchable',await page.evaluate(()=>chargingOperatorSearchText({operatorId:'58430020',operator:'程豐資通股份有限公司',name:'測試站'}).includes('電小二')));
@@ -228,6 +233,12 @@ let browser;
 
   await page.locator('#chargingCity').selectOption('Tainan');
   check('Charging city selector filters actual TDX cards',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingCity==='Tainan'&&[...document.querySelectorAll('#chargingList article')].every(el=>el.textContent.includes('臺南市'))));
+  await page.locator('#chargingSearch').fill('東山服務區');
+  if(await page.locator('#chargingList article').count()){
+    await page.locator('#chargingList article details.charging-more').first().evaluate(el=>{el.open=true;});
+    check('iCharging station detail exposes official charging method',await page.locator('#chargingList article').first().textContent().then(x=>x.includes('iParking')));
+    check('iCharging station detail links official fee page',await page.locator('#chargingList article a').evaluateAll(nodes=>nodes.some(a=>a.textContent.includes('官方費率')&&a.href.includes('icharging.com.tw'))));
+  }
   await page.locator('#chargingSearch').fill('電小二');
   check('Tainan EV2 stations are discoverable by consumer brand',await page.locator('#chargingList article').count()>0&&await page.locator('#chargingList article').evaluateAll(nodes=>nodes.every(el=>el.textContent.includes('電小二 EV2'))));
   check('EV2 cards expose an official operator source',await page.locator('#chargingList a[href="https://www.ev2.com.tw/"]').count()>0);
@@ -369,7 +380,7 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-32');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-33');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
   await context.setOffline(true);
