@@ -406,7 +406,7 @@ function renderCharging(){
   if($("#chargingNearby")){
     $("#chargingNearby").setAttribute("aria-pressed",String(state.chargingSort==="nearby"));
     const label=$("#chargingNearby").querySelector("b");
-    if(label)label.textContent=state.chargingSort==="nearby"?"附近排序中":"附近排序";
+    if(label)label.textContent=state.chargingSort==="nearby"?"依距離排序":"附近排序";
   }
   $$("[data-charge-quick]").forEach(b=>b.classList.toggle("active",b.dataset.chargeQuick===state.chargingQuick));
   if($("#chargingResultSummary")){
@@ -419,7 +419,9 @@ function renderCharging(){
     if(state.chargingQuick==="fast")context.push("100 kW+");
     if(state.chargingQuick==="ccs2")context.push("CCS2");
     if(state.chargingQuick==="tesla")context.push("Tesla");
-    $("#chargingResultSummary").textContent=resultCount+" 站符合"+suffix+(context.length?" · "+context.join(" · "):"");
+    $("#chargingResultSummary").textContent=resultCount===0&&state.chargingAvailableOnly
+      ?"目前沒有可確認空槍"+(state.chargingSort==="nearby"?" · 可改看附近站點":"")
+      :resultCount+" 站符合"+suffix+(context.length?" · "+context.join(" · "):"");
   }
   if($("#chargingFindNow"))$("#chargingFindNow").setAttribute("aria-pressed",String(state.chargingSort==="nearby"&&state.chargingAvailableOnly));
 
@@ -460,8 +462,8 @@ function renderCharging(){
       '</div>'+
     '</article>';
   }).join(""):(state.chargingAvailableOnly
-    ? '<div class="empty"><b>目前沒有可確認的即時空槍</b><p>可能是目前沒有空槍，或 TDX 快取已逾時。COLA GO 不會把過期狀態當成「現在可用」。</p></div>'
-    : '<div class="empty"><b>沒有符合的充電站</b><p>可以清除篩選，或改用搜尋站名、地址、業者。</p></div>');
+    ? '<div class="empty charging-empty"><b>目前沒有可確認的即時空槍</b><p>可能真的滿位，也可能即時狀態剛好逾時。COLA GO 不會把過期資料當成「現在可用」。</p><button class="charging-empty-primary" data-charge-show-nearby>改看附近充電站</button><small>保留距離排序，只取消「只看空槍」</small></div>'
+    : '<div class="empty charging-empty"><b>沒有符合的充電站</b><p>可以清除篩選，或改用搜尋站名、地址、業者。</p><button class="charging-empty-secondary" data-charge-clear-filters>清除充電篩選</button></div>');
 
   $$("[data-charge-favorite]",root).forEach(b=>b.onclick=()=>{
     const key=b.dataset.chargeFavorite;
@@ -485,7 +487,13 @@ function renderCharging(){
   });
   $$("[data-charge-google]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/dir/?api=1&destination="+b.dataset.chargeGoogle+"&travelmode=driving","_blank","noopener"));
   $$("[data-charge-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?daddr="+b.dataset.chargeApple+"&dirflg=d","_blank","noopener"));
-  $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
+  $("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
+  $("[data-charge-show-nearby]",root)?.addEventListener("click",()=>{
+    state.chargingAvailableOnly=false;
+    renderCharging();
+    toast(state.chargingSort==="nearby"?"已改看附近充電站":"已顯示充電站");
+  });
+  $("[data-charge-clear-filters]",root)?.addEventListener("click",()=>$("#resetChargingFilters")?.click());
 }
 
 const TAIWAN_CITIES=[{"code":"Taipei","name":"臺北市"},{"code":"NewTaipei","name":"新北市"},{"code":"Taoyuan","name":"桃園市"},{"code":"Taichung","name":"臺中市"},{"code":"Tainan","name":"臺南市"},{"code":"Kaohsiung","name":"高雄市"},{"code":"Keelung","name":"基隆市"},{"code":"Hsinchu","name":"新竹市"},{"code":"HsinchuCounty","name":"新竹縣"},{"code":"MiaoliCounty","name":"苗栗縣"},{"code":"ChanghuaCounty","name":"彰化縣"},{"code":"NantouCounty","name":"南投縣"},{"code":"YunlinCounty","name":"雲林縣"},{"code":"Chiayi","name":"嘉義市"},{"code":"ChiayiCounty","name":"嘉義縣"},{"code":"PingtungCounty","name":"屏東縣"},{"code":"YilanCounty","name":"宜蘭縣"},{"code":"HualienCounty","name":"花蓮縣"},{"code":"TaitungCounty","name":"臺東縣"},{"code":"PenghuCounty","name":"澎湖縣"},{"code":"KinmenCounty","name":"金門縣"},{"code":"LienchiangCounty","name":"連江縣"}];
