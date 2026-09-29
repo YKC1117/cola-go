@@ -111,6 +111,7 @@ let browser;
   check('Charging city control stays in the first layer',await page.locator('#chargingCity').evaluate(el=>!el.closest('.charging-advanced')));
   check('Charging source HTML formatting becomes readable text',await page.evaluate(()=>chargingDisplayText('尖峰<br>12.7元&nbsp;每度')==='尖峰 · 12.7元 每度'));
   check('ConnectorType 2 and 5 normalize to CCS2 and J1772',await page.evaluate(()=>chargingConnectors({connectors:['2','5']}).join(',')==='CCS2,J1772'));
+  check('Missing official ConnectorType is shown explicitly',await page.evaluate(()=>chargingConnectors({road:'tdx',connectors:[]}).join(',')==='接頭類型未提供'));
   check('ConnectorStatus 1/2/3/0 compatibility is available/occupied/fault/unknown',await page.evaluate(()=>{
     const counts=chargingLiveCounts({liveStateCount:4,liveStates:{'0':1,'1':1,'2':1,'3':1}});
     return counts.available===1&&counts.occupied===1&&counts.fault===1&&counts.unknown===1;
