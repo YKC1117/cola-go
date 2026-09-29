@@ -1,8 +1,11 @@
 {
-  "schema": 1,
+  "schema": 2,
   "source": "EVOASIS 官方 DC 站點",
   "sourceUrl": "https://www.evoasis.com.tw/charging-station",
-  "updatedAt": "2026-09-29T06:18:29.663744Z",
+  "updatedAt": "2026-09-29T07:48:39.612985Z",
+  "lastSuccessAt": "2026-09-29T07:48:39.612985Z",
+  "lastAttemptAt": "2026-09-29T07:48:39.612985Z",
+  "syncStatus": "ok",
   "count": 92,
   "items": [
     {
