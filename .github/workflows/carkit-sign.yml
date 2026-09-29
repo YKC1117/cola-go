@@ -12,13 +12,16 @@ on:
       - "carkit-sign/**"
       - ".github/workflows/carkit-sign.yml"
 
+permissions:
+  contents: write
+
 jobs:
   build-sign:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Probe JiXing iOS metadata
+      - name: Verify JiXing iOS metadata
         run: |
           python3 - <<'PY'
           import json
@@ -34,7 +37,7 @@ jobs:
           print("JIXING_TRACK_NAME=", app.get("trackName"))
           print("JIXING_BUNDLE_ID=", app.get("bundleId"))
           assert app.get("trackId")==6755052698
-          assert app.get("bundleId"), app
+          assert app.get("bundleId")=="com.chaiche.drivesafe", app
           PY
 
       - name: Build shortcuts
@@ -308,10 +311,13 @@ jobs:
                       return p.get("WFMenuItems",[])
               raise AssertionError(f"missing top menu: {prompt}")
           assert top_menu_items(oil,"油車助手｜請選功能")==[
-              "神盾","導航","路況","停車 / 找車","加油 / eTag","音樂","先不用"
+              "神盾","極行","導航","路況","停車 / 找車","加油 / eTag","音樂","先不用"
           ]
           assert top_menu_items(tesla,"特斯拉助手｜請選功能")==[
               "快速出發","車外遙控","導航","找充電站","停車 / 找車","行車工具","語音控制","Tesla App","先不用"
+          ]
+          assert top_menu_items(tesla,"行車工具")==[
+              "神盾測速照相","極行","高速公路1968","Tesla App"
           ]
 
           # Voice control is embedded in 特斯拉助手; no second shortcut is required.
@@ -465,6 +471,19 @@ jobs:
             shasum -a 256 "$f"
           done
           ls -lh carkit-sign/out
+
+      - name: Publish signed shortcuts to branch
+        run: |
+          set -euxo pipefail
+          cp "carkit-sign/out/油車助手.shortcut" downloads/oil-driver.shortcut
+          cp "carkit-sign/out/特斯拉助手.shortcut" downloads/tesla-driver.shortcut
+          git config user.name "COLA GO Bot"
+          git config user.email "actions@users.noreply.github.com"
+          if ! git diff --quiet -- downloads/oil-driver.shortcut downloads/tesla-driver.shortcut; then
+            git add downloads/oil-driver.shortcut downloads/tesla-driver.shortcut
+            git commit -m "build: refresh CarKit shortcuts with JiXing"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
 
       - name: Upload signed shortcuts
         uses: actions/upload-artifact@v4
