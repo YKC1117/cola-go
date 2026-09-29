@@ -172,7 +172,6 @@ let browser;
   check('Charging Google navigation prefers lat/lon coordinates',await page.evaluate(()=>{
     const u=new URL(window.__opened.at(-1)); return /^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test(u.searchParams.get('destination')||'');
   }));
-  await firstNav.click();
   await page.locator('#chargingList [data-charge-apple]').first().click();
   check('Charging Apple navigation prefers lat/lon coordinates',await page.evaluate(()=>{
     const u=new URL(window.__opened.at(-1)); return /^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test(u.searchParams.get('daddr')||'');
