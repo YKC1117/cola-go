@@ -15,6 +15,7 @@ OUT = Path("data/operators")
 UPOWER_URL = "https://www.u-power.com.tw/"
 EVOASIS_URL = "https://www.evoasis.com.tw/charging-station"
 TAIL_URL = "https://www.evtail.com.tw/locations"
+TESLA_SUPERCHARGER_URL = "https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan"
 
 CITY_PREFIXES = [
     ("臺北市", "Taipei", "臺北市"), ("台北市", "Taipei", "臺北市"),
@@ -411,6 +412,183 @@ def validate_tail(items):
         raise RuntimeError("; ".join(errors))
 
 
+def city_from_postal(postal, name="", address=""):
+    try:
+        code = int(str(postal)[:3])
+    except (TypeError, ValueError):
+        code = 0
+
+    if 100 <= code <= 116:
+        return "Taipei", "臺北市"
+    if 200 <= code <= 206:
+        return "Keelung", "基隆市"
+    if 209 <= code <= 212:
+        return "LienchiangCounty", "連江縣"
+    if 220 <= code <= 253:
+        return "NewTaipei", "新北市"
+    if 260 <= code <= 272:
+        return "YilanCounty", "宜蘭縣"
+    if code == 300:
+        return "Hsinchu", "新竹市"
+    if 302 <= code <= 315:
+        return "HsinchuCounty", "新竹縣"
+    if 320 <= code <= 338:
+        return "Taoyuan", "桃園市"
+    if 350 <= code <= 369:
+        return "MiaoliCounty", "苗栗縣"
+    if 400 <= code <= 439:
+        return "Taichung", "臺中市"
+    if 500 <= code <= 530:
+        return "ChanghuaCounty", "彰化縣"
+    if 540 <= code <= 558:
+        return "NantouCounty", "南投縣"
+    if code == 600:
+        return "Chiayi", "嘉義市"
+    if 602 <= code <= 625:
+        return "ChiayiCounty", "嘉義縣"
+    if 630 <= code <= 655:
+        return "YunlinCounty", "雲林縣"
+    if 700 <= code <= 745:
+        return "Tainan", "臺南市"
+    if 800 <= code <= 852:
+        return "Kaohsiung", "高雄市"
+    if 880 <= code <= 885:
+        return "PenghuCounty", "澎湖縣"
+    if 890 <= code <= 896:
+        return "KinmenCounty", "金門縣"
+    if 900 <= code <= 947:
+        return "PingtungCounty", "屏東縣"
+    if 950 <= code <= 966:
+        return "TaitungCounty", "臺東縣"
+    if 970 <= code <= 983:
+        return "HualienCounty", "花蓮縣"
+
+    haystack = clean_text(f"{name} {address}")
+    aliases = [
+        ("臺北", "Taipei", "臺北市"), ("台北", "Taipei", "臺北市"),
+        ("新北", "NewTaipei", "新北市"), ("基隆", "Keelung", "基隆市"),
+        ("桃園", "Taoyuan", "桃園市"), ("新竹", "HsinchuCounty", "新竹縣"),
+        ("苗栗", "MiaoliCounty", "苗栗縣"), ("臺中", "Taichung", "臺中市"),
+        ("台中", "Taichung", "臺中市"), ("彰化", "ChanghuaCounty", "彰化縣"),
+        ("南投", "NantouCounty", "南投縣"), ("雲林", "YunlinCounty", "雲林縣"),
+        ("嘉義", "ChiayiCounty", "嘉義縣"), ("臺南", "Tainan", "臺南市"),
+        ("台南", "Tainan", "臺南市"), ("高雄", "Kaohsiung", "高雄市"),
+        ("屏東", "PingtungCounty", "屏東縣"), ("宜蘭", "YilanCounty", "宜蘭縣"),
+        ("花蓮", "HualienCounty", "花蓮縣"), ("臺東", "TaitungCounty", "臺東縣"),
+        ("台東", "TaitungCounty", "臺東縣"), ("澎湖", "PenghuCounty", "澎湖縣"),
+        ("金門", "KinmenCounty", "金門縣"), ("連江", "LienchiangCounty", "連江縣"),
+    ]
+    for alias, city, city_name in aliases:
+        if alias in haystack:
+            return city, city_name
+    return "", ""
+
+
+def parse_tesla_superchargers(html_text):
+    parser = TextNodeParser()
+    parser.feed(html_text)
+    nodes = parser.nodes
+    items = []
+    skip_words = {
+        "Tesla 超級充電站 - 台灣", "Tesla Superchargers in Taiwan", "返回列表", "返回清單",
+        "台灣", "Taiwan", "搜尋我們", "超級充電座", "超級充電站",
+    }
+
+    for i, raw in enumerate(nodes):
+        address_match = re.match(r"^(\d{3,6})\s+(.+)$", clean_text(raw))
+        if not address_match:
+            continue
+        postal = address_match.group(1)
+        address_body = clean_text(address_match.group(2))
+        if not address_body or re.fullmatch(r"\d+", address_body):
+            continue
+
+        name = ""
+        for step in range(1, 5):
+            if i - step < 0:
+                break
+            candidate = clean_text(nodes[i - step])
+            if not candidate or candidate in skip_words:
+                continue
+            if candidate.startswith("Roadside Assistance") or candidate.startswith("Phone"):
+                continue
+            if re.match(r"^\d{3,6}\s+", candidate):
+                continue
+            if candidate.startswith("http://") or candidate.startswith("https://"):
+                continue
+            if len(candidate) > 100:
+                continue
+            name = candidate
+            break
+        if not name:
+            continue
+
+        city, city_name = city_from_postal(postal, name, address_body)
+        if not city:
+            continue
+
+        address = f"{postal} {address_body}"
+        items.append(
+            {
+                "id": stable_id("tesla", name, address),
+                "road": "operator",
+                "city": city,
+                "cityName": city_name,
+                "name": name,
+                "location": address,
+                "operator": "台灣特斯拉汽車有限公司",
+                "operatorId": "",
+                "operatorWebURL": TESLA_SUPERCHARGER_URL,
+                "officialSource": "Tesla 台灣官方超級充電站",
+                "officialSourceURL": TESLA_SUPERCHARGER_URL,
+                "officialSupplemental": True,
+                "officialStationType": "Supercharger",
+                "sitePowerKw": 0,
+                "maxPowerKw": None,
+                "power": "Tesla Supercharger",
+                "spaces": 0,
+                "connectorCount": 0,
+                "connectors": [],
+                "liveStateCount": 0,
+                "availableConnectors": 0,
+                "occupiedConnectors": 0,
+                "faultedConnectors": 0,
+                "unavailableConnectors": 0,
+                "unknownConnectors": 0,
+                "liveStatusKnown": False,
+                "liveStale": False,
+                "statusUpdatedAt": None,
+                "lat": None,
+                "lon": None,
+                "direction": "",
+                "serviceTime": "",
+                "chargingRate": "",
+                "parkingRate": "",
+                "telephone": "",
+                "operatorTelephone": "0809007518",
+                "description": "",
+            }
+        )
+
+    unique = {}
+    for item in items:
+        key = (clean_text(item["name"]).lower(), clean_text(item["location"]).lower())
+        unique[key] = item
+    return list(unique.values())
+
+
+def validate_tesla_superchargers(items):
+    errors = []
+    if len(items) < 90:
+        errors.append(f"expected at least 90 Tesla Supercharger locations, got {len(items)}")
+    if any(not x.get("city") or not x.get("name") or not x.get("location") for x in items):
+        errors.append("one or more Tesla Supercharger rows are missing city/name/location")
+    if len({x.get("city") for x in items if x.get("city")}) < 15:
+        errors.append("Tesla Supercharger list covers too few cities/counties")
+    if errors:
+        raise RuntimeError("; ".join(errors))
+
+
 def fetch_text(url):
     req = urllib.request.Request(
         url,
@@ -468,10 +646,19 @@ def main():
         print(f"TAIL_SYNC_ERROR {error}", file=sys.stderr)
         raise
 
+    try:
+        tesla_source = fetch_text(TESLA_SUPERCHARGER_URL)
+        tesla_items = parse_tesla_superchargers(tesla_source)
+        validate_tesla_superchargers(tesla_items)
+    except Exception as error:
+        print(f"TESLA_SYNC_ERROR {error}", file=sys.stderr)
+        raise
+
     total_seats = sum(int(x.get("ccs1Seats") or 0) + int(x.get("ccs2Seats") or 0) for x in upower_items)
     print(f"UPOWER_OK stations={len(upower_items)} seats={total_seats}")
     print(f"EVOASIS_OK stations={len(evoasis_items)}")
     print(f"TAIL_OK stations={len(tail_items)}")
+    print(f"TESLA_OK superchargers={len(tesla_items)}")
 
     if args.check_online:
         return 0
@@ -503,6 +690,14 @@ def main():
             "updatedAt": generated_at,
             "count": len(tail_items),
             "items": sorted(tail_items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
+        },
+        "tesla-superchargers.json": {
+            "schema": 1,
+            "source": "Tesla 台灣官方超級充電站",
+            "sourceUrl": TESLA_SUPERCHARGER_URL,
+            "updatedAt": generated_at,
+            "count": len(tesla_items),
+            "items": sorted(tesla_items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
         },
     }
     for filename, payload in payloads.items():
