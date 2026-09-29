@@ -525,7 +525,7 @@ function renderCharging(){
       chargingStatusMarkup(x)+
       '<div class="specs charging-facts">'+
         (distance!=null?'<span class="charging-distance">'+esc(distance<10?distance.toFixed(1):Math.round(distance))+' km</span>':"")+
-        '<span>'+esc(x.spaces)+(supplemental?' 席':(tdx?' 充電點':' 車位'))+'</span>'+
+        (supplemental&&Number(x.spaces)<=0?'<span>席次未提供</span>':'<span>'+esc(x.spaces)+(supplemental?' 席':(tdx?' 充電點':' 車位'))+'</span>')+
         '<span class="charging-power">'+esc(chargingPowerLabel(x))+'</span>'+
         chargingConnectors(x).map(c=>'<span class="charging-connector">'+esc(c)+'</span>').join("")+
       '</div>'+

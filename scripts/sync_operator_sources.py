@@ -13,6 +13,7 @@ from pathlib import Path
 
 OUT = Path("data/operators")
 UPOWER_URL = "https://www.u-power.com.tw/"
+EVOASIS_URL = "https://www.evoasis.com.tw/charging-station"
 
 CITY_PREFIXES = [
     ("臺北市", "Taipei", "臺北市"), ("台北市", "Taipei", "臺北市"),
@@ -52,9 +53,9 @@ def city_from_address(address):
     return "", ""
 
 
-def stable_id(name, address):
-    digest = hashlib.sha1(f"{name}|{address}".encode("utf-8")).hexdigest()[:14]
-    return f"official-upower-{digest}"
+def stable_id(provider, name, address):
+    digest = hashlib.sha1(f"{provider}|{name}|{address}".encode("utf-8")).hexdigest()[:14]
+    return f"official-{provider}-{digest}"
 
 
 class TableParser(HTMLParser):
@@ -154,7 +155,7 @@ def parse_upower(html_text):
 
         items.append(
             {
-                "id": stable_id(name, address),
+                "id": stable_id("upower", name, address),
                 "road": "operator",
                 "city": city,
                 "cityName": city_name,
@@ -202,6 +203,83 @@ def parse_upower(html_text):
     return list(unique.values())
 
 
+def parse_evoasis(html_text):
+    parser = TableParser()
+    parser.feed(html_text)
+    items = []
+
+    for row in parser.rows:
+        if len(row) < 2:
+            continue
+        name = clean_text(row[0])
+        address = clean_text(row[1])
+        city, city_name = city_from_address(address)
+        if not name or not city:
+            continue
+        if name in {"站名", "Station"}:
+            continue
+
+        items.append(
+            {
+                "id": stable_id("evoasis", name, address),
+                "road": "operator",
+                "city": city,
+                "cityName": city_name,
+                "name": name,
+                "location": address,
+                "operator": "源點科技股份有限公司",
+                "operatorId": "",
+                "operatorWebURL": EVOASIS_URL,
+                "officialSource": "EVOASIS 官方 DC 站點",
+                "officialSourceURL": EVOASIS_URL,
+                "officialSupplemental": True,
+                "officialStationType": "DC",
+                "sitePowerKw": 0,
+                "maxPowerKw": None,
+                "power": "DC 快充",
+                "spaces": 0,
+                "connectorCount": 0,
+                "connectors": [],
+                "liveStateCount": 0,
+                "availableConnectors": 0,
+                "occupiedConnectors": 0,
+                "faultedConnectors": 0,
+                "unavailableConnectors": 0,
+                "unknownConnectors": 0,
+                "liveStatusKnown": False,
+                "liveStale": False,
+                "statusUpdatedAt": None,
+                "lat": None,
+                "lon": None,
+                "direction": "",
+                "serviceTime": "",
+                "chargingRate": "",
+                "parkingRate": "",
+                "telephone": "",
+                "operatorTelephone": "06-602-0889",
+                "description": "",
+            }
+        )
+
+    unique = {}
+    for item in items:
+        key = (clean_text(item["name"]).lower(), clean_text(item["location"]).lower())
+        unique[key] = item
+    return list(unique.values())
+
+
+def validate_evoasis(items):
+    errors = []
+    if len(items) < 80:
+        errors.append(f"expected at least 80 EVOASIS DC stations, got {len(items)}")
+    if any(not x.get("city") or not x.get("name") or not x.get("location") for x in items):
+        errors.append("one or more EVOASIS rows are missing city/name/location")
+    if len({x.get("city") for x in items if x.get("city")}) < 6:
+        errors.append("EVOASIS official DC list covers too few cities")
+    if errors:
+        raise RuntimeError("; ".join(errors))
+
+
 def fetch_text(url):
     req = urllib.request.Request(
         url,
@@ -236,32 +314,53 @@ def main():
     args = parser.parse_args()
 
     try:
-        source = fetch_text(UPOWER_URL)
-        items = parse_upower(source)
-        validate_upower(items)
+        upower_source = fetch_text(UPOWER_URL)
+        upower_items = parse_upower(upower_source)
+        validate_upower(upower_items)
     except Exception as error:
         print(f"UPOWER_SYNC_ERROR {error}", file=sys.stderr)
         raise
 
-    total_seats = sum(int(x.get("ccs1Seats") or 0) + int(x.get("ccs2Seats") or 0) for x in items)
-    print(f"UPOWER_OK stations={len(items)} seats={total_seats}")
+    try:
+        evoasis_source = fetch_text(EVOASIS_URL)
+        evoasis_items = parse_evoasis(evoasis_source)
+        validate_evoasis(evoasis_items)
+    except Exception as error:
+        print(f"EVOASIS_SYNC_ERROR {error}", file=sys.stderr)
+        raise
+
+    total_seats = sum(int(x.get("ccs1Seats") or 0) + int(x.get("ccs2Seats") or 0) for x in upower_items)
+    print(f"UPOWER_OK stations={len(upower_items)} seats={total_seats}")
+    print(f"EVOASIS_OK stations={len(evoasis_items)}")
 
     if args.check_online:
         return 0
 
     OUT.mkdir(parents=True, exist_ok=True)
-    payload = {
-        "schema": 1,
-        "source": "U-POWER 官方網站",
-        "sourceUrl": UPOWER_URL,
-        "updatedAt": now(),
-        "count": len(items),
-        "totalSeats": total_seats,
-        "items": sorted(items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
+    generated_at = now()
+    payloads = {
+        "upower.json": {
+            "schema": 1,
+            "source": "U-POWER 官方網站",
+            "sourceUrl": UPOWER_URL,
+            "updatedAt": generated_at,
+            "count": len(upower_items),
+            "totalSeats": total_seats,
+            "items": sorted(upower_items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
+        },
+        "evoasis.json": {
+            "schema": 1,
+            "source": "EVOASIS 官方 DC 站點",
+            "sourceUrl": EVOASIS_URL,
+            "updatedAt": generated_at,
+            "count": len(evoasis_items),
+            "items": sorted(evoasis_items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
+        },
     }
-    target = OUT / "upower.json"
-    target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"WROTE {target} {len(items)} stations")
+    for filename, payload in payloads.items():
+        target = OUT / filename
+        target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"WROTE {target} {len(payload['items'])} stations")
     return 0
 
 
