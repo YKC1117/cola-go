@@ -38,7 +38,17 @@ let browser;
   const page=await context.newPage();
   page.on('pageerror',error=>errors.push(error.message));
   await page.goto(base);
-  await page.waitForFunction(()=>document.querySelectorAll('#chargingList article').length>0);
+  try{
+    await page.waitForFunction(()=>document.querySelectorAll('#chargingList article').length>0,{timeout:8000});
+  }catch(error){
+    console.log('INITIAL_RENDER_ERRORS',JSON.stringify(errors));
+    console.log('INITIAL_RENDER_STATE',JSON.stringify(await page.evaluate(()=>({
+      charging:Array.isArray(state?.charging)?state.charging.length:null,
+      html:document.querySelector('#chargingList')?.innerHTML?.slice(0,600)||'',
+      body:document.body?.innerText?.slice(0,600)||''
+    })).catch(e=>({evaluateError:e.message}))));
+    throw error;
+  }
   await applyFonts(page);
   await page.evaluate(()=>{window.__opened=[];window.open=(url)=>{window.__opened.push(url);return null;};});
   const baseline=execFileSync('git',['show','9212eb9077a5576a56109fbe5a6e52ed866c0a29:index.html'],{cwd:root,encoding:'utf8'});
@@ -109,12 +119,15 @@ let browser;
   await page.waitForFunction(()=>state.charging.some(x=>x.road==='tdx'));
   const all=await page.locator('#chargingList article').count();
   check('Charging driver-first controls are visible',await page.locator('#chargingFindNow').isVisible()&&await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingAvailableOnly').isVisible()&&await page.locator('#chargingCity').isVisible()&&await page.locator('#chargingSearch').isVisible());
+  check('Six primary charging networks are first-layer controls',await page.locator('#chargingMajorFilter [data-charge-major]').evaluateAll(nodes=>nodes.map(n=>n.dataset.chargeMajor).join(',')==='all,evoasis,upower,tail,evalue,icharging,tesla'));
   check('Charging cards expose decision-first availability',await page.locator('#chargingList .charging-availability-main').first().isVisible());
   check('Charging city control stays in the first layer',await page.locator('#chargingCity').evaluate(el=>!el.closest('.charging-advanced')));
   check('Charging source HTML formatting becomes readable text',await page.evaluate(()=>chargingDisplayText('尖峰<br>12.7元&nbsp;每度')==='尖峰 · 12.7元 每度'));
   check('ConnectorType 2 and 5 normalize to CCS2 and J1772',await page.evaluate(()=>chargingConnectors({connectors:['2','5']}).join(',')==='CCS2,J1772'));
   check('Missing official ConnectorType is shown explicitly',await page.evaluate(()=>chargingConnectors({road:'tdx',connectors:[]}).join(',')==='接頭類型未提供'));
   check('EV2 operator maps TDX legal identity to consumer brand',await page.evaluate(()=>chargingOperatorLabel({operatorId:'58430020',operator:'程豐資通股份有限公司'})==='電小二 EV2'));
+  check('U-POWER operator maps TDX legal identity to consumer brand',await page.evaluate(()=>chargingOperatorLabel({operatorId:'83235398',operator:'旭電馳科研'})==='U-POWER'));
+  check('Primary charging network list is the six requested providers',await page.evaluate(()=>CHARGING_MAJOR_KEYS.join(',')==='evoasis,upower,tail,evalue,icharging,tesla'));
   check('EV2 aliases are searchable',await page.evaluate(()=>chargingOperatorSearchText({operatorId:'58430020',operator:'程豐資通股份有限公司',name:'測試站'}).includes('電小二')));
   check('ConnectorStatus 1/2/3/0 compatibility is available/occupied/fault/unknown',await page.evaluate(()=>{
     const counts=chargingLiveCounts({liveStateCount:4,liveStates:{'0':1,'1':1,'2':1,'3':1}});
@@ -131,6 +144,12 @@ let browser;
   await page.locator('[data-charge-quick="ev2"]').click();
   check('EV2 quick filter selects only mapped EV2 operator rows',await page.evaluate(()=>state.charging.filter(chargingQuickMatch).every(x=>chargingOperatorProfile(x)?.key==='ev2')));
   await page.locator('[data-charge-quick="all"]').click();
+  await page.locator('[data-charge-major="upower"]').click();
+  check('U-POWER major filter maps the TDX legal operator identity',await page.locator('#chargingList article').count()>0&&await page.locator('#chargingList article').evaluateAll(nodes=>nodes.every(el=>el.textContent.includes('U-POWER'))));
+  await page.locator('[data-charge-quick="fast"]').click();
+  check('Major operator and technical quick filters can be combined',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingMajor==='upower'&&state.chargingQuick==='fast'));
+  await page.locator('[data-charge-quick="all"]').click();
+  await page.locator('[data-charge-major="all"]').click();
 
   await page.locator('#chargingCity').selectOption('Tainan');
   check('Charging city selector filters actual TDX cards',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingCity==='Tainan'&&[...document.querySelectorAll('#chargingList article')].every(el=>el.textContent.includes('臺南市'))));
@@ -275,7 +294,7 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-26');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-27');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
   await context.setOffline(true);

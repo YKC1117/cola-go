@@ -487,3 +487,18 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
   .map-handoff.charging .map-handoff-heading>span:not(.external-chip) { font-size:15px; }
   .map-handoff.charging .charging-actions button { min-height:58px; }
 }
+
+/* Charging V3.1: six primary charging networks */
+.charging-filter-label { display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:2px 2px 0; }
+.charging-filter-label span { font-size:11px;font-weight:800;color:#e7eef2;letter-spacing:.02em; }
+.charging-filter-label small { font-size:9px;color:#7f8b91; }
+.charging-filter-label-secondary { margin-top:3px; }
+.charging-major-filter { margin-top:0;padding-bottom:3px; }
+.charging-major-filter button { min-height:38px;border-color:#30424b;background:#11191d;color:#d6e2e8; }
+.charging-major-filter button.active { background:linear-gradient(135deg,#eaf8ff,#d9edf7);color:#0e1820;border-color:#dff4ff;box-shadow:0 4px 14px #8fd7ff1e; }
+.charging-item.is-major-network:not(.is-available) { border-color:#283943; }
+@media(max-width:480px){
+  .charging-filter-label { margin-top:1px; }
+  .charging-filter-label small { display:none; }
+  .charging-major-filter button { min-height:35px;padding:6px 10px;font-size:11px; }
+}
