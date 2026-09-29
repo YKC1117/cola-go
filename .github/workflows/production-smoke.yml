@@ -98,6 +98,7 @@ jobs:
           items=charging.get("items",[])
           detailed_location=sum(1 for x in items if x.get("location") and x.get("location") != x.get("cityName"))
           numeric_operator=sum(1 for x in items if str(x.get("operator") or "").isdigit() and len(str(x.get("operator") or "")) == 8)
+          numeric_connector_rows=sum(1 for x in items if any(str(v).isdigit() for v in (x.get("connectors") or [])))
           normalized_connector=sum(1 for x in items if any(str(v) in {"CCS1","CCS2","CHAdeMO","Tesla TPC","J1772","Type2","其他"} for v in (x.get("connectors") or [])))
           assert traffic.get("status") in {"live","stale"}
           assert sum(len(v) for v in traffic.get("highways",{}).values()) > 0
@@ -108,7 +109,7 @@ jobs:
 
           print("PRODUCTION_SMOKE_PASS")
           print("charging", len(charging["items"]), charging.get("status"), charging.get("updatedAt"))
-          print("charging diagnostics", "detailed_location", detailed_location, "numeric_operator", numeric_operator, "normalized_connector", normalized_connector)
+          print("charging diagnostics", "detailed_location", detailed_location, "numeric_operator", numeric_operator, "numeric_connector_rows", numeric_connector_rows, "normalized_connector", normalized_connector)
           print("traffic", sum(len(v) for v in traffic["highways"].values()), traffic.get("status"), traffic.get("updatedAt"))
           print("tunnel", len(tunnel.get("south",[])), len(tunnel.get("north",[])), tunnel.get("status"), tunnel.get("updatedAt"))
           print("cctv", len(cctv["items"]), cctv.get("updatedAt"))
