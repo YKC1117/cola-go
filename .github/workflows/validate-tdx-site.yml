@@ -8,7 +8,9 @@ on:
       - "scripts/sync_tdx.py"
       - "assets/tdx-runtime.js"
       - "assets/app.js"
+      - "assets/styles.css"
       - "index.html"
+      - "scripts/verify_ui_v6.cjs"
       - "sw.js"
       - ".github/workflows/sync-tdx-data.yml"
       - ".github/workflows/validate-tdx-site.yml"
@@ -47,8 +49,10 @@ jobs:
           assert classify_live_state(3) == "fault"
           assert classify_live_state(0) == "unknown"
           assert connector_type_name(2) == "CCS2"
-          assert connector_type_name(4) == "Tesla TPC"
-          assert connector_type_name(6) == "Mennekes(Type2)"
+          assert connector_type_name(5) == "J1772"
+          assert connector_type_name(6) == "Type2"
+          assert connector_type_name(254) == "其他"
+          assert connector_type_name(255) == "其他"
           assert power_mode_name(1) == "AC"
           assert power_mode_name(2) == "DC"
           assert power_rating_kw("250kW") == 250
@@ -57,6 +61,9 @@ jobs:
               "Location":{"Address":{"City":"臺南市","Town":"東區","Road":"民族路一段","Lane":"17巷","No":"37號對面"}}
           },"臺南市")
           assert location == "臺南市東區民族路一段17巷37號對面"
+          assert station_location({"Location":{"Place":{"POI":"臺南轉運站"}}},"臺南市") == "臺南轉運站"
+          assert station_location({"Location":{"Freeway":{"RoadName":"國道1號","Direction":"北上","Milepost":"319K"}}},"臺南市") == "國道1號北上319K"
+          assert station_location({"Address":"臺南市","Location":{"CityRoad":{"City":"臺南市","Town":"永康區","Road":"中正北路"}}},"臺南市") == "臺南市永康區中正北路"
           PY
       - name: JavaScript syntax
         run: |
@@ -80,9 +87,11 @@ jobs:
           grep -q 'LastUpdateTime' scripts/sync_tdx.py
           grep -q 'PowerRating' scripts/sync_tdx.py
           grep -q 'Operator/City/' scripts/sync_tdx.py
-          grep -Fq 'data-charge-quick="available"' index.html
+          grep -Fq 'id="chargingAvailableOnly"' index.html
           grep -Fq 'id="chargingNearby"' index.html
           grep -q 'chargingLiveCounts' assets/app.js
+          grep -q 'chargingAvailableOnly' assets/app.js
+          grep -q 'const TAIWAN_CITIES=' assets/app.js
           grep -q 'chargingOperatorLabel' assets/app.js
           grep -q 'bindSelect("chargingCity","chargingCity")' assets/app.js
           grep -q 'Road/Traffic/Live/Freeway' scripts/sync_tdx.py
