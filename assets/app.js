@@ -18,6 +18,7 @@ const state={
   chargingOperator:"all",
   chargingCity:"all",
   chargingQuick:"all",
+  chargingMajor:"all",
   chargingAvailableOnly:false,
   chargingSort:"smart",
   chargingOrigin:null,
@@ -205,14 +206,16 @@ const LEGACY_TDX_CONNECTOR_TYPES={"1":"CCS1","2":"CCS2","3":"CHAdeMO","4":"Tesla
 const CHARGING_OPERATOR_PROFILES=[
   {key:"ev2",brand:"電小二 EV2",ids:["58430020"],names:["程豐資通股份有限公司"],aliases:["電小二","EV2","程豐"],official:"https://www.ev2.com.tw/",ios:"https://apps.apple.com/tw/app/%E9%9B%BB%E5%B0%8F%E4%BA%8C-%E9%9B%BB%E5%8B%95%E8%BB%8A%E5%85%85%E9%9B%BB%E7%AB%99/id6677032732",android:"https://play.google.com/store/apps/details?id=tw.delta.android"},
   {key:"evoasis",brand:"EVOASIS",names:["源點科技股份有限公司"],aliases:["OASIS","源點科技"],official:"https://www.evoasis.com.tw/"},
-  {key:"evalue",brand:"E-Value",names:["華城電能科技股份有限公司"],aliases:["EVALUE","華城電能"],official:"https://www.evalue.com.tw/"},
-  {key:"icharging",brand:"iCharging",names:["中興電工機械股份有限公司"],aliases:["中興電工"],official:"https://www.icharging.com.tw/tw"},
+  {key:"upower",brand:"U-POWER",ids:["83235398"],names:["旭電馳科研","旭電馳科研股份有限公司"],aliases:["U POWER","UPOWER","旭電馳","旭電馳科研"],official:"https://www.u-power.com.tw/"},
+  {key:"evalue",brand:"EVALUE 華城電機",names:["華城電能科技股份有限公司","華城電機股份有限公司"],aliases:["E-Value","華城電能","華城電機"],official:"https://www.evalue.com.tw/"},
+  {key:"icharging",brand:"iCharging 中興電工",names:["中興電工機械股份有限公司"],aliases:["iCharging","中興電工"],official:"https://www.icharging.com.tw/tw"},
   {key:"starcharger",brand:"星舟快充",names:["星舟快充"],aliases:["StarCharger","星舟"],official:"https://starcharger.com.tw/"},
   {key:"tail",brand:"TAIL 特爾電力",names:["特爾電力股份有限公司"],aliases:["TAIL","特爾"],official:"https://www.evtail.com.tw/"},
   {key:"acon",brand:"Acon-eco",names:["連展電能科技股份有限公司"],aliases:["Acon","連展電能"],official:"https://www.acon-eco.com/"},
   {key:"noodoe",brand:"Noodoe",names:["拓廣科技","拓廣科技股份有限公司"],aliases:["拓廣","Noodoe EV"],official:"https://www.noodoe.com.tw/"},
-  {key:"tesla",brand:"Tesla",names:["台灣特斯拉汽車有限公司"],aliases:["特斯拉","Tesla Supercharger"],official:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan"}
+  {key:"tesla",brand:"Tesla 超級充電",names:["台灣特斯拉汽車有限公司"],aliases:["特斯拉","Tesla","Tesla Supercharger"],official:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan"}
 ];
+const CHARGING_MAJOR_KEYS=["evoasis","upower","tail","evalue","icharging","tesla"];
 function chargingOperatorProfile(value){
   const x=typeof value==="string"?{operator:value}:(value||{});
   const operator=String(x.operator||"").trim();
@@ -221,6 +224,14 @@ function chargingOperatorProfile(value){
     (operatorId&&profile.ids?.includes(operatorId))||
     profile.names?.some(name=>operator===name||operator.includes(name))
   )||null;
+}
+function chargingMajorRank(x){
+  const key=chargingOperatorProfile(x)?.key||"";
+  const index=CHARGING_MAJOR_KEYS.indexOf(key);
+  return index>=0?index:99;
+}
+function chargingMajorMatch(x){
+  return state.chargingMajor==="all"||chargingOperatorProfile(x)?.key===state.chargingMajor;
 }
 function chargingOperatorSearchText(x){
   const profile=chargingOperatorProfile(x);
@@ -410,6 +421,7 @@ function renderCharging(){
     .filter(x=>state.chargingConnector==="all"||chargingConnectors(x).includes(state.chargingConnector))
     .filter(x=>chargingPowerKw(x)>=Number(state.chargingPower||0))
     .filter(x=>state.chargingOperator==="all"||x.operator===state.chargingOperator)
+    .filter(chargingMajorMatch)
     .filter(chargingQuickMatch)
     .filter(x=>!state.chargingFavoritesOnly||state.chargingFavorites.includes(chargingKey(x)))
     .filter(x=>!q||chargingOperatorSearchText(x).includes(q));
@@ -430,6 +442,8 @@ function renderCharging(){
     if(fa!==fb)return Number(fb)-Number(fa);
     const rank=chargingSortRank(a)-chargingSortRank(b);
     if(rank)return rank;
+    const major=chargingMajorRank(a)-chargingMajorRank(b);
+    if(major)return major;
     const available=chargingLiveCounts(b).available-chargingLiveCounts(a).available;
     if(available)return available;
     const power=chargingPowerKw(b)-chargingPowerKw(a);
@@ -452,7 +466,8 @@ function renderCharging(){
     const label=$("#chargingNearby").querySelector("b");
     if(label)label.textContent=state.chargingSort==="nearby"?"依距離排序":"附近排序";
   }
-  $$("[data-charge-quick]").forEach(b=>b.classList.toggle("active",b.dataset.chargeQuick===state.chargingQuick));
+  $("[data-charge-quick]").forEach(b=>b.classList.toggle("active",b.dataset.chargeQuick===state.chargingQuick));
+  $("[data-charge-major]").forEach(b=>b.classList.toggle("active",b.dataset.chargeMajor===state.chargingMajor));
   if($("#chargingResultSummary")){
     const suffix=resultCount>shown.length?" · 先顯示前 "+shown.length+" 站":"";
     const context=[];
@@ -464,6 +479,10 @@ function renderCharging(){
     if(state.chargingQuick==="ccs2")context.push("CCS2");
     if(state.chargingQuick==="tesla")context.push("Tesla");
     if(state.chargingQuick==="ev2")context.push("電小二");
+    if(state.chargingMajor!=="all"){
+      const majorProfile=CHARGING_OPERATOR_PROFILES.find(x=>x.key===state.chargingMajor);
+      if(majorProfile)context.push(majorProfile.brand);
+    }
     $("#chargingResultSummary").textContent=resultCount===0&&state.chargingAvailableOnly
       ?"目前沒有可確認空槍"+(state.chargingSort==="nearby"?" · 可改看附近站點":"")
       :resultCount+" 站符合"+suffix+(context.length?" · "+context.join(" · "):"");
@@ -488,7 +507,8 @@ function renderCharging(){
     const meta=[tdx?x.cityName:x.direction,chargingOperatorLabel(x)].filter(Boolean).join(" · ");
     const routeTag=tdx?"官方":("國 "+x.road);
     const availableNow=tdx&&!x.liveStale&&chargingLiveCounts(x).available>0;
-    return '<article class="list-item charging-item '+(availableNow?'is-available':'')+'">'+
+    const majorNetwork=CHARGING_MAJOR_KEYS.includes(chargingOperatorProfile(x)?.key||"");
+    return '<article class="list-item charging-item '+(availableNow?'is-available ':'')+(majorNetwork?'is-major-network':'')+'">'+
       '<div class="list-head">'+
         '<div><div class="charging-title-line"><h3>'+esc(x.name)+'</h3></div><div class="meta">'+esc(meta)+'</div></div>'+
         '<span class="route-tag">'+esc(routeTag)+'</span>'+
@@ -1429,10 +1449,21 @@ function bindChargingTools(){
   bindSelect("chargingDirection","chargingDirection");
   bindSelect("chargingConnector","chargingConnector");
   bindSelect("chargingPower","chargingPower",Number);
-  bindSelect("chargingOperator","chargingOperator");
+  const chargingOperatorSelect=$("#chargingOperator");
+  if(chargingOperatorSelect)chargingOperatorSelect.onchange=()=>{
+    state.chargingOperator=chargingOperatorSelect.value;
+    state.chargingMajor="all";
+    renderCharging();
+  };
 
-  $$("[data-charge-quick]").forEach(b=>b.addEventListener("click",()=>{
+  $("[data-charge-quick]").forEach(b=>b.addEventListener("click",()=>{
     state.chargingQuick=b.dataset.chargeQuick||"all";
+    renderCharging();
+  }));
+  $("[data-charge-major]").forEach(b=>b.addEventListener("click",()=>{
+    state.chargingMajor=b.dataset.chargeMajor||"all";
+    state.chargingOperator="all";
+    if($("#chargingOperator"))$("#chargingOperator").value="all";
     renderCharging();
   }));
 
@@ -1489,6 +1520,7 @@ function bindChargingTools(){
     state.chargingPower=0;
     state.chargingOperator="all";
     state.chargingQuick="all";
+    state.chargingMajor="all";
     state.chargingAvailableOnly=false;
     state.chargingSort="smart";
     state.chargingOrigin=null;
