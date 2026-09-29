@@ -204,6 +204,8 @@ let browser;
   check('Major operator detail prefers station-specific official source URL',await page.evaluate(()=>chargingDetailMarkup({officialSupplemental:true,officialSource:'EVALUE 官方充電站',officialSourceURL:'https://example.com/station',operator:'華城電能科技股份有限公司',road:'operator',connectors:[],spaces:0}).includes('https://example.com/station')));
   check('Network key can classify partner-operated stations into EVALUE',await page.evaluate(()=>chargingOperatorProfile({operator:'聯永物業股份有限公司',networkKey:'evalue'})?.key==='evalue'));
   check('Primary charging network list is the six requested providers',await page.evaluate(()=>CHARGING_MAJOR_KEYS.join(',')==='evoasis,upower,tail,evalue,icharging,tesla'));
+  check('iCharging official plug-and-charge capability matches Dongshan service area',await page.evaluate(()=>chargingCapabilities({operator:'中興電工機械股份有限公司',name:'東山服務區'}).some(x=>x.key==='plug-and-charge')));
+  check('iCharging plug-and-charge capability does not leak to unrelated stations',await page.evaluate(()=>chargingCapabilities({operator:'中興電工機械股份有限公司',name:'捷運石牌站'}).length===0));
   check('EV2 aliases are searchable',await page.evaluate(()=>chargingOperatorSearchText({operatorId:'58430020',operator:'程豐資通股份有限公司',name:'測試站'}).includes('電小二')));
   check('ConnectorStatus 1/2/3/0 compatibility is available/occupied/fault/unknown',await page.evaluate(()=>{
     const counts=chargingLiveCounts({liveStateCount:4,liveStates:{'0':1,'1':1,'2':1,'3':1}});
@@ -233,6 +235,9 @@ let browser;
   await page.locator('[data-charge-major="all"]').click();
 
   await page.locator('#chargingCity').selectOption('Tainan');
+  await page.locator('#chargingSearch').fill('東山服務區');
+  check('Known iCharging plug-and-charge station shows capability chip',await page.locator('#chargingList .charging-capability').filter({hasText:'插槍即充'}).count()>0);
+  await page.locator('#chargingSearch').fill('');
   check('Charging city selector filters actual TDX cards',await page.locator('#chargingList article').count()>0&&await page.evaluate(()=>state.chargingCity==='Tainan'&&[...document.querySelectorAll('#chargingList article')].every(el=>el.textContent.includes('臺南市'))));
   await page.locator('#chargingSearch').fill('東山服務區');
   if(await page.locator('#chargingList article').count()){
@@ -381,7 +386,7 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-34');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-35');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
   await context.setOffline(true);
