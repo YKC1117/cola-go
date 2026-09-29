@@ -243,6 +243,7 @@ Siri「特斯拉助手」：
 <button data-charge-quick="fast">100 kW+</button>
 <button data-charge-quick="ccs2">CCS2</button>
 <button data-charge-quick="tesla">Tesla</button>
+<button data-charge-quick="ev2">電小二</button>
 </div>
 <div class="charging-result-summary" id="chargingResultSummary">讀取充電站資料中</div>
 </div>
@@ -259,13 +260,13 @@ Siri「特斯拉助手」：
 <button aria-pressed="false" id="chargingFavoritesOnly"><span>只看收藏</span><b id="chargingFavoriteCount">0</b></button>
 <button id="resetChargingFilters">清除篩選</button>
 </div>
-<p class="notice">交通部 TDX 即時資料。COLA GO 約每 15 分鐘同步；最後同步時間以站點與上方資料狀態為準。超過 45 分鐘會標示逾時，且不列入「有空槍」。</p>
+<p class="notice">交通部 TDX 為站點與即時槍況主來源，COLA GO 約每 15 分鐘同步；另把法人業者名稱轉成車友熟悉的品牌並提供官方入口。沒有 TDX 即時槍況不代表站點不存在或不能充，這類站點請再以業者官方資訊確認。</p>
 <button class="external-btn" data-url="https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan"><span><b>Tesla 台灣超充官方清單</b><small>Tesla 官方來源，適合再確認站點規格與開放資訊</small></span><svg><use href="#i-external"></use></svg></button>
 </details>
 
 <div class="charging-source">
-<div><b>TDX 全台官方充電站</b><small>交通部 TDX 即時資料 · COLA GO 約每 15 分鐘同步</small></div>
-<span class="charging-source-chip">交通部官方資料</span>
+<div><b>TDX 全台官方充電站＋業者品牌</b><small>交通部 TDX 站點與槍況 · 常用業者名稱轉成車友熟悉品牌</small></div>
+<span class="charging-source-chip">讀取資料覆蓋率</span>
 </div>
 <div class="list" id="chargingList"></div>
 
