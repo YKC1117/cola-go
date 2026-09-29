@@ -245,6 +245,7 @@ function chargingConnectors(x){
 function chargingPowerKw(x){
   const direct=Number(x?.maxPowerKw);
   if(Number.isFinite(direct)&&direct>0)return direct;
+  if(x?.officialSupplemental&&Number(x?.sitePowerKw)>0)return 0;
   const legacy=String(x?.power||"").trim();
   if(x?.road==="tdx"&&/^[12](?:\.0)?\s*kW$/i.test(legacy))return 0;
   return parseChargingPower(legacy);
@@ -252,6 +253,7 @@ function chargingPowerKw(x){
 function chargingPowerLabel(x){
   const kw=Number(x?.maxPowerKw);
   if(Number.isFinite(kw)&&kw>0)return (Number.isInteger(kw)?kw:kw.toFixed(1))+" kW";
+  if(x?.officialSupplemental&&Number(x?.sitePowerKw)>0)return "站點總功率 "+Number(x.sitePowerKw).toLocaleString("zh-TW")+" kW";
   const legacy=String(x?.power||"").trim();
   if(x?.road==="tdx"&&/^[12](?:\.0)?\s*kW$/i.test(legacy))return "功率未提供";
   return legacy||"功率未提供";
@@ -331,6 +333,7 @@ function chargingQuickMatch(x){
   return true;
 }
 function chargingSortRank(x){
+  if(x?.officialSupplemental)return 3;
   if(x.road!=="tdx")return 5;
   if(x.liveStale)return 4;
   if(chargingLiveCounts(x).available>0)return 0;
@@ -351,6 +354,10 @@ function chargingStatusMarkup(x){
   const tdx=x.road==="tdx";
   const profile=chargingOperatorProfile(x);
   const unknown=(title,detail,kind="is-unknown")=>'<div class="charging-status-block '+kind+'"><div class="charging-availability-row '+kind+'"><div class="charging-availability-main"><strong>--</strong><span>空槍</span></div><div class="charging-availability-copy"><b>'+esc(title)+'</b><small>'+esc(detail)+'</small></div></div></div>';
+  if(x?.officialSupplemental){
+    const brand=profile?.brand||"業者";
+    return unknown("業者官方站點",brand+" 官方已列站 · 即時空槍尚未由 TDX 驗證");
+  }
   if(!tdx)return unknown("即時狀態未知","此筆未提供即時空槍");
   const updated=x.statusUpdatedAt?formatTime(x.statusUpdatedAt):"更新時間未提供";
   if(x.liveStale)return unknown("狀態已逾時","不列入「有空槍」 · "+updated,"is-stale");
@@ -393,6 +400,7 @@ function chargingDetailMarkup(x){
     ["營業時間",x.serviceTime],
     ["充電費率",x.chargingRate],
     ["停車費率",x.parkingRate],
+    [x.officialSupplemental&&Number(x.sitePowerKw)>0?"站點總設備功率":"",x.officialSupplemental&&Number(x.sitePowerKw)>0?Number(x.sitePowerKw).toLocaleString("zh-TW")+" kW":""],
     ["聯絡電話",x.telephone||x.operatorTelephone],
     [profile&&x.operator&&profile.brand!==x.operator?"TDX 登記業者":"",profile&&x.operator&&profile.brand!==x.operator?x.operator:""],
     ["狀態更新",x.statusUpdatedAt?formatTime(x.statusUpdatedAt):""]
@@ -489,11 +497,11 @@ function renderCharging(){
   }
   if($("#chargingFindNow"))$("#chargingFindNow").setAttribute("aria-pressed",String(state.chargingSort==="nearby"&&state.chargingAvailableOnly));
 
-  const unverifiedRows=state.chargingAvailableOnly?candidateRows.filter(x=>x.road==="tdx"&&(x.liveStale||chargingLiveCounts(x).total===0)):[];
+  const unverifiedRows=state.chargingAvailableOnly?candidateRows.filter(x=>x?.officialSupplemental||(x.road==="tdx"&&(x.liveStale||chargingLiveCounts(x).total===0))):[];
   const unverifiedBrands=[...new Set(unverifiedRows.map(x=>chargingOperatorProfile(x)?.brand).filter(Boolean))].slice(0,3);
   const unverifiedScope=state.chargingSort==="nearby"?"附近":"目前篩選";
   const unverifiedNote=unverifiedRows.length
-    ? unverifiedScope+"另有 "+unverifiedRows.length+" 站沒有 TDX 即時槍況"+(unverifiedBrands.length?"，包含 "+unverifiedBrands.join("、"):"")+"；不代表站點不能充。"
+    ? unverifiedScope+"另有 "+unverifiedRows.length+" 站沒有可驗證的即時槍況"+(unverifiedBrands.length?"，包含 "+unverifiedBrands.join("、"):"")+"；其中業者官方已列站不代表不能充。"
     : "";
 
   root.innerHTML=shown.length?shown.map(x=>{
@@ -503,9 +511,10 @@ function renderCharging(){
     const hasCoords=Number.isFinite(lat)&&Number.isFinite(lon);
     const destination=encodeURIComponent(hasCoords?(lat+","+lon):(x.name+" "+x.location));
     const tdx=x.road==="tdx";
+    const supplemental=Boolean(x.officialSupplemental);
     const distance=chargingDistanceKm(x);
-    const meta=[tdx?x.cityName:x.direction,chargingOperatorLabel(x)].filter(Boolean).join(" · ");
-    const routeTag=tdx?"官方":("國 "+x.road);
+    const meta=[tdx||supplemental?x.cityName:x.direction,chargingOperatorLabel(x)].filter(Boolean).join(" · ");
+    const routeTag=supplemental?"業者官方":(tdx?"TDX":("國 "+x.road));
     const availableNow=tdx&&!x.liveStale&&chargingLiveCounts(x).available>0;
     const majorNetwork=CHARGING_MAJOR_KEYS.includes(chargingOperatorProfile(x)?.key||"");
     return '<article class="list-item charging-item '+(availableNow?'is-available ':'')+(majorNetwork?'is-major-network':'')+'">'+
@@ -516,7 +525,7 @@ function renderCharging(){
       chargingStatusMarkup(x)+
       '<div class="specs charging-facts">'+
         (distance!=null?'<span class="charging-distance">'+esc(distance<10?distance.toFixed(1):Math.round(distance))+' km</span>':"")+
-        '<span>'+esc(x.spaces)+(tdx?' 充電點':' 車位')+'</span>'+
+        '<span>'+esc(x.spaces)+(supplemental?' 席':(tdx?' 充電點':' 車位'))+'</span>'+
         '<span class="charging-power">'+esc(chargingPowerLabel(x))+'</span>'+
         chargingConnectors(x).map(c=>'<span class="charging-connector">'+esc(c)+'</span>').join("")+
       '</div>'+
@@ -526,7 +535,7 @@ function renderCharging(){
         '<button class="go charging-go-primary" data-charge-go="'+destination+'">直接導航</button>'+
         '<button class="charging-map-choice" data-charge-nav-toggle="'+esc(key)+'">選地圖</button>'+
         '<button class="favorite-action '+(favorite?'active':'')+'" data-charge-favorite="'+esc(key)+'" aria-pressed="'+favorite+'">'+(favorite?'已收藏':'收藏')+'</button>'+
-        (!tdx?'<button data-camera-road="'+esc(x.road)+'">CCTV</button>':"")+
+        (!tdx&&["1","3","5"].includes(String(x.road))?'<button data-camera-road="'+esc(x.road)+'">CCTV</button>':"")+
       '</div>'+
       '<div class="charging-nav-menu" data-charge-nav-menu="'+esc(key)+'" hidden>'+
         '<button data-charge-google="'+destination+'">Google Maps</button>'+
