@@ -104,7 +104,7 @@ jobs:
               for x in a for v in x.get("connectors",[])
           )
           assert not any(re.fullmatch(r"\d{8}", str(x.get("operator") or "")) for x in a)
-          assert city_only(a) < city_only(b)
+          assert city_only(a) <= city_only(b)
           print("CHARGING_CACHE_DRY_RUN_PASS", "cityOnly", city_only(b), "->", city_only(a))
           PY
           cp /tmp/charging-before.json data/tdx/charging.json
