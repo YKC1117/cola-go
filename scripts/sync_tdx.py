@@ -545,7 +545,32 @@ def operator_map(rows):
     return out
 
 
-def normalize_station(record, city, city_name, operators=None):
+def canonical_place_name(value):
+    text = re.sub(r"\s+", "", str(value or "")).strip()
+    for prefix in ("YES裕捷能源",):
+        if text.startswith(prefix):
+            text = text[len(prefix):]
+    return text
+
+
+def parking_address_map(city):
+    data = load_old(PARK / f"{city}.json", {})
+    grouped = defaultdict(set)
+    for row in data.get("items", []):
+        if not isinstance(row, dict):
+            continue
+        name = canonical_place_name(row.get("name"))
+        address = str(row.get("address") or "").strip()
+        if name and address:
+            grouped[name].add(address)
+    return {
+        name: next(iter(addresses))
+        for name, addresses in grouped.items()
+        if len(addresses) == 1
+    }
+
+
+def normalize_station(record, city, city_name, operators=None, parking_addresses=None):
     source_id = str(record.get("StationID") or record.get("ChargingStationID") or "")
     if not source_id:
         return None
@@ -553,13 +578,21 @@ def normalize_station(record, city, city_name, operators=None):
     operator_id = str(record.get("OperatorID") or record.get("OperatorId") or "")
     operator = (operators or {}).get(operator_id, {})
     station_phone = str(record.get("Telephone") or "")
+    charging_location = station_location(record, city_name)
+    fallback_location = ""
+    if charging_location == city_name and parking_addresses:
+        fallback_location = parking_addresses.get(canonical_place_name(
+            zh(record.get("StationName")) or zh(record.get("Name")) or source_id
+        ), "")
+    final_location = fallback_location or charging_location
     return {
         "id": f"{city}:{source_id}",
         "sourceId": source_id,
         "city": city,
         "cityName": city_name,
         "name": zh(record.get("StationName")) or zh(record.get("Name")) or source_id,
-        "location": station_location(record, city_name),
+        "location": final_location,
+        "locationSource": "TDX parking" if fallback_location else "TDX charging",
         "operator": operator.get("name") or (f"TDX 業者 {operator_id}" if operator_id else "TDX 官方站點"),
         "operatorId": operator_id,
         "operatorWebURL": operator.get("webURL") or "",
@@ -648,7 +681,11 @@ def sync_charging_static(tok):
                 print("EV_CONNECTOR_OPTIONAL_FAIL", city, repr(error), file=sys.stderr)
 
             operators = operator_map(operator_raw)
-            stations = [normalize_station(x, city, city_name, operators) for x in station_raw]
+            parking_addresses = parking_address_map(city)
+            stations = [
+                normalize_station(x, city, city_name, operators, parking_addresses)
+                for x in station_raw
+            ]
             stations = [x for x in stations if x]
             points = [normalize_point(x) for x in point_raw]
             connectors = [normalize_connector(x) for x in connector_raw]
@@ -726,6 +763,7 @@ def sync_charging_static(tok):
             print(
                 "EV_STATIC", city, len(city_rows),
                 "operators", len(operators),
+                "parkingAddresses", len(parking_addresses),
                 "points", len(points), "connectors", len(connectors),
             )
         except Exception as error:
