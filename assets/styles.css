@@ -233,20 +233,34 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .charging-title-line h3 { min-width:0 }
 .favorite-btn { width:34px;height:34px;min-height:34px;border-radius:50%;color:#b6b7b2;font-size:17px;line-height:1;flex:none;margin-top:-7px }
 .favorite-btn.active { color:#c98b18;background:#352b12 }
-.charging-status-line { display:flex;align-items:center;gap:8px;margin-top:11px;flex-wrap:wrap }
-.charging-status-line span { font-size:11px;color:var(--ink);font-weight:700;padding:4px 7px;border-radius:99px;background:var(--soft) }
-.charging-status-line small { font-size:11px;color:var(--muted);line-height:1.45 }
-.charging-status-line.available span { color:var(--good);background:#123322 }
-.charging-status-line.busy span,.charging-status-line.partial span { color:var(--warn);background:#352b12 }
-.charging-status-line.stale span { color:var(--bad);background:#371a22 }
+.charging-item.is-available { border-color:#24523a;box-shadow:inset 3px 0 0 #40e28c33 }
+.charging-status-block { display:grid;gap:6px;margin-top:11px }
+.charging-status-block>small { font-size:11px;color:var(--muted);line-height:1.45 }
+.charging-live-badges { display:flex;gap:6px;flex-wrap:wrap }
+.charging-live-badges span { font-size:11px;font-weight:750;padding:5px 8px;border-radius:99px;background:var(--soft) }
+.charging-live-badges .available { color:var(--good);background:#123322 }
+.charging-live-badges .occupied { color:var(--warn);background:#352b12 }
+.charging-live-badges .fault { color:var(--bad);background:#371a22 }
+.charging-live-badges .unknown { color:var(--muted);background:var(--soft) }
+.charging-status-block.stale .charging-live-badges .fault { color:var(--bad) }
 .charging-primary { display:grid;gap:10px;margin:4px 0 14px }
-.charging-main-search { margin:0 }
-.charging-nearby { min-height:58px;padding:10px 13px;border:1px solid var(--line);border-radius:14px;background:var(--card);display:flex;align-items:center;justify-content:space-between;text-align:left;gap:10px }
-.charging-nearby>span { display:grid;grid-template-columns:24px 1fr;column-gap:9px;align-items:center }
-.charging-nearby>span svg { grid-row:1/3;color:var(--coral) }
-.charging-nearby b { font-size:14px;font-weight:750 }
-.charging-nearby small { color:var(--muted);font-size:11px }
+.charging-primary-actions { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px }
+.charging-primary-action,.charging-city-primary { min-width:0;min-height:70px;border:1px solid var(--line);border-radius:14px;background:var(--card) }
+.charging-primary-action { padding:10px;display:grid;grid-template-columns:20px minmax(0,1fr);gap:7px;align-items:start;text-align:left }
+.charging-primary-action>svg { width:18px;height:18px;color:var(--coral);margin-top:1px }
+.charging-primary-action span { min-width:0 }
+.charging-primary-action b { display:block;font-size:12px;font-weight:750;line-height:1.3 }
+.charging-primary-action small { display:block;color:var(--muted);font-size:9px;line-height:1.35;margin-top:4px }
 .charging-nearby[aria-pressed="true"] { border-color:#7d2836;background:var(--coral-soft) }
+.charging-available[aria-pressed="true"] { border-color:#24523a;background:#102a1d }
+.charging-available[aria-pressed="true"]>svg,.charging-available[aria-pressed="true"] b { color:var(--good) }
+.charging-city-primary { display:flex;flex-direction:column;justify-content:center;padding:8px 9px }
+.charging-city-primary>span { display:block;font-size:9px;color:var(--muted);line-height:1.2;margin-bottom:3px }
+.charging-city-primary select { width:100%;min-height:34px;border:0;background:transparent;padding:0;font-size:13px;font-weight:750 }
+.charging-main-search { margin:0 }
+.favorite-action.active { border-color:#7d2836;background:var(--coral-soft);color:var(--coral) }
+.charging-nav-menu { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px }
+.charging-nav-menu button { min-height:42px;border:1px solid var(--line);border-radius:10px;background:var(--soft);font-size:12px;font-weight:650 }
 .charging-quick-filter { display:flex;gap:7px;overflow-x:auto;padding:1px 0 3px;scrollbar-width:none }
 .charging-quick-filter::-webkit-scrollbar { display:none }
 .charging-quick-filter button { flex:none;min-height:38px;padding:7px 11px;border:1px solid var(--line);border-radius:99px;background:var(--card);font-size:12px;font-weight:650;white-space:nowrap }
