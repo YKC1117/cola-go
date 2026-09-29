@@ -152,22 +152,13 @@ let browser;
   await page.locator('#chargingFindNow').click();
   await page.waitForFunction(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&Boolean(state.chargingOrigin));
   check('One-tap nearby available action combines location, distance sorting, and live availability',await page.evaluate(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&state.chargingCity==='all'));
-  const oneTapCards=await page.evaluate(()=>[...document.querySelectorAll('#chargingList .charging-item')].map(card=>({
-    cls:card.className,
-    text:card.textContent.replace(/\s+/g,' ').trim().slice(0,220)
-  })));
-  const oneTapBad=oneTapCards.filter(card=>!card.cls.split(/\s+/).includes('is-available'));
-  if(oneTapBad.length){
-    console.log('ONE_TAP_NON_AVAILABLE',JSON.stringify(oneTapBad.slice(0,6)));
-    console.log('ONE_TAP_STATE',JSON.stringify(await page.evaluate(()=>({
-      availableOnly:state.chargingAvailableOnly,
-      sort:state.chargingSort,
-      summary:document.querySelector('#chargingResultSummary')?.textContent,
-      findNow:document.querySelector('#chargingFindNow')?.getAttribute('aria-pressed')
-    }))));
-    console.log('ONE_TAP_PAGE_ERRORS',JSON.stringify(errors));
+  const oneTapBad=await page.evaluate(()=>[...document.querySelectorAll('#chargingList .charging-item')].filter(card=>!card.classList.contains('is-available')).length);
+  check('One-tap nearby available never shows a non-available card',oneTapBad===0);
+  if(await page.locator('[data-charge-show-nearby]').count()){
+    await page.locator('[data-charge-show-nearby]').click();
+    check('Empty available state can fall back to nearby stations without losing distance sort',await page.evaluate(()=>state.chargingAvailableOnly===false&&state.chargingSort==='nearby'));
+    await page.locator('#chargingAvailableOnly').click();
   }
-  check('One-tap nearby available never shows a non-available card',oneTapBad.length===0);
   await page.locator('#resetChargingFilters').click();
   await page.locator('#chargingNearby').click();
   await page.waitForFunction(()=>state.chargingSort==='nearby'&&Boolean(state.chargingOrigin));
@@ -274,7 +265,7 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-24');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-25');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
   await context.setOffline(true);

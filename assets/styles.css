@@ -450,3 +450,35 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .shortcut-automation{margin-top:16px}.shortcut-automation ol{margin:14px 0 0;padding-left:22px}.shortcut-automation li{margin:9px 0;line-height:1.6;font-size:14px}.shortcut-automation .shortcut-note{margin-bottom:0}\n.shortcut-proof{display:grid;gap:7px;margin:12px 0}.shortcut-proof span{display:block;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:700;line-height:1.45}.shortcut-proof .verified{background:rgba(34,197,94,.12)}.shortcut-proof .pending{background:rgba(245,158,11,.12)}
 
 .shortcut-guide{margin:16px 0 4px}.shortcut-guide a{display:block;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card)}.shortcut-guide img{display:block;width:100%;height:auto;max-width:100%;object-fit:contain}.shortcut-guide figcaption{padding:8px 4px 0;font-size:12px;color:var(--muted);line-height:1.5}.shortcut-guide-overview{margin:0 0 18px}.shortcut-guide-intro{margin:18px 0;padding:18px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}.shortcut-guide-intro h2{margin:0 0 10px;font-size:20px}.shortcut-guide-intro p{margin:8px 0;line-height:1.65}.shortcut-guide-disclaimer,.shortcut-guide-search{font-size:13px;color:var(--muted)}
+
+
+/* Charging mobile refinement after iPhone visual QA */
+.charging-nearby[aria-pressed="true"] { border-color:#315e77;background:#102634; }
+.charging-nearby[aria-pressed="true"]>svg,.charging-nearby[aria-pressed="true"] b { color:#75cfff; }
+.charging-empty { margin-top:8px;padding:22px 18px;border:1px solid #263238;border-radius:18px;background:linear-gradient(145deg,#121a1e,#0d1215); }
+.charging-empty b { display:block;font-size:17px;line-height:1.45; }
+.charging-empty p { margin:10px 0 16px;font-size:13px;line-height:1.7;color:var(--muted); }
+.charging-empty button { width:100%;min-height:48px;border-radius:12px;font-size:14px;font-weight:800; }
+.charging-empty-primary { color:#07140d;border:1px solid #4beb98;background:linear-gradient(135deg,#58f2a2,#2fdc82); }
+.charging-empty-secondary { color:#fff;border:1px solid #354149;background:#151c20; }
+.charging-empty small { display:block;margin-top:9px;text-align:center;font-size:10px;color:#7f8b91; }
+.charging-source { padding:10px 0; }
+.charging-map-secondary { margin-top:16px; }
+@media(max-width:480px){
+  .charging-primary-actions { gap:7px; }
+  .charging-primary-action,.charging-city-primary { min-height:58px; }
+  .charging-primary-action { grid-template-columns:17px minmax(0,1fr);gap:6px;padding:9px; }
+  .charging-primary-action>svg { width:16px;height:16px; }
+  .charging-primary-action b { font-size:11px; }
+  .charging-primary-action small { display:none; }
+  .charging-city-primary { padding:7px 9px; }
+  .charging-city-primary>span { font-size:9px;margin-bottom:1px; }
+  .charging-city-primary select { min-height:30px;font-size:12px; }
+  .charging-main-search input { font-size:14px; }
+  .charging-source b { font-size:13px; }
+  .charging-source small { font-size:10px; }
+  .charging-source-chip { font-size:10px;padding:5px 7px; }
+  .map-handoff.charging { padding:13px; }
+  .map-handoff.charging .map-handoff-heading>span:not(.external-chip) { font-size:15px; }
+  .map-handoff.charging .charging-actions button { min-height:58px; }
+}
