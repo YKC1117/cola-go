@@ -16,13 +16,7 @@
     return data;
   };
 
-  const cityOptions=[
-    ["all","全台灣"],["Taipei","臺北市"],["NewTaipei","新北市"],["Taoyuan","桃園市"],["Taichung","臺中市"],
-    ["Tainan","臺南市"],["Kaohsiung","高雄市"],["Keelung","基隆市"],["Hsinchu","新竹市"],["HsinchuCounty","新竹縣"],
-    ["MiaoliCounty","苗栗縣"],["ChanghuaCounty","彰化縣"],["NantouCounty","南投縣"],["YunlinCounty","雲林縣"],
-    ["Chiayi","嘉義市"],["ChiayiCounty","嘉義縣"],["PingtungCounty","屏東縣"],["YilanCounty","宜蘭縣"],
-    ["HualienCounty","花蓮縣"],["TaitungCounty","臺東縣"],["PenghuCounty","澎湖縣"],["KinmenCounty","金門縣"]
-  ];
+  const cityOptions=[["all","全台灣"],...TAIWAN_CITIES.filter(x=>x.code!=="LienchiangCounty").map(x=>[x.code,x.name])];
 
   let officialChargingAll=[];
   let curatedCharging=[];
@@ -94,8 +88,9 @@
     if(chip){
       const city=document.querySelector("#chargingCity")?.value||"all";
       const total=city==="all"?officialChargingAll.length:officialChargingAll.filter(x=>x.city===city).length;
-      const health=chargingStatus==="live"?"即時槍況":chargingStatus==="partial"?"部分更新延遲":chargingStatus==="stale"?"最後可用資料":"設備資料";
-      chip.textContent=total+" 站 · "+health+(chargingUpdatedAt?" · "+formatTime(chargingUpdatedAt):"");
+      const health=chargingStatus==="live"?"槍況已同步":chargingStatus==="partial"?"部分更新延遲":chargingStatus==="stale"?"資料已逾時":"設備資料";
+      const syncTime=chargingUpdatedAt?formatTime(chargingUpdatedAt).replace(" 更新",""):"";
+      chip.textContent=total+" 站 · "+health+(syncTime?" · 最後同步 "+syncTime:"");
     }
     const totalCount=officialChargingAll.length+curatedCharging.length;
     if(document.querySelector("#chargeQuick"))document.querySelector("#chargeQuick").textContent=totalCount?totalCount+" 站":"充電站";
