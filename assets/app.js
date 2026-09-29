@@ -201,7 +201,7 @@ function parseChargingPower(value){
   const m=String(value||"").match(/\d+(?:\.\d+)?/);
   return m?Number(m[0]):0;
 }
-const LEGACY_TDX_CONNECTOR_TYPES={"1":"CCS1","2":"CCS2","3":"CHAdeMO","4":"Tesla TPC","5":"J1772","6":"Type2","254":"其他","255":"其他"};
+const LEGACY_TDX_CONNECTOR_TYPES={"1":"CCS1","2":"CCS2","3":"CHAdeMO","4":"Tesla TPC","5":"J1772","6":"Type2","254":"其他","255":"其他","J1772(Type1)":"J1772","Mennekes(Type2)":"Type2"};
 function chargingConnectors(x){
   return (x?.connectors||[]).map(value=>LEGACY_TDX_CONNECTOR_TYPES[String(value)]||String(value)).filter(Boolean);
 }
