@@ -14,6 +14,7 @@ from pathlib import Path
 OUT = Path("data/operators")
 UPOWER_URL = "https://www.u-power.com.tw/"
 EVOASIS_URL = "https://www.evoasis.com.tw/charging-station"
+TAIL_URL = "https://www.evtail.com.tw/locations"
 
 CITY_PREFIXES = [
     ("臺北市", "Taipei", "臺北市"), ("台北市", "Taipei", "臺北市"),
@@ -95,6 +96,17 @@ class TableParser(HTMLParser):
     def handle_data(self, data):
         if self.in_cell:
             self.cell_parts.append(data)
+
+
+class TextNodeParser(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.nodes = []
+
+    def handle_data(self, data):
+        value = clean_text(data)
+        if value:
+            self.nodes.append(value)
 
 
 def split_station_cell(value):
@@ -280,6 +292,125 @@ def validate_evoasis(items):
         raise RuntimeError("; ".join(errors))
 
 
+def normalize_tail_address(value):
+    text = clean_text(value)
+    text = re.sub(r"^\d{3,5}\s*", "", text)
+    for prefix, _, _ in CITY_PREFIXES:
+        if text.startswith(prefix):
+            second = text.find(prefix, len(prefix))
+            if 0 < second < 24:
+                text = text[second:]
+            break
+    return clean_text(text)
+
+
+def clean_tail_station_name(value):
+    name = clean_text(value)
+    m = re.match(r"^(.{2,80})\s+\1$", name)
+    if m:
+        name = clean_text(m.group(1))
+    return name
+
+
+def parse_tail(html_text):
+    parser = TextNodeParser()
+    parser.feed(html_text)
+    nodes = parser.nodes
+    items = []
+    skip_words = {
+        "尋找充電站", "充電地圖", "全部", "北部", "中部", "南部", "東部", "離島",
+        "聯絡資訊", "客服信箱", "客服電話", "聯絡地址", "TAIL", "特爾電力",
+    }
+
+    for i, raw in enumerate(nodes):
+        address = normalize_tail_address(raw)
+        city, city_name = city_from_address(address)
+        if not city:
+            continue
+        if len(address) < 8:
+            continue
+
+        name = ""
+        for step in range(1, 7):
+            if i - step < 0:
+                break
+            candidate = clean_tail_station_name(nodes[i - step])
+            if not candidate or candidate in skip_words:
+                continue
+            if city_from_address(normalize_tail_address(candidate))[0]:
+                continue
+            if re.fullmatch(r"[\d\s\-()]+", candidate):
+                continue
+            if len(candidate) > 90:
+                continue
+            name = candidate
+            break
+        if not name:
+            continue
+        if any(word in name for word in ["客服", "聯絡", "Copyright", "隱私權", "服務條款"]):
+            continue
+
+        items.append(
+            {
+                "id": stable_id("tail", name, address),
+                "road": "operator",
+                "city": city,
+                "cityName": city_name,
+                "name": name,
+                "location": address,
+                "operator": "特爾電力股份有限公司",
+                "operatorId": "",
+                "operatorWebURL": TAIL_URL,
+                "officialSource": "TAIL 特爾電力官方站點",
+                "officialSourceURL": TAIL_URL,
+                "officialSupplemental": True,
+                "officialStationType": "",
+                "sitePowerKw": 0,
+                "maxPowerKw": None,
+                "power": "",
+                "spaces": 0,
+                "connectorCount": 0,
+                "connectors": [],
+                "liveStateCount": 0,
+                "availableConnectors": 0,
+                "occupiedConnectors": 0,
+                "faultedConnectors": 0,
+                "unavailableConnectors": 0,
+                "unknownConnectors": 0,
+                "liveStatusKnown": False,
+                "liveStale": False,
+                "statusUpdatedAt": None,
+                "lat": None,
+                "lon": None,
+                "direction": "",
+                "serviceTime": "",
+                "chargingRate": "",
+                "parkingRate": "",
+                "telephone": "",
+                "operatorTelephone": "02-2531-0858",
+                "description": "",
+            }
+        )
+
+    unique = {}
+    for item in items:
+        key = (clean_text(item["name"]).lower(), clean_text(item["location"]).lower())
+        unique[key] = item
+    return list(unique.values())
+
+
+def validate_tail(items):
+    errors = []
+    if len(items) < 70:
+        errors.append(f"expected at least 70 TAIL stations, got {len(items)}")
+    if any(not x.get("city") or not x.get("name") or not x.get("location") for x in items):
+        errors.append("one or more TAIL rows are missing city/name/location")
+    if len({x.get("city") for x in items if x.get("city")}) < 10:
+        errors.append("TAIL official station list covers too few cities")
+    if errors:
+        raise RuntimeError("; ".join(errors))
+
+
 def fetch_text(url):
     req = urllib.request.Request(
         url,
@@ -329,9 +460,18 @@ def main():
         print(f"EVOASIS_SYNC_ERROR {error}", file=sys.stderr)
         raise
 
+    try:
+        tail_source = fetch_text(TAIL_URL)
+        tail_items = parse_tail(tail_source)
+        validate_tail(tail_items)
+    except Exception as error:
+        print(f"TAIL_SYNC_ERROR {error}", file=sys.stderr)
+        raise
+
     total_seats = sum(int(x.get("ccs1Seats") or 0) + int(x.get("ccs2Seats") or 0) for x in upower_items)
     print(f"UPOWER_OK stations={len(upower_items)} seats={total_seats}")
     print(f"EVOASIS_OK stations={len(evoasis_items)}")
+    print(f"TAIL_OK stations={len(tail_items)}")
 
     if args.check_online:
         return 0
@@ -355,6 +495,14 @@ def main():
             "updatedAt": generated_at,
             "count": len(evoasis_items),
             "items": sorted(evoasis_items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
+        },
+        "tail.json": {
+            "schema": 1,
+            "source": "TAIL 特爾電力官方站點",
+            "sourceUrl": TAIL_URL,
+            "updatedAt": generated_at,
+            "count": len(tail_items),
+            "items": sorted(tail_items, key=lambda x: (x.get("cityName") or "", x.get("name") or "")),
         },
     }
     for filename, payload in payloads.items():
