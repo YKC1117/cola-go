@@ -152,6 +152,10 @@ let browser;
   await page.locator('#chargingFindNow').click();
   await page.waitForFunction(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&Boolean(state.chargingOrigin));
   check('One-tap nearby available action combines location, distance sorting, and live availability',await page.evaluate(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&state.chargingCity==='all'));
+  await page.waitForFunction(()=>{
+    const cards=[...document.querySelectorAll('#chargingList .charging-item')];
+    return cards.length===0||cards.every(card=>card.classList.contains('is-available'));
+  });
   check('One-tap nearby available never shows a non-available card',await page.evaluate(()=>[...document.querySelectorAll('#chargingList .charging-item')].every(card=>card.classList.contains('is-available'))));
   await page.locator('#resetChargingFilters').click();
   await page.locator('#chargingNearby').click();
