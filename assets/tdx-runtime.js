@@ -92,6 +92,48 @@
     return operatorChargingAll.filter(x=>(city==="all"||x.city===city)&&!stationIdentityKeys(x).some(key=>officialKeys.has(key)));
   }
 
+  function renderChargingCoverage(){
+    const grid=document.querySelector("#chargingCoverageGrid");
+    const summary=document.querySelector("#chargingCoverageSummary");
+    if(!grid||!summary)return;
+
+    const city=document.querySelector("#chargingCity")?.value||"all";
+    const tdxRows=city==="all"?officialChargingAll:officialChargingAll.filter(x=>x.city===city);
+    const supplementRows=operatorSupplementRows(tdxRows);
+    const majorProfiles=CHARGING_MAJOR_KEYS.map(key=>CHARGING_OPERATOR_PROFILES.find(x=>x.key===key)).filter(Boolean);
+    const rows=majorProfiles.map(profile=>{
+      const tdxBrand=tdxRows.filter(x=>chargingOperatorProfile(x)?.key===profile.key);
+      const supplementBrand=supplementRows.filter(x=>chargingOperatorProfile(x)?.key===profile.key);
+      const live=tdxBrand.filter(x=>!x.liveStale&&Number(x.liveStateCount)>0).length;
+      const merged=tdxBrand.length+supplementBrand.length;
+      const ratio=tdxBrand.length?Math.round(live/tdxBrand.length*100):0;
+      const source=supplementBrand.length?"TDX＋業者官方":(live?"TDX 即時":"TDX");
+      return {profile,tdx:tdxBrand.length,supplement:supplementBrand.length,live,merged,ratio,source};
+    });
+
+    const mergedTotal=rows.reduce((sum,x)=>sum+x.merged,0);
+    const liveTotal=rows.reduce((sum,x)=>sum+x.live,0);
+    summary.textContent=(city==="all"?"全台":"目前縣市")+" · "+mergedTotal+" 站 · "+liveTotal+" 站有即時槍況";
+    grid.innerHTML=rows.map(row=>
+      '<button type="button" data-coverage-major="'+row.profile.key+'">'+
+        '<span class="charging-coverage-brand"><b>'+esc(row.profile.brand)+'</b><small>'+esc(row.source)+'</small></span>'+
+        '<span class="charging-coverage-stats">'+
+          '<strong>'+row.merged+'</strong><small>站</small>'+
+          '<em>'+row.live+' 即時</em>'+
+          (row.supplement?'<em class="official">'+row.supplement+' 官方補</em>':'')+
+        '</span>'+
+      '</button>'
+    ).join("");
+    grid.querySelectorAll("[data-coverage-major]").forEach(button=>button.onclick=()=>{
+      state.chargingMajor=button.dataset.coverageMajor||"all";
+      state.chargingOperator="all";
+      const select=document.querySelector("#chargingOperator");
+      if(select)select.value="all";
+      renderCharging();
+      document.querySelector("#chargingList")?.scrollIntoView({behavior:"smooth",block:"start"});
+    });
+  }
+
   renderCharging=function(){
     ensureChargingCityFilter();
     const currentCurated=(state.charging||[]).filter(x=>x.road!=="tdx");
@@ -128,6 +170,7 @@
       if(chip)chip.textContent=total+" 站 · "+liveCount+" 站有即時槍況 · 官方補 "+supplement.length;
       if(sourceNote)sourceNote.textContent="交通部 TDX＋業者公開官方站點 · 六大主力 "+majorCount+" 站 · 已辨識品牌 "+brandCount+" 站"+(syncTime?" · TDX "+syncTime:"")+(operatorTime?" · 業者 "+operatorTime:"");
     }
+    renderChargingCoverage();
     const totalCount=officialChargingAll.length+operatorSupplementRows(officialChargingAll).length+curatedCharging.length;
     if(document.querySelector("#chargeQuick"))document.querySelector("#chargeQuick").textContent=totalCount?totalCount+" 站":"充電站";
     if(document.querySelector("#chargeValue"))document.querySelector("#chargeValue").textContent=totalCount||"—";

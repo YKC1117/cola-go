@@ -506,3 +506,28 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 /* Operator official station supplements */
 .charging-item .route-tag { white-space:nowrap; }
 .charging-item:has(.route-tag) .route-tag { letter-spacing:.01em; }
+
+/* Charging V8: six-network data coverage */
+.charging-coverage { margin:4px 0 14px;border:1px solid #27343a;border-radius:16px;background:#0d1316;overflow:hidden; }
+.charging-coverage>summary { min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;cursor:pointer;list-style:none; }
+.charging-coverage>summary::-webkit-details-marker { display:none; }
+.charging-coverage>summary>span:first-child { min-width:0; }
+.charging-coverage>summary b { display:block;font-size:13px;font-weight:800;color:#e8f0f4; }
+.charging-coverage>summary small { display:block;margin-top:3px;font-size:10px;color:#87949a; }
+.charging-coverage-chevron { flex:none;font-size:10px;color:#8ea0a8;border:1px solid #334149;border-radius:99px;padding:5px 8px; }
+.charging-coverage[open] .charging-coverage-chevron { color:#65efa8;border-color:#315e49;background:#10271a; }
+.charging-coverage-grid { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 12px 12px; }
+.charging-coverage-grid button { min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px;border:1px solid #263238;border-radius:12px;background:#11181b;text-align:left; }
+.charging-coverage-grid button:active { transform:scale(.985); }
+.charging-coverage-brand { min-width:0; }
+.charging-coverage-brand b { display:block;font-size:11px;line-height:1.3;color:#e4edf1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.charging-coverage-brand small { display:block;margin-top:4px;font-size:8px;color:#7f8c92; }
+.charging-coverage-stats { flex:none;display:grid;grid-template-columns:auto auto;align-items:baseline;column-gap:3px;row-gap:2px;text-align:right; }
+.charging-coverage-stats strong { font-size:19px;line-height:1;color:#fff;font-variant-numeric:tabular-nums; }
+.charging-coverage-stats>small { font-size:8px;color:#819097; }
+.charging-coverage-stats em { grid-column:1 / -1;font-style:normal;font-size:8px;color:#68e9a6; }
+.charging-coverage-stats em.official { color:#8bcfff; }
+.charging-coverage>p { margin:0;padding:0 14px 13px;font-size:9px;line-height:1.55;color:#748188; }
+@media(max-width:359px){
+  .charging-coverage-grid { grid-template-columns:1fr; }
+}
