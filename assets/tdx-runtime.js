@@ -52,7 +52,11 @@
       ...curatedCharging.map(x=>x.operator),
       ...officialChargingAll.map(x=>x.operator)
     ].filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),"zh-Hant"));
-    select.innerHTML='<option value="all">全部業者</option>'+operators.map(name=>'<option value="'+String(name).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;")+'">'+String(name).replace(/&/g,"&amp;").replace(/</g,"&lt;")+'</option>').join("");
+    select.innerHTML='<option value="all">全部業者</option>'+operators.map(name=>{
+      const value=String(name).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+      const label=chargingOperatorLabel(name).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+      return '<option value="'+value+'">'+label+'</option>';
+    }).join("");
     select.value=operators.includes(current)?current:"all";
     if(select.value==="all")state.chargingOperator="all";
   }
