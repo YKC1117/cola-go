@@ -74,17 +74,22 @@
     return rows;
   }
 
-  function stationIdentity(x){
+  function stationIdentityKeys(x){
     const brand=chargingOperatorProfile(x)?.key||String(x?.operator||"").toLowerCase();
     const city=String(x?.city||"");
-    const name=String(x?.name||"").toLowerCase().replace(/[\s\-_.·・()（）]/g,"");
-    return [brand,city,name].join("|");
+    const normalize=value=>String(value||"").toLowerCase().replace(/[\s\-_.·・()（）,，。號]/g,"");
+    const keys=[];
+    const name=normalize(x?.name);
+    const address=normalize(x?.location);
+    if(name)keys.push([brand,city,"n",name].join("|"));
+    if(address)keys.push([brand,city,"a",address].join("|"));
+    return keys;
   }
 
   function operatorSupplementRows(officialRows){
     const city=document.querySelector("#chargingCity")?.value||"all";
-    const officialKeys=new Set((officialRows||[]).map(stationIdentity));
-    return operatorChargingAll.filter(x=>(city==="all"||x.city===city)&&!officialKeys.has(stationIdentity(x)));
+    const officialKeys=new Set((officialRows||[]).flatMap(stationIdentityKeys));
+    return operatorChargingAll.filter(x=>(city==="all"||x.city===city)&&!stationIdentityKeys(x).some(key=>officialKeys.has(key)));
   }
 
   renderCharging=function(){
@@ -167,14 +172,14 @@
   }
 
   async function loadOperatorCharging(){
-    try{
-      const data=await officialGet("./data/operators/upower.json");
-      if(!Array.isArray(data?.items)||!data.items.length)return;
-      operatorChargingAll=data.items.map(x=>({...x,officialSupplemental:true}));
-      operatorUpdatedAt=data.updatedAt||null;
-      syncChargingOperatorOptions();
-      renderCharging();
-    }catch{}
+    const paths=["./data/operators/upower.json","./data/operators/evoasis.json"];
+    const results=await Promise.allSettled(paths.map(path=>officialGet(path)));
+    const datasets=results.filter(x=>x.status==="fulfilled"&&Array.isArray(x.value?.items)&&x.value.items.length).map(x=>x.value);
+    if(!datasets.length)return;
+    operatorChargingAll=datasets.flatMap(data=>data.items).map(x=>({...x,officialSupplemental:true}));
+    operatorUpdatedAt=datasets.map(x=>x.updatedAt).filter(Boolean).sort().at(-1)||null;
+    syncChargingOperatorOptions();
+    renderCharging();
   }
 
   async function loadOfficialCCTV(){
