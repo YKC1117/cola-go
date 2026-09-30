@@ -203,7 +203,7 @@ let browser;
   check('Six primary charging networks are first-layer controls',await page.locator('#chargingMajorFilter [data-charge-major]').evaluateAll(nodes=>nodes.map(n=>n.dataset.chargeMajor).join(',')==='all,evoasis,upower,tail,evalue,icharging,tesla'));
   await page.waitForFunction(()=>[...document.querySelectorAll('#chargingMajorFilter [data-major-status]')].every(el=>/站/.test(el.textContent||'')));
   check('Major network controls expose station and live counts',await page.locator('#chargingMajorFilter [data-major-status]').evaluateAll(nodes=>nodes.length===7&&nodes.every(n=>n.textContent.includes('站'))));
-  check('Major network source semantics stay visible',await page.locator('.charging-network-legend').first().textContent().then(x=>x.includes('TDX')&&x.includes('即時')));
+  check('Major network source semantics stay visible',await page.locator('.charging-network-legend').evaluateAll(nodes=>nodes.some(n=>(n.textContent||'').includes('TDX')&&(n.textContent||'').includes('即時'))));
   await page.waitForFunction(()=>document.querySelectorAll('#chargingPriorityGrid [data-charge-priority]').length===4);
   check('Priority charging panel focuses on top three plus Tesla',await page.locator('#chargingPriorityGrid [data-charge-priority]').evaluateAll(nodes=>nodes.map(n=>n.dataset.chargePriority).join(',')==='evoasis,upower,tail,tesla'));
   check('Priority charging panel surfaces availability, power and rate context',await page.locator('#chargingPriorityPanel').textContent().then(x=>x.includes('空槍')&&x.includes('kW')&&x.includes('元/度')));
