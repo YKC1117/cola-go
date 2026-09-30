@@ -12,7 +12,7 @@ on:
       - "index.html"
       - "scripts/verify_ui_v6.cjs"
       - "sw.js"
-      - ".github/workflows/sync-tdx-data.yml"
+      - ".github/workflows/sync-tdx-official.yml"
       - ".github/workflows/validate-tdx-site.yml"
 
 permissions:
@@ -115,16 +115,16 @@ jobs:
       - name: Integration markers
         run: |
           grep -q 'assets/tdx-runtime.js' index.html
-          grep -q 'TDX_CLIENT_ID' .github/workflows/sync-tdx-data.yml
-          grep -q 'TDX_CLIENT_SECRET' .github/workflows/sync-tdx-data.yml
-          grep -q '^  workflow_dispatch:' .github/workflows/sync-tdx-data.yml
-          grep -q '^  schedule:' .github/workflows/sync-tdx-data.yml
-          ! grep -q '^  push:' .github/workflows/sync-tdx-data.yml
-          grep -Fq 'cancel-in-progress: false' .github/workflows/sync-tdx-data.yml
-          grep -Fq 'snapshot="$(mktemp -d)"' .github/workflows/sync-tdx-data.yml
-          grep -Fq 'git reset --hard origin/main' .github/workflows/sync-tdx-data.yml
-          grep -Fq 'git push origin HEAD:main' .github/workflows/sync-tdx-data.yml
-          ! grep -Fq 'git pull --rebase origin main' .github/workflows/sync-tdx-data.yml
+          grep -q 'TDX_CLIENT_ID' .github/workflows/sync-tdx-official.yml
+          grep -q 'TDX_CLIENT_SECRET' .github/workflows/sync-tdx-official.yml
+          grep -q '^  workflow_dispatch:' .github/workflows/sync-tdx-official.yml
+          grep -q '^  schedule:' .github/workflows/sync-tdx-official.yml
+          ! grep -q '^  push:' .github/workflows/sync-tdx-official.yml
+          grep -Fq 'cancel-in-progress: false' .github/workflows/sync-tdx-official.yml
+          grep -Fq 'snapshot="$(mktemp -d)"' .github/workflows/sync-tdx-official.yml
+          grep -Fq 'git reset --hard origin/main' .github/workflows/sync-tdx-official.yml
+          grep -Fq 'git push origin HEAD:main' .github/workflows/sync-tdx-official.yml
+          ! grep -Fq 'git pull --rebase origin main' .github/workflows/sync-tdx-official.yml
           test ! -f .github/workflows/tdx-worker.yml
           grep -q 'ConnectorLiveStatus' scripts/sync_tdx.py
           grep -q 'LastUpdateTime' scripts/sync_tdx.py
