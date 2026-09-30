@@ -361,6 +361,7 @@ let browser;
   // CCTV V3: checked-in official data first, then explicit fixtures for missing fields.
   const officialCCTV=await page.evaluate(()=>state.cctv);
   await page.locator('#cctvRoadFilter [data-cctv-road="all"]').click();
+  await page.locator('[data-cctv-select="6"]').waitFor();
   check('CCTV initial view shows six freeway cards and no cameras',await page.locator('[data-cctv-select]:not([data-cctv-select="other"])').count()===6&&await page.locator('.cctv-camera').count()===0);
   await page.locator('[data-cctv-select="1"]').click();
   check('CCTV freeway selection shows grouped segments',await page.locator('.cctv-group').count()>0);
