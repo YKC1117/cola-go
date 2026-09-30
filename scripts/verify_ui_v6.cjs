@@ -36,6 +36,7 @@ let browser;
   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
   await context.route('**/*',route=>new URL(route.request().url()).origin===base?route.continue():route.abort());
   await context.addInitScript(()=>{
+    const qaOfflineMode=sessionStorage.getItem('cola-go-ui-v6-qa-offline')==='on';
     const fixture={
       schema:1,source:'U-POWER 官方網站',updatedAt:new Date().toISOString(),count:2,totalSeats:12,
       items:[
@@ -46,6 +47,10 @@ let browser;
     const nativeFetch=window.fetch.bind(window);
     window.fetch=(input,init)=>{
       const url=typeof input==='string'?input:(input?.url||'');
+      if(qaOfflineMode&&(String(url).includes('/data/tdx/')||String(url).includes('/data/operators/'))){
+        return Promise.reject(new TypeError('QA offline live feed disabled'));
+      }
+      if(qaOfflineMode)return nativeFetch(input,init);
       if(String(url).includes('/data/tdx/charging.json')||String(url).includes('./data/tdx/charging.json')){
         return nativeFetch(input,init).then(async response=>{
           const data=await response.clone().json();
@@ -196,6 +201,9 @@ let browser;
   }));
   check('Charging driver-first controls are visible',await page.locator('#chargingFindNow').isVisible()&&await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingAvailableOnly').isVisible()&&await page.locator('#chargingCity').isVisible()&&await page.locator('#chargingSearch').isVisible());
   check('Six primary charging networks are first-layer controls',await page.locator('#chargingMajorFilter [data-charge-major]').evaluateAll(nodes=>nodes.map(n=>n.dataset.chargeMajor).join(',')==='all,evoasis,upower,tail,evalue,icharging,tesla'));
+  await page.waitForFunction(()=>[...document.querySelectorAll('#chargingMajorFilter [data-major-status]')].every(el=>/站/.test(el.textContent||'')));
+  check('Major network controls expose station and live counts',await page.locator('#chargingMajorFilter [data-major-status]').evaluateAll(nodes=>nodes.length===7&&nodes.every(n=>n.textContent.includes('站'))));
+  check('Major network source semantics stay visible',await page.locator('.charging-network-legend').textContent().then(x=>x.includes('TDX')&&x.includes('即時')));
   await page.waitForFunction(()=>document.querySelectorAll('#chargingCoverageGrid [data-coverage-major]').length===6);
   await page.waitForFunction(()=>state.charging.some(x=>x.officialSupplemental&&x.networkKey==='evalue'),{timeout:12000}).catch(()=>{});
   check('EVALUE official source is loaded when available',await page.evaluate(()=>state.charging.some(x=>x.networkKey==='evalue')));
@@ -226,6 +234,9 @@ let browser;
   }));
   check('Primary charging network list is the six requested providers',await page.evaluate(()=>CHARGING_MAJOR_KEYS.join(',')==='evoasis,upower,tail,evalue,icharging,tesla'));
   check('iCharging official plug-and-charge capability matches Dongshan service area',await page.evaluate(()=>chargingCapabilities({operator:'中興電工機械股份有限公司',name:'東山服務區'}).some(x=>x.key==='plug-and-charge')));
+  check('iCharging 2026 verified highway expansion matches Hsinying northbound',await page.evaluate(()=>chargingCapabilities({operator:'中興電工機械股份有限公司',name:'新營服務區北向'}).some(x=>x.key==='plug-and-charge')));
+  check('iCharging current official rate hint is present',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='icharging')?.rateHint.includes('9.2–10 元/度')));
+  check('Tesla guidance never claims website list is live availability',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='tesla')?.networkHint.includes('不把官方網站清單假裝成即時空槍')));
   check('iCharging plug-and-charge capability does not leak to unrelated stations',await page.evaluate(()=>chargingCapabilities({operator:'中興電工機械股份有限公司',name:'捷運石牌站'}).length===0));
   check('Charging rate summary parses fixed per-kWh rates',await page.evaluate(()=>chargingRateSummary('計度/固定/9元每度')==='9 元/度'));
   check('Charging rate summary parses peak/off-peak ranges',await page.evaluate(()=>chargingRateSummary('計度/離峰/6.5元每度，計度/尖峰/13.5元每度')==='6.5–13.5 元/度'));
@@ -350,6 +361,78 @@ let browser;
   await page.locator('[data-view=highway] .cctv-link').click();
   await page.locator('#cctvRoadFilter button').last().click();
   check('CCTV filter handler remains wired',await page.evaluate(()=>state.cctvRoad===document.querySelector('#cctvRoadFilter button:last-child').dataset.cctvRoad));
+  // CCTV V3: checked-in official data first, then explicit fixtures for missing fields.
+  const officialCCTV=await page.evaluate(()=>state.cctv);
+  await page.locator('#cctvRoadFilter [data-cctv-road="all"]').click();
+  await page.locator('[data-cctv-select="6"]').waitFor();
+  check('CCTV initial view shows six freeway cards and no cameras',await page.locator('[data-cctv-select]:not([data-cctv-select="other"])').count()===6&&await page.locator('.cctv-camera').count()===0);
+  await page.locator('[data-cctv-select="1"]').click();
+  check('CCTV freeway selection shows grouped segments',await page.locator('.cctv-group').count()>0);
+  check('CCTV directions reflect actual selected-road data',await page.evaluate(()=>{
+    const keys=new Set(state.cctv.items.filter(x=>String(x.roadNo)==='1').map(x=>cctvDirectionKey(x.direction)));
+    return [...document.querySelectorAll('[data-cctv-direction]')].every(b=>b.dataset.cctvDirection==='all'||b.hidden===!keys.has(b.dataset.cctvDirection));
+  }));
+  await page.locator('#cctvRoadFilter [data-cctv-road="all"]').click();
+  await page.locator('#cctvSearch').fill('321K');
+  check('CCTV 321K search matches actual cache cameras',await page.locator('.cctv-camera').count()>0&&await page.locator('.cctv-camera-info b').allTextContents().then(a=>a.every(x=>/^321(?:\.\d+)?K$/.test(x))));
+  await page.locator('#cctvSearch').fill('');
+  const baseCamera={id:'fixture-S-321',road:'國道1號',roadNo:'1',direction:'S',mile:'321K+000',start:'永康交流道',end:'台南系統',lat:23.03,lon:120.23,stream:'https://cctvn.freeway.gov.tw/abs2mjpg/bmjpg?camera=10000'};
+  const fixture=[baseCamera,
+    {...baseCamera,id:'fixture-S-322',direction:'SB',mile:'322K',lat:null,lon:null},
+    {...baseCamera,id:'fixture-N-321',direction:'N'},
+    {...baseCamera,id:'fixture-east',road:'國道2號',roadNo:'2',direction:'E',start:'機場系統',end:'服務區',mile:'9K',lat:91},
+    {...baseCamera,id:'fixture-west',road:'國道2號',roadNo:'2',direction:'W',mile:'9K',lat:0,lon:0},
+    {...baseCamera,id:'fixture-other',road:'國道2號',roadNo:'2',direction:'匝道',mile:'9K',lat:'',lon:''},
+    {...baseCamera,id:'fixture-fallback-29',road:'國道5號',roadNo:'5',direction:'S',start:'',end:'',mile:'29K+999'},
+    {...baseCamera,id:'fixture-fallback-30',road:'國道5號',roadNo:'5',direction:'S',start:'',end:'',mile:'30K+000'},
+    {...baseCamera,id:'fixture-partial',start:'新營服務區',end:'',mile:'390K'},
+    {...baseCamera,id:'fixture-unsafe',mile:'400K',start:'<img src=x onerror=alert(1)>',end:'',lat:null,stream:'javascript:alert(1)'}
+  ];
+  await page.evaluate(items=>{state.cctv={status:'ready',items,source:'Explicit QA fixture'};selectCCTVRoad('all');},fixture);
+  check('CCTV same official endpoints and direction merge; opposite direction stays separate',await page.evaluate(()=>{
+    const groups=cctvGroupRows(state.cctv.items);
+    return groups.some(g=>g.place==='永康交流道 → 台南系統'&&g.direction==='南下'&&g.items.length===2)&&groups.some(g=>g.place==='永康交流道 → 台南系統'&&g.direction==='北上'&&g.items.length===1);
+  }));
+  check('CCTV missing endpoints alone use mileage bands with 10K boundaries',await page.evaluate(()=>{
+    const rows=state.cctv.items;
+    return cctvPlaceLabel(rows.find(x=>x.id==='fixture-fallback-29')).includes('20–29K 路段（里程分段）')&&cctvPlaceLabel(rows.find(x=>x.id==='fixture-fallback-30')).includes('30–39K 路段（里程分段）')&&!cctvPlaceLabel(rows.find(x=>x.id==='fixture-partial')).includes('里程分段');
+  }));
+  check('CCTV aliases normalize all four directions',await page.evaluate(()=>[['N','NB','north','北'],['S','SB','south','南'],['E','EB','east','東'],['W','WB','west','西']].every((group,i)=>group.every(x=>cctvDirectionKey(x)===['north','south','east','west'][i]))));
+  check('CCTV JSON/XML official parsers retain endpoints, stream and coordinates',await page.evaluate(()=>{
+    const a={CCTVID:'parser',RoadName:'國道1號',RoadDirection:'S',Start:'永康交流道',End:'台南系統',LocationMile:'321K',VideoStreamURL:'https://cctvn.freeway.gov.tw/abs2mjpg/bmjpg?camera=10000',PositionLat:23,PositionLon:120};
+    const json=parseCCTVJson([a])[0],xml=parseCCTVXml('<root><CCTV>'+Object.entries(a).map(([k,v])=>`<${k}>${v}</${k}>`).join('')+'</CCTV></root>')[0];
+    return [json,xml].every(x=>x?.start===a.Start&&x.end===a.End&&x.stream===a.VideoStreamURL&&x.lat===23&&x.lon===120)&&normalizeCCTVObject({...a,PositionLat:'',PositionLon:''}).lat===null;
+  }));
+  await page.locator('#cctvSearch').fill('永康');
+  check('CCTV all-road place search directly shows related segments (fixture)',await page.locator('.cctv-group').count()===4&&await page.locator('.cctv-road-card').count()===0);
+  await page.locator('#cctvSearch').fill('fixture-S-322');
+  check('CCTV ID search and invalid-coordinate map suppression',await page.locator('.cctv-camera').count()===1&&await page.locator('[data-cctv-map]').count()===0);
+  await page.locator('#cctvSearch').fill('fixture-S-321');
+  await page.locator('[data-cctv-stream]').click();
+  check('CCTV button opens original official VideoStreamURL',await page.evaluate(()=>window.__opened.at(-1))===baseCamera.stream);
+  await page.locator('[data-cctv-map]').click();
+  check('CCTV valid-coordinate map uses original coordinates',await page.evaluate(()=>new URL(window.__opened.at(-1)).searchParams.get('query'))==='23.03,120.23');
+  await page.locator('#cctvSearch').fill('fixture-unsafe');
+  check('CCTV unsafe stream and endpoint HTML cannot execute',await page.locator('[data-cctv-stream]').count()===0&&await page.locator('#cctvList img').count()===0);
+  await page.locator('#cctvSearch').fill('');
+  for(const width of [390,430,1440]){
+    await page.setViewportSize({width,height:width===1440?1000:844});
+    await page.locator('#cctvRoadFilter [data-cctv-road="all"]').click();
+    await page.screenshot({path:path.join(output,`cctv-v3-overview-${width}.png`)});
+    check(`CCTV overview ${width}px: no overflow`,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    await page.locator('[data-cctv-select="1"]').click();
+    await page.locator('[data-cctv-direction="south"]').click();
+    check(`CCTV south filter ${width}px`,await page.evaluate(()=>[...document.querySelectorAll('.cctv-group-kicker')].every(x=>x.textContent.startsWith('南下'))));
+    await page.screenshot({path:path.join(output,`cctv-v3-segments-${width}.png`)});
+    check(`CCTV segments ${width}px: no overflow`,await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    const closed=page.locator('.cctv-group:not([open])').first();
+    await closed.locator('summary').click();
+    check(`CCTV segment expands ${width}px`,await closed.count()===0||await page.locator('.cctv-group[open]').count()===2);
+    await page.locator('#cctvRoadFilter [data-cctv-road="2"]').click();
+    check(`CCTV changing road resets direction ${width}px`,await page.evaluate(()=>state.cctvDirection==='all')&&await page.locator('[data-cctv-direction="east"]').isVisible()&&await page.locator('[data-cctv-direction="west"]').isVisible()&&await page.locator('[data-cctv-direction="other"]').isVisible()&&!await page.locator('[data-cctv-direction="south"]').isVisible());
+  }
+  await page.evaluate(data=>{state.cctv=data;selectCCTVRoad('all');},officialCCTV);
+  await page.setViewportSize({width:390,height:844});
   await page.locator('.bottom-nav [data-go=tunnel]').click();
   await page.locator('#tunnelDirection [data-direction=north]').click();
   check('Snow tunnel direction changes',await page.evaluate(()=>state.direction==='north'));
@@ -410,16 +493,23 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-37');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-39');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
-  await context.setOffline(true);
-  await page.reload();
-  await page.waitForFunction(()=>document.querySelectorAll('#chargingList article').length>0);
-  check('Offline reload retains app and charging dataset',await page.locator('#chargingList article').count()===all);
-  check('Offline hero loads from cache',await page.locator('.hero-photo').evaluate(x=>x.complete&&x.naturalWidth>0));
-  check('No uncaught browser JavaScript errors',errors.length===0);
-  const report={browser:browser.version(),viewports:[390,430,1440],checks:results.length,passed:results,errors,externalNetwork:'blocked; checked-in data only, no fabricated feeds',fontSetup:fontCSS?'QA-only embedded Noto Sans TC; product CSS unchanged':'system fonts'};
+  await page.evaluate(()=>sessionStorage.setItem('cola-go-ui-v6-qa-offline','on'));
+  try{
+    await context.setOffline(true);
+    await page.reload();
+    await page.waitForFunction(()=>document.querySelectorAll('#chargingList article').length>0);
+    const offlineCharging=JSON.parse(fs.readFileSync(path.join(root,'data/charging.json'),'utf8'));
+    check('Offline reload retains bundled charging data without live feeds',await page.evaluate(expected=>JSON.stringify(state.charging)===JSON.stringify(expected),offlineCharging));
+    check('Offline hero loads from cache',await page.locator('.hero-photo').evaluate(x=>x.complete&&x.naturalWidth>0));
+    check('No uncaught browser JavaScript errors',errors.length===0);
+  }finally{
+    await context.setOffline(false);
+    await page.evaluate(()=>sessionStorage.removeItem('cola-go-ui-v6-qa-offline'));
+  }
+  const report={browser:browser.version(),viewports:[390,430,1440],checks:results.length,passed:results,errors,externalNetwork:'blocked; checked-in data plus explicitly labelled charging/CCTV QA fixtures',fontSetup:fontCSS?'QA-only embedded Noto Sans TC; product CSS unchanged':'system fonts'};
   fs.writeFileSync(path.join(root,'docs/ui-v6/verification.json'),JSON.stringify(report,null,2)+'\n');
   console.log(`PASS ${results.length} checks; screenshots: ${output}`);
 })().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();server.close();});

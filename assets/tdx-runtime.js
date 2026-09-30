@@ -192,8 +192,11 @@
       const ratio=tdxBrand.length?Math.round(live/tdxBrand.length*100):0;
       const health=operatorSourceHealth[profile.key]||null;
       const degraded=health?.syncStatus==="degraded";
-      const source=supplementBrand.length?(degraded?"TDX＋官方舊資料":"TDX＋業者官方"):(live?"TDX 即時":"TDX");
-      return {profile,tdx:tdxBrand.length,supplement:supplementBrand.length,live,merged,ratio,source,degraded};
+      const officialGuideOnly=profile.key==="icharging"||profile.key==="tesla";
+      const source=supplementBrand.length
+        ?(degraded?"TDX＋官方舊資料":"TDX＋業者官方")
+        :(officialGuideOnly?(live?"TDX 即時＋官方入口":"TDX＋官方入口"):(live?"TDX 即時":"TDX"));
+      return {profile,tdx:tdxBrand.length,supplement:supplementBrand.length,live,merged,ratio,source,degraded,officialGuideOnly};
     });
 
     const mergedTotal=rows.reduce((sum,x)=>sum+x.merged,0);
@@ -202,6 +205,25 @@
     grid.dataset.sourceHealth=healthKeys.join(",");
     grid.dataset.degradedSources=rows.filter(x=>x.degraded).map(x=>x.profile.key).join(",");
     summary.textContent=(city==="all"?"全台":"目前縣市")+" · "+mergedTotal+" 站 · "+liveTotal+" 站有即時槍況";
+
+    document.querySelectorAll("#chargingMajorFilter [data-charge-major]").forEach(button=>{
+      const key=button.dataset.chargeMajor||"all";
+      const status=button.querySelector("[data-major-status]");
+      if(key==="all"){
+        if(status)status.textContent=mergedTotal+" 站 · "+liveTotal+" 即時";
+        button.dataset.sourceMode="combined";
+        button.setAttribute("aria-label","全部主力充電網，"+mergedTotal+" 站，"+liveTotal+" 站有即時槍況");
+        return;
+      }
+      const row=rows.find(item=>item.profile.key===key);
+      if(!row)return;
+      if(status)status.textContent=row.merged+" 站 · "+row.live+" 即時";
+      button.dataset.sourceMode=row.supplement?"official-cache":(row.officialGuideOnly?"official-guide":"tdx");
+      button.classList.toggle("has-live",row.live>0);
+      button.classList.toggle("has-official-supplement",row.supplement>0);
+      button.setAttribute("aria-label",row.profile.brand+"，"+row.merged+" 站，"+row.live+" 站有即時槍況");
+    });
+
     grid.innerHTML=rows.map(row=>
       '<button type="button" class="'+(row.degraded?'is-degraded':'')+'" data-coverage-major="'+row.profile.key+'">'+
         '<span class="charging-coverage-brand"><b>'+esc(row.profile.brand)+'</b><small>'+esc(row.source)+'</small></span>'+
