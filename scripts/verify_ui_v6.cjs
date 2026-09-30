@@ -257,6 +257,13 @@ let browser;
   check('iCharging 2026 verified highway expansion matches Hsinying northbound',await page.evaluate(()=>chargingCapabilities({operator:'中興電工機械股份有限公司',name:'新營服務區北向'}).some(x=>x.key==='plug-and-charge')));
   check('iCharging current official rate hint is present',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='icharging')?.rateHint.includes('9.2–10 元/度')));
   check('Tesla guidance never claims website list is live availability',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='tesla')?.networkHint.includes('不把官方網站清單假裝成即時空槍')));
+  check('Tesla missing TDX live state directs users to official app availability',await page.evaluate(()=>chargingStatusMarkup({road:'tdx',operator:'台灣特斯拉汽車有限公司',liveStateCount:0,availableConnectors:0,liveStatusKnown:false,liveStale:false}).includes('Tesla App 可查看官方可用充電座')));
+  check('Tesla stale TDX state does not show false zero availability',await page.evaluate(()=>chargingStatusMarkup({road:'tdx',operator:'台灣特斯拉汽車有限公司',liveStateCount:6,availableConnectors:0,liveStatusKnown:true,liveStale:true}).includes('Tesla App 可查看官方可用充電座')));
+  check('Priority network cards expose an official first-layer action',await page.evaluate(()=>
+    chargingPriorityOfficialLabel({operator:'台灣特斯拉汽車有限公司'})==='Tesla 官方'&&
+    chargingPriorityOfficialUrl({operator:'台灣特斯拉汽車有限公司'}).includes('tesla.com')&&
+    chargingPriorityOfficialUrl({operator:'旭電馳科研'}).includes('u-power.com.tw')
+  ));
   check('iCharging plug-and-charge capability does not leak to unrelated stations',await page.evaluate(()=>chargingCapabilities({operator:'中興電工機械股份有限公司',name:'捷運石牌站'}).length===0));
   check('Charging rate summary parses fixed per-kWh rates',await page.evaluate(()=>chargingRateSummary('計度/固定/9元每度')==='9 元/度'));
   check('Charging rate summary parses peak/off-peak ranges',await page.evaluate(()=>chargingRateSummary('計度/離峰/6.5元每度，計度/尖峰/13.5元每度')==='6.5–13.5 元/度'));
