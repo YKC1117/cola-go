@@ -455,10 +455,12 @@ function ensurePlateWatchTools(){
       '<div class="plate-announcement-summary">'+
         '<div><b id="plateWatchLiveCount">0</b><small>候選競標中</small></div>'+
         '<div><b id="plateWatchUpcomingCount">0</b><small>候選即將開標</small></div>'+
+        '<div><b id="plateWatchFinalCount">0</b><small>15 分鐘內</small></div>'+
         '<div><b id="plateWatchNoMatchCount">0</b><small>暫無公告</small></div>'+
       '</div>'+
       '<div class="plate-watch-actions">'+
         '<button class="active" data-plate-watch-filter="all" type="button">全部候選</button>'+
+        '<button data-plate-watch-filter="final" type="button">15 分鐘內</button>'+
         '<button data-plate-watch-filter="live" type="button">競標中</button>'+
         '<button data-plate-watch-filter="upcoming" type="button">即將開標</button>'+
         '<button data-plate-watch-filter="nomatch" type="button">暫無公告</button>'+
@@ -478,17 +480,20 @@ function ensurePlateWatchTools(){
 function renderWatchSummary(){
   ensurePlateWatchTools();
   const rows=loadRows();
-  let live=0,upcoming=0,noMatch=0;
+  let live=0,upcoming=0,finalStage=0,noMatch=0;
   rows.forEach(row=>{
     const match=bestOfficialMatch(row.plate);
     if(!match){noMatch++;return}
     const status=auctionState(match);
-    if(status==="live")live++;
-    else if(status==="upcoming")upcoming++;
+    if(status==="live"){
+      live++;
+      if(watchFinalStage(row).active)finalStage++;
+    }else if(status==="upcoming")upcoming++;
     else noMatch++;
   });
   if($p("#plateWatchLiveCount"))$p("#plateWatchLiveCount").textContent=String(live);
   if($p("#plateWatchUpcomingCount"))$p("#plateWatchUpcomingCount").textContent=String(upcoming);
+  if($p("#plateWatchFinalCount"))$p("#plateWatchFinalCount").textContent=String(finalStage);
   if($p("#plateWatchNoMatchCount"))$p("#plateWatchNoMatchCount").textContent=String(noMatch);
 }
 function watchBackupPayload(){
@@ -532,15 +537,38 @@ function watchOfficialState(row){
   const match=bestOfficialMatch(row.plate);
   return match?auctionState(match):"nomatch";
 }
+function auctionFinalStage(match,now=Date.now()){
+  if(!match||auctionState(match,now)!=="live")return {active:false,level:"",label:"",ms:null,match};
+  const end=Date.parse(match.endAt||"");
+  if(!Number.isFinite(end))return {active:false,level:"",label:"",ms:null,match};
+  const ms=end-now;
+  if(ms<=0)return {active:false,level:"passed",label:"公告時間已到・請回官方確認",ms,match};
+  if(ms<=60000)return {active:true,level:"critical",label:"最後 1 分鐘",ms,match};
+  if(ms<=3*60000)return {active:true,level:"extension",label:"最後 3 分鐘・可能延長",ms,match};
+  if(ms<=5*60000)return {active:true,level:"urgent",label:"剩 5 分鐘內",ms,match};
+  if(ms<=15*60000)return {active:true,level:"watch",label:"剩 15 分鐘內",ms,match};
+  return {active:false,level:"",label:"",ms,match};
+}
+function watchFinalStage(row,now=Date.now()){
+  return auctionFinalStage(bestOfficialMatch(row.plate),now);
+}
+function watchBudgetUsage(row){
+  const budget=Number(row.budget)||0,current=Number(row.current)||0;
+  if(!budget||!current)return null;
+  return Math.round(current/budget*100);
+}
 function watchPriorityRank(row){
   const status=watchOfficialState(row);
+  const stage=watchFinalStage(row);
+  const stageRank=stage.active?({critical:0,extension:1,urgent:2,watch:3}[stage.level]??4):9;
   const statusRank={live:0,upcoming:1,ended:2,nomatch:3}[status]??4;
   const budget=Number(row.budget)||0,current=Number(row.current)||0;
   const risk=budget&&current?current/budget:0;
-  return {statusRank,risk};
+  return {stageRank,statusRank,risk};
 }
 function visibleWatchRows(){
   let rows=loadRows();
+  if(watchFilter==="final")rows=rows.filter(row=>watchFinalStage(row).active);
   if(watchFilter==="live")rows=rows.filter(row=>watchOfficialState(row)==="live");
   if(watchFilter==="upcoming")rows=rows.filter(row=>watchOfficialState(row)==="upcoming");
   if(watchFilter==="nomatch")rows=rows.filter(row=>watchOfficialState(row)==="nomatch");
@@ -553,6 +581,7 @@ function visibleWatchRows(){
     if(watchSort==="recent")return Date.parse(b.createdAt||0)-Date.parse(a.createdAt||0);
     if(watchSort==="plate")return String(a.plate||"").localeCompare(String(b.plate||""),"en");
     const ar=watchPriorityRank(a),br=watchPriorityRank(b);
+    if(ar.stageRank!==br.stageRank)return ar.stageRank-br.stageRank;
     if(ar.statusRank!==br.statusRank)return ar.statusRank-br.statusRank;
     return br.risk-ar.risk||Date.parse(b.createdAt||0)-Date.parse(a.createdAt||0);
   });
@@ -572,17 +601,20 @@ function renderWatchList(){
   root.innerHTML=rows.map(row=>{
     const s=budgetState(row),budget=Number(row.budget)||0,current=Number(row.current)||0,remain=budget&&current?budget-current:null;
     const match=bestOfficialMatch(row.plate),officialState=match?auctionState(match):"";
+    const stage=watchFinalStage(row),budgetUsage=watchBudgetUsage(row);
     const officialLine=match?'<div class="plate-watch-official">官方同步：'+escPlate(auctionLabel(officialState))+'・'+escPlate(match.office||"監理單位")+'</div>':"";
+    const stageLine=stage.active?'<div class="plate-final-stage '+escPlate(stage.level)+'"><b>'+escPlate(stage.label)+'</b><span>距公告決標 '+escPlate(fmtCountdown(stage.ms))+'</span>'+(stage.level==="extension"||stage.level==="critical"?'<small>官方最後 3 分鐘若有兩人以上繼續出高價，會延長 3 分鐘，最多 10 次；請以官方頁最後時間為準。</small>':'')+'</div>':"";
     const priceLine=current?'<div class="plate-detail-note"><b>價格來源：手動記錄</b><br>'+escPlate(row.priceUpdatedAt?fmtTime(row.priceUpdatedAt)+" 更新":"先前儲存的手動價格")+'；正式出價前請回官方頁確認最新價格與出價次數。</div>':'<div class="plate-detail-note"><b>即時價格：需官方確認</b><br>COLA GO 目前沒有官方逐筆出價資料，不會自行猜測目前價格。</div>';
-    return '<article class="plate-watch-card" data-plate-id="'+escPlate(row.id)+'">'+
+    return '<article class="plate-watch-card'+(stage.active?' is-final-stage':'')+'" data-plate-id="'+escPlate(row.id)+'">'+
       '<div class="plate-watch-top"><div><div class="plate-watch-number">'+escPlate(row.plate)+'</div><small class="meta">存在此裝置</small>'+officialLine+'</div><span class="plate-budget-state '+s.cls+'">'+escPlate(s.label)+'</span></div>'+
       '<div class="plate-watch-meta">'+
         '<div><small>最高預算</small><b>'+moneyPlate(budget)+'</b></div>'+
         '<div><small>手動記錄價</small><b>'+moneyPlate(current)+'</b></div>'+
         '<div><small>距離預算</small><b>'+(remain===null?"—":remain>=0?moneyPlate(remain):"超過 "+moneyPlate(Math.abs(remain)))+'</b></div>'+
-        '<div><small>結標時間</small><b>'+escPlate(fmtTime(row.endTime||match?.endAt))+'</b></div>'+
-      '</div>'+priceLine+
-      '<div class="plate-watch-actions"><button data-plate-action="copy" type="button">複製號碼</button><button data-plate-action="budget" type="button">改預算</button><button data-plate-action="price" type="button">更新手動價</button>'+(match?'<button data-plate-action="detail" type="button">公告詳情</button>':'')+'<button data-plate-action="history" type="button">官方歷史</button><button data-plate-action="official" type="button">官方即時競標</button><button class="danger" data-plate-action="remove" type="button">移除</button></div>'+
+        '<div><small>預算使用</small><b>'+(budgetUsage===null?"—":escPlate(budgetUsage+"%"))+'</b></div>'+
+        '<div><small>官方公告決標</small><b>'+escPlate(fmtTime(match?.endAt||row.endTime))+'</b></div>'+
+      '</div>'+stageLine+priceLine+
+      '<div class="plate-watch-actions"><button data-plate-action="copy" type="button">複製號碼</button><button data-plate-action="budget" type="button">改預算</button><button data-plate-action="price" type="button">更新手動價</button>'+(match?'<button data-plate-action="detail" type="button">公告詳情</button>':'')+'<button data-plate-action="history" type="button">官方歷史</button><button class="'+(stage.active?'official plate-bid-now':'official')+'" data-plate-action="official" type="button">'+(stage.active?'立即正式競標':'官方即時競標')+'</button><button class="danger" data-plate-action="remove" type="button">移除</button></div>'+
     '</article>'
   }).join("");
   renderWatchSummary();
@@ -633,17 +665,19 @@ function renderAnnouncements(){
   const queryPlate=plateParts(q)?q:"";
   root.innerHTML=rows.slice(0,80).map(row=>{
     const status=auctionState(row,now),start=Date.parse(row.startAt||""),end=Date.parse(row.endAt||"");
+    const stage=auctionFinalStage(row,now);
     const countdown=status==="upcoming"&&Number.isFinite(start)?"距起標 "+fmtCountdown(start-now):status==="live"&&Number.isFinite(end)?"距公告決標 "+fmtCountdown(end-now):"";
+    const stageMarkup=stage.active?'<div class="plate-final-stage '+escPlate(stage.level)+'"><b>'+escPlate(stage.label)+'</b><span>'+escPlate(fmtCountdown(stage.ms))+'</span>'+(stage.level==="extension"||stage.level==="critical"?'<small>最後 3 分鐘若有兩人以上繼續出高價，官方會延長 3 分鐘、最多 10 次；請以正式競標頁最後時間為準。</small>':'')+'</div>':"";
     const matches=announcementMatchesWatch(row);
     const matchMarkup=matches.length?'<div class="plate-watch-match">'+matches.map(w=>'<span>候選 '+escPlate(w.plate)+'</span>').join("")+'</div>':"";
     const range=row.startNumber===row.endNumber?row.startNumber:row.startNumber+" ～ "+row.endNumber;
     const addButton=queryPlate&&rangeContains(row,queryPlate)&&!loadRows().some(w=>w.plate===queryPlate)?'<button data-plate-announcement-action="watch" data-plate-value="'+escPlate(queryPlate)+'" data-plate-end="'+escPlate(row.endAt||"")+'" type="button">追蹤 '+escPlate(queryPlate)+'</button>':"";
-    return '<article class="plate-announcement-card">'+
+    return '<article class="plate-announcement-card'+(stage.active?' is-final-stage':'')+'">'+
       '<div class="plate-announcement-top"><div><div class="plate-announcement-range">'+escPlate(range)+'</div><div class="plate-announcement-office">'+escPlate(row.office||"")+'・'+escPlate(row.category||"")+'</div></div><span class="plate-auction-state '+status+'">'+auctionLabel(status)+'</span></div>'+
       '<div class="plate-announcement-timing"><div><small>起標</small><b>'+escPlate(fmtTime(row.startAt))+'</b></div><div><small>公告決標</small><b>'+escPlate(fmtTime(row.endAt))+'</b></div></div>'+
-      (countdown?'<div class="plate-countdown">'+escPlate(countdown)+'</div>':"")+matchMarkup+
+      (countdown?'<div class="plate-countdown">'+escPlate(countdown)+'</div>':"")+stageMarkup+matchMarkup+
       (status==="live"?'<div class="plate-detail-note"><b>官方同步：</b>競標狀態、起標／公告決標時間<br><b>需官方即時確認：</b>目前出價、出價次數、最後延長後時間</div>':"")+
-      '<div class="plate-announcement-actions">'+addButton+'<button data-plate-announcement-action="detail" data-plate-id="'+escPlate(row.id)+'" type="button">查看詳情</button>'+(status==="live"?'<button class="official" data-plate-announcement-action="official" type="button">正式競標</button>':"")+'</div>'+
+      '<div class="plate-announcement-actions">'+addButton+'<button data-plate-announcement-action="detail" data-plate-id="'+escPlate(row.id)+'" type="button">查看詳情</button>'+(status==="live"?'<button class="'+(stage.active?'official plate-bid-now':'official')+'" data-plate-announcement-action="official" type="button">'+(stage.active?'立即正式競標':'正式競標')+'</button>':"")+'</div>'+
     '</article>'
   }).join("");
   renderWatchList();
@@ -718,19 +752,28 @@ function updateNotifyText(){
   else if(Notification.permission==="denied")el.textContent="通知權限目前被封鎖；請到系統或瀏覽器的網站通知設定重新允許。";
   else el.textContent="按下「開啟瀏覽器通知」後才會要求系統權限；COLA GO 不會在你沒有操作時主動跳出授權視窗。";
 }
+function deadlineReminder(ms){
+  if(!Number.isFinite(ms)||ms<=0)return null;
+  if(ms<=60000)return {m:1,label:"1 分鐘"};
+  if(ms<=3*60000)return {m:3,label:"3 分鐘（延長可能區）"};
+  if(ms<=5*60000)return {m:5,label:"5 分鐘"};
+  if(ms<=15*60000)return {m:15,label:"15 分鐘"};
+  return null;
+}
 function checkDeadlines(){
   const now=Date.now(),alerts=loadAlerts();
   loadRows().forEach(row=>{
     if(!row.endTime)return;
     const ms=new Date(row.endTime).getTime()-now;
     if(!Number.isFinite(ms)||ms<=0)return;
-    [[15,"15 分鐘"],[5,"5 分鐘"],[1,"1 分鐘"]].forEach(([m,label])=>{
-      const key=row.id+"-manual-"+m;
-      if(ms<=m*60000&&!alerts[key]){
+    const reminder=deadlineReminder(ms);
+    if(reminder){
+      const key=row.id+"-manual-"+reminder.m;
+      if(!alerts[key]){
         alerts[key]=Date.now();
-        notify("COLA GO 車牌提醒",row.plate+" 距離你設定的結標時間約剩 "+label+"。請回官方頁確認最新價格與決標時間。",key);
+        notify("COLA GO 車牌提醒",row.plate+" 距離你設定的結標時間約剩 "+reminder.label+"。請回官方頁確認最新價格與決標時間。",key);
       }
-    });
+    }
   });
   saveAlerts(alerts);
 }
@@ -755,13 +798,14 @@ function checkAnnouncementAlerts(){
         });
       }
       if(status==="live"&&Number.isFinite(end)){
-        [[15,"15 分鐘"],[5,"5 分鐘"],[1,"1 分鐘"]].forEach(([m,label])=>{
-          const key=base+"-end-"+m,ms=end-now;
-          if(ms>0&&ms<=m*60000&&!alerts[key]){
+        const ms=end-now,reminder=deadlineReminder(ms);
+        if(reminder){
+          const key=base+"-end-"+reminder.m;
+          if(!alerts[key]){
             alerts[key]=Date.now();
-            notify("COLA GO 車牌競標提醒",w.plate+" 距公告決標約剩 "+label+"。最後階段可能因官方規則延長，請以監理服務網最新時間為準。",key);
+            notify("COLA GO 車牌競標提醒",w.plate+" 距公告決標約剩 "+reminder.label+"。最後階段可能因官方規則延長，請以監理服務網最新時間為準。",key);
           }
-        });
+        }
       }
     });
   });

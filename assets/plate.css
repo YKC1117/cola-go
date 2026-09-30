@@ -114,3 +114,13 @@
 .plate-detail-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .secondary-action{min-height:50px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:13px;font-weight:700}
 @media(max-width:380px){.plate-detail-grid{grid-template-columns:1fr}.plate-detail-actions{grid-template-columns:1fr}}
+
+/* Plate Center V10: last-stage bidding readability */
+.plate-watch-panel .plate-announcement-summary{grid-template-columns:repeat(4,minmax(0,1fr))}
+.plate-watch-card.is-final-stage,.plate-announcement-card.is-final-stage{border-color:#62412b;box-shadow:inset 0 0 0 1px #3a281b}
+.plate-final-stage{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;margin-top:10px;padding:10px 11px;border:1px solid #594324;border-radius:11px;background:#241b0f;color:#ffd36b}
+.plate-final-stage b{font-size:12px}.plate-final-stage span{font-size:11px;font-weight:750;font-variant-numeric:tabular-nums}.plate-final-stage small{grid-column:1/-1;color:#d9c28a;font-size:10px;line-height:1.55}
+.plate-final-stage.extension,.plate-final-stage.critical{border-color:#6a3038;background:#281217;color:#ff8f9c}
+.plate-final-stage.extension small,.plate-final-stage.critical small{color:#dcb0b6}
+.plate-watch-actions .plate-bid-now{background:#ff3650;border-color:#ff6578;color:#fff;font-weight:850}
+@media(max-width:430px){.plate-watch-panel .plate-announcement-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.plate-final-stage{grid-template-columns:1fr}.plate-final-stage span{justify-self:start}}
