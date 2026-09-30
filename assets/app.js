@@ -459,12 +459,19 @@ function chargingStatusMarkup(x){
   }
   if(!tdx)return unknown("即時狀態未知","此筆未提供即時空槍");
   const updated=x.statusUpdatedAt?formatTime(x.statusUpdatedAt):"更新時間未提供";
-  if(x.liveStale)return unknown("狀態已逾時","不列入「有空槍」 · "+updated,"is-stale");
+  if(x.liveStale){
+    const detail=profile?.key==="tesla"
+      ?"TDX 狀態已逾時 · Tesla App 可查看官方可用充電座"
+      :"不列入「有空槍」 · "+updated;
+    return unknown("狀態已逾時",detail,"is-stale");
+  }
   const counts=chargingLiveCounts(x);
   if(!counts.total){
-    const detail=profile
-      ? "TDX 尚未收到 "+profile.brand+" 即時槍況 · 可由業者官方確認"
-      : "TDX 目前沒有可安全判讀的即時槍況 · "+updated;
+    const detail=profile?.key==="tesla"
+      ?"TDX 尚未提供即時空槍 · Tesla App 可查看官方可用充電座"
+      :profile
+        ? "TDX 尚未收到 "+profile.brand+" 即時槍況 · 可由業者官方確認"
+        : "TDX 目前沒有可安全判讀的即時槍況 · "+updated;
     return unknown("未提供 TDX 即時槍況",detail);
   }
 
@@ -534,6 +541,20 @@ function chargingRateSummary(value){
   if(/(?:每分|每分鐘|元\/分|元每\d*分|計時|計分)/i.test(text))return "計時制";
   if(/費用詳情|依.*app|依.*公告|浮動/i.test(text))return "依官方";
   return "";
+}
+function chargingPriorityOfficialUrl(x){
+  const profile=chargingOperatorProfile(x);
+  if(!profile||!CHARGING_PRIORITY_KEYS.includes(profile.key))return "";
+  if(profile.key==="tesla")return profile.stationMap||profile.official||"";
+  return profile.rateGuide||profile.stationMap||profile.official||"";
+}
+function chargingPriorityOfficialLabel(x){
+  const key=chargingOperatorProfile(x)?.key||"";
+  if(key==="tesla")return "Tesla 官方";
+  if(key==="evoasis")return "EVOASIS 官方";
+  if(key==="upower")return "U-POWER 官方";
+  if(key==="tail")return "TAIL 官方";
+  return "官方資訊";
 }
 function chargingDetailMarkup(x){
   const profile=chargingOperatorProfile(x);
@@ -692,6 +713,7 @@ function renderCharging(){
         '<button class="go charging-go-primary" data-charge-go="'+destination+'">直接導航</button>'+
         '<button class="charging-map-choice" data-charge-nav-toggle="'+esc(key)+'">選地圖</button>'+
         '<button class="favorite-action '+(favorite?'active':'')+'" data-charge-favorite="'+esc(key)+'" aria-pressed="'+favorite+'">'+(favorite?'已收藏':'收藏')+'</button>'+
+        (chargingPriorityOfficialUrl(x)?'<button data-charge-official-url="'+esc(chargingPriorityOfficialUrl(x))+'">'+esc(chargingPriorityOfficialLabel(x))+'</button>':"")+
         (!tdx&&["1","3","5"].includes(String(x.road))?'<button data-camera-road="'+esc(x.road)+'">CCTV</button>':"")+
       '</div>'+
       '<div class="charging-nav-menu" data-charge-nav-menu="'+esc(key)+'" hidden>'+
@@ -724,8 +746,9 @@ function renderCharging(){
     window.open(url,"_blank","noopener");
   });
   $$("[data-charge-google]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/dir/?api=1&destination="+b.dataset.chargeGoogle+"&travelmode=driving","_blank","noopener"));
-  $$("[data-charge-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?daddr="+b.dataset.chargeApple+"&dirflg=d","_blank","noopener"));
-  $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
+  $("[data-charge-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?daddr="+b.dataset.chargeApple+"&dirflg=d","_blank","noopener"));
+  $("[data-charge-official-url]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.chargeOfficialUrl,"_blank","noopener"));
+  $("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
   $("[data-charge-show-nearby]",root)?.addEventListener("click",()=>{
     state.chargingAvailableOnly=false;
     renderCharging();
