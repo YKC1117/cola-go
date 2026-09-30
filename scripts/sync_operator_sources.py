@@ -17,6 +17,7 @@ UPOWER_URL = "https://www.u-power.com.tw/"
 EVOASIS_URL = "https://www.evoasis.com.tw/charging-station"
 TAIL_URL = "https://www.evtail.com.tw/locations"
 EVALUE_URL = "https://www.evalue.com.tw/find"
+TESLA_URL = "https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan"
 
 CITY_PREFIXES = [
     ("臺北市", "Taipei", "臺北市"), ("台北市", "Taipei", "臺北市"),
@@ -168,6 +169,274 @@ class EvalueListParser(HTMLParser):
         text = " ".join(self.total_text)
         m = re.search(r"全部共\s*(\d+)\s*筆", text)
         return int(m.group(1)) if m else 0
+
+
+
+class TeslaListParser(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.current_href = ""
+        self.anchor_parts = []
+        self.links = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() != "a":
+            return
+        href = dict(attrs).get("href") or ""
+        if re.search(r"/findus/location/supercharger/\d+", href):
+            self.current_href = href
+            self.anchor_parts = []
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "a" and self.current_href:
+            name = clean_text(" ".join(self.anchor_parts))
+            if name:
+                self.links.append((self.current_href, name))
+            self.current_href = ""
+            self.anchor_parts = []
+
+    def handle_data(self, data):
+        if self.current_href:
+            value = clean_text(data)
+            if value:
+                self.anchor_parts.append(value)
+
+
+TESLA_NAME_CITIES = [
+    ("臺北", "Taipei", "臺北市"), ("台北", "Taipei", "臺北市"),
+    ("新北", "NewTaipei", "新北市"), ("桃園", "Taoyuan", "桃園市"),
+    ("臺中", "Taichung", "臺中市"), ("台中", "Taichung", "臺中市"),
+    ("臺南", "Tainan", "臺南市"), ("台南", "Tainan", "臺南市"),
+    ("高雄", "Kaohsiung", "高雄市"), ("基隆", "Keelung", "基隆市"),
+    ("新竹", "HsinchuCounty", "新竹縣"), ("苗栗", "MiaoliCounty", "苗栗縣"),
+    ("彰化", "ChanghuaCounty", "彰化縣"), ("南投", "NantouCounty", "南投縣"),
+    ("雲林", "YunlinCounty", "雲林縣"), ("嘉義", "ChiayiCounty", "嘉義縣"),
+    ("屏東", "PingtungCounty", "屏東縣"), ("宜蘭", "YilanCounty", "宜蘭縣"),
+    ("花蓮", "HualienCounty", "花蓮縣"), ("臺東", "TaitungCounty", "臺東縣"),
+    ("台東", "TaitungCounty", "臺東縣"), ("澎湖", "PenghuCounty", "澎湖縣"),
+    ("金門", "KinmenCounty", "金門縣"),
+]
+
+
+def tesla_city_from_name(name):
+    text = clean_text(name)
+    for prefix, code, city_name in TESLA_NAME_CITIES:
+        if text.startswith(prefix):
+            return code, city_name
+    return "", ""
+
+
+def tesla_city_from_postal(value):
+    m = re.match(r"^\s*(\d{3})\d{0,2}\b", clean_text(value))
+    if not m:
+        return "", ""
+    code = int(m.group(1))
+    ranges = [
+        (100, 116, "Taipei", "臺北市"),
+        (200, 206, "Keelung", "基隆市"),
+        (207, 253, "NewTaipei", "新北市"),
+        (260, 272, "YilanCounty", "宜蘭縣"),
+        (300, 300, "Hsinchu", "新竹市"),
+        (302, 315, "HsinchuCounty", "新竹縣"),
+        (320, 338, "Taoyuan", "桃園市"),
+        (350, 369, "MiaoliCounty", "苗栗縣"),
+        (400, 439, "Taichung", "臺中市"),
+        (500, 530, "ChanghuaCounty", "彰化縣"),
+        (540, 558, "NantouCounty", "南投縣"),
+        (600, 600, "Chiayi", "嘉義市"),
+        (602, 625, "ChiayiCounty", "嘉義縣"),
+        (630, 655, "YunlinCounty", "雲林縣"),
+        (700, 745, "Tainan", "臺南市"),
+        (800, 852, "Kaohsiung", "高雄市"),
+        (900, 947, "PingtungCounty", "屏東縣"),
+        (950, 966, "TaitungCounty", "臺東縣"),
+        (970, 983, "HualienCounty", "花蓮縣"),
+    ]
+    for start, end, city, city_name in ranges:
+        if start <= code <= end:
+            return city, city_name
+    return "", ""
+
+
+def tesla_base_item(name, detail_url):
+    city, city_name = tesla_city_from_name(name)
+    return {
+        "id": stable_id("tesla", name, detail_url),
+        "road": "operator",
+        "city": city,
+        "cityName": city_name,
+        "name": clean_text(name),
+        "location": "",
+        "operator": "台灣特斯拉汽車有限公司",
+        "operatorId": "",
+        "networkKey": "tesla",
+        "operatorWebURL": TESLA_URL,
+        "officialSource": "Tesla 台灣超級充電站",
+        "officialSourceURL": detail_url,
+        "officialSupplemental": True,
+        "officialStationType": "Supercharger",
+        "sitePowerKw": 0,
+        "maxPowerKw": None,
+        "power": "",
+        "spaces": 0,
+        "connectorCount": 0,
+        "connectors": [],
+        "liveStateCount": 0,
+        "availableConnectors": 0,
+        "occupiedConnectors": 0,
+        "faultedConnectors": 0,
+        "unavailableConnectors": 0,
+        "unknownConnectors": 0,
+        "liveStatusKnown": False,
+        "liveStale": False,
+        "statusUpdatedAt": None,
+        "lat": None,
+        "lon": None,
+        "direction": "",
+        "serviceTime": "",
+        "chargingRate": "",
+        "parkingRate": "",
+        "telephone": "",
+        "operatorTelephone": "0809-007-518",
+        "description": "Tesla 官方超級充電站",
+    }
+
+
+def parse_tesla_detail(html_text, item):
+    parser = TextNodeParser()
+    parser.feed(html_text)
+    nodes = parser.nodes
+    text = "\n".join(nodes)
+
+    address = next((clean_text(x) for x in nodes if re.match(r"^\d{3,5}\s+\S", clean_text(x))), "")
+    city, city_name = tesla_city_from_postal(address)
+    if not city:
+        city, city_name = tesla_city_from_name(item.get("name") or "")
+
+    power_match = re.search(
+        r"(\d+)\s*個超級充電座\s*最高可達\s*([0-9]+(?:\.[0-9]+)?)\s*kW",
+        text,
+        re.I,
+    )
+    spaces = int(power_match.group(1)) if power_match else int(item.get("spaces") or 0)
+    max_power = float(power_match.group(2)) if power_match else item.get("maxPowerKw")
+    service = next(
+        (clean_text(x) for x in nodes if clean_text(x).startswith(("服務時間", "營業時間", "開放時間"))),
+        item.get("serviceTime") or "",
+    )
+
+    result = dict(item)
+    result.update({
+        "city": city or item.get("city") or "",
+        "cityName": city_name or item.get("cityName") or "",
+        "location": address or item.get("location") or "",
+        "maxPowerKw": max_power,
+        "power": (f"最高 {max_power:g} kW" if isinstance(max_power, (int, float)) and max_power else item.get("power") or ""),
+        "spaces": spaces,
+        "connectorCount": spaces,
+        "serviceTime": service,
+        "description": "Tesla 官方超級充電站" + (f" · {spaces} 座" if spaces else ""),
+    })
+    return result
+
+
+def sync_tesla(fetch_details=True):
+    list_html = fetch_text(TESLA_URL)
+    parser = TeslaListParser()
+    parser.feed(list_html)
+
+    links = []
+    seen = set()
+    for href, name in parser.links:
+        detail_url = urllib.parse.urljoin(TESLA_URL, href)
+        if detail_url in seen:
+            continue
+        seen.add(detail_url)
+        links.append((detail_url, clean_text(name)))
+
+    if len(links) < 100:
+        raise RuntimeError(f"expected at least 100 Tesla Supercharger links, got {len(links)}")
+
+    existing_payload = read_existing_payload("tesla.json")
+    existing = {
+        str(x.get("officialSourceURL") or ""): x
+        for x in ((existing_payload or {}).get("items") or [])
+        if x.get("officialSourceURL")
+    }
+    day = datetime.now(timezone.utc).timetuple().tm_yday
+    items = []
+
+    for index, (detail_url, name) in enumerate(links):
+        previous = existing.get(detail_url)
+        item = dict(previous) if previous else tesla_base_item(name, detail_url)
+        item.update({
+            "name": name,
+            "operator": "台灣特斯拉汽車有限公司",
+            "networkKey": "tesla",
+            "operatorWebURL": TESLA_URL,
+            "officialSource": "Tesla 台灣超級充電站",
+            "officialSourceURL": detail_url,
+            "officialSupplemental": True,
+            "officialStationType": "Supercharger",
+        })
+
+        if not fetch_details:
+            if index == 0:
+                detail = fetch_text(detail_url)
+                item = parse_tesla_detail(detail, item)
+            items.append(item)
+            continue
+
+        has_detail = bool(item.get("location") and item.get("maxPowerKw") and int(item.get("spaces") or 0) > 0)
+        refresh = (not has_detail) or ((index + day) % 14 == 0)
+        if refresh:
+            try:
+                detail = fetch_text(detail_url)
+                item = parse_tesla_detail(detail, item)
+            except Exception as error:
+                if not has_detail:
+                    print(f"TESLA_DETAIL_WARN {name} {error}", file=sys.stderr)
+
+        if not item.get("city"):
+            city, city_name = tesla_city_from_name(name)
+            item["city"] = city
+            item["cityName"] = city_name
+        items.append(item)
+
+    return items
+
+
+def validate_tesla_list(items):
+    errors = []
+    if len(items) < 100:
+        errors.append(f"expected at least 100 Tesla Supercharger stations, got {len(items)}")
+    if any(not x.get("name") or not x.get("officialSourceURL") for x in items):
+        errors.append("one or more Tesla rows are missing name/officialSourceURL")
+    if not any(x.get("location") and NumberLike(x.get("maxPowerKw")) > 0 for x in items):
+        errors.append("Tesla online detail sample did not expose address and max power")
+    if errors:
+        raise RuntimeError("; ".join(errors))
+
+
+def NumberLike(value):
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def validate_tesla(items):
+    errors = []
+    if len(items) < 100:
+        errors.append(f"expected at least 100 Tesla Supercharger stations, got {len(items)}")
+    if sum(1 for x in items if x.get("location")) < 95:
+        errors.append("too few Tesla rows contain official addresses")
+    if sum(1 for x in items if NumberLike(x.get("maxPowerKw")) > 0 and int(x.get("spaces") or 0) > 0) < 90:
+        errors.append("too few Tesla rows contain official stall count and max power")
+    if len({x.get("city") for x in items if x.get("city")}) < 15:
+        errors.append("Tesla official Supercharger list covers too few cities")
+    if errors:
+        raise RuntimeError("; ".join(errors))
 
 
 def normalize_station_name(value):
@@ -754,6 +1023,9 @@ def main():
          lambda: parse_tail(fetch_text(TAIL_URL)), validate_tail, None),
         ("evalue", "evalue.json", "EVALUE 官方充電站", EVALUE_URL,
          lambda: sync_evalue(fetch_details=not args.check_online), validate_evalue, None),
+        ("tesla", "tesla.json", "Tesla 台灣超級充電站", TESLA_URL,
+         lambda: sync_tesla(fetch_details=not args.check_online),
+         validate_tesla_list if args.check_online else validate_tesla, None),
     ]
 
     failures = []
