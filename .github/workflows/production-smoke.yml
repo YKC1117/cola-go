@@ -147,7 +147,7 @@ jobs:
           import json, pathlib, sys
           root=pathlib.Path(sys.argv[1])
           status=json.load(open(root/"status.json", encoding="utf-8"))
-plate_announcements=json.load(open(root/"plate-announcements.json", encoding="utf-8"))
+          plate_announcements=json.load(open(root/"plate-announcements.json", encoding="utf-8"))
           charging=json.load(open(root/"charging.json", encoding="utf-8"))
           traffic=json.load(open(root/"traffic.json", encoding="utf-8"))
           tunnel=json.load(open(root/"tunnel.json", encoding="utf-8"))
@@ -161,8 +161,8 @@ plate_announcements=json.load(open(root/"plate-announcements.json", encoding="ut
           tail=json.load(open(tail_path, encoding="utf-8")) if tail_path.exists() else None
 
           assert status["source"] == "TDX／交通部"
-assert plate_announcements.get("status") in {"pending-sync","live","stale"}
-assert isinstance(plate_announcements.get("items"), list)
+          assert plate_announcements.get("status") in {"pending-sync","live","stale"}
+          assert isinstance(plate_announcements.get("items"), list)
           assert status["datasets"]["charging"]["count"] > 0
           assert status["datasets"]["traffic"]["count"] > 0
           assert status["datasets"]["tunnel"]["count"] > 0
