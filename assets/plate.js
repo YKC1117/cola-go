@@ -8,6 +8,7 @@ const official={
   pick:"https://www.mvdis.gov.tw/m3-emv-plate/webpickno/queryPickNo",
   bid:"https://www.mvdis.gov.tw/m3-emv-plate/bid/queryBiding"
 };
+let detailRow=null;
 const $p=q=>document.querySelector(q);
 const $$p=q=>Array.from(document.querySelectorAll(q));
 const escPlate=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
@@ -73,6 +74,42 @@ function auctionState(row,now=Date.now()){
   return "ended";
 }
 function auctionLabel(status){return status==="live"?"競標中":status==="upcoming"?"即將開標":"已結束"}
+function scrollToPlate(selector){
+  const el=$p(selector);
+  if(el)el.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function openPlateDetail(row){
+  detailRow=row||null;
+  const dialog=$p("#plateDetailDialog"),body=$p("#plateDetailBody"),title=$p("#plateDetailTitle"),bid=$p("#plateDetailBid"),watch=$p("#plateDetailWatch");
+  if(!dialog||!body||!row)return;
+  const status=auctionState(row),range=row.startNumber===row.endNumber?row.startNumber:row.startNumber+" ～ "+row.endNumber;
+  title.textContent=range;
+  const matches=announcementMatchesWatch(row);
+  body.innerHTML=
+    '<div class="plate-detail-status"><span class="plate-auction-state '+status+'">'+escPlate(auctionLabel(status))+'</span><span>'+escPlate(row.office||"監理單位")+'</span></div>'+
+    '<div class="plate-detail-grid">'+
+      '<div><small>號牌類別</small><b>'+escPlate(row.category||"未提供")+'</b></div>'+
+      '<div><small>監理單位</small><b>'+escPlate(row.office||"未提供")+'</b></div>'+
+      '<div><small>起標時間</small><b>'+escPlate(fmtTime(row.startAt))+'</b></div>'+
+      '<div><small>公告決標</small><b>'+escPlate(fmtTime(row.endAt))+'</b></div>'+
+      '<div><small>轉帳截止</small><b>'+escPlate(fmtTime(row.transferDeadline))+'</b></div>'+
+      '<div><small>資料來源</small><b>交通部公路局</b></div>'+
+    '</div>'+
+    (matches.length?'<div class="plate-detail-match"><b>你的候選命中</b><div>'+matches.map(x=>'<span>'+escPlate(x.plate)+'</span>').join("")+'</div></div>':'')+
+    '<div class="plate-detail-note">COLA GO 顯示的是官方公告資料。競標中的目前出價、出價次數與最後階段延長時間，只有正式競標前才需要到監理服務網確認。</div>';
+  if(bid){
+    bid.hidden=status!=="live";
+    bid.textContent="正式競標";
+  }
+  if(watch){
+    const exact=row.startNumber===row.endNumber?row.startNumber:"";
+    watch.hidden=!exact;
+    watch.dataset.value=exact;
+    watch.dataset.end=row.endAt||"";
+    watch.textContent=exact&&loadRows().some(x=>x.plate===exact)?"已在候選":"加入候選";
+  }
+  if(typeof dialog.showModal==="function")dialog.showModal();else dialog.setAttribute("open","");
+}
 function budgetState(row){
   const budget=Number(row.budget)||0,current=Number(row.current)||0;
   if(!budget||!current)return {label:"等待價格",cls:""};
@@ -181,7 +218,7 @@ function renderAnnouncements(){
       '<div class="plate-announcement-top"><div><div class="plate-announcement-range">'+escPlate(range)+'</div><div class="plate-announcement-office">'+escPlate(row.office||"")+'・'+escPlate(row.category||"")+'</div></div><span class="plate-auction-state '+status+'">'+auctionLabel(status)+'</span></div>'+
       '<div class="plate-announcement-timing"><div><small>起標</small><b>'+escPlate(fmtTime(row.startAt))+'</b></div><div><small>公告決標</small><b>'+escPlate(fmtTime(row.endAt))+'</b></div></div>'+
       (countdown?'<div class="plate-countdown">'+escPlate(countdown)+'</div>':"")+matchMarkup+
-      '<div class="plate-announcement-actions">'+addButton+'<button class="official" data-plate-announcement-action="official" type="button">官方即時競標</button></div>'+
+      '<div class="plate-announcement-actions">'+addButton+'<button data-plate-announcement-action="detail" data-plate-id="'+escPlate(row.id)+'" type="button">查看詳情</button>'+(status==="live"?'<button class="official" data-plate-announcement-action="official" type="button">正式競標</button>':"")+'</div>'+
     '</article>'
   }).join("");
   renderWatchList();
@@ -277,6 +314,14 @@ function bind(){
   if(clear)clear.onclick=()=>{announcementQuery="";if(searchInput)searchInput.value="";renderAnnouncements()};
 
   $$p("[data-plate-filter]").forEach(btn=>btn.onclick=()=>{announcementFilter=btn.dataset.plateFilter||"all";renderAnnouncements()});
+  $$p("[data-plate-jump]").forEach(btn=>btn.onclick=()=>{
+    const target=btn.dataset.plateJump;
+    if(target==="search"){scrollToPlate("#plateSearchInput");$p("#plateSearchInput")?.focus();return}
+    if(target==="watch"){announcementFilter="watch";renderAnnouncements();scrollToPlate(".plate-watch-panel");return}
+    announcementFilter=target==="live"?"live":"upcoming";
+    renderAnnouncements();
+    scrollToPlate(".plate-announcement-panel");
+  });
 
   const add=$p("#plateAddWatch");
   if(add)add.onclick=()=>{
@@ -328,12 +373,26 @@ function bind(){
   if(announcementList)announcementList.onclick=e=>{
     const btn=e.target.closest("[data-plate-announcement-action]");
     if(!btn)return;
-    if(btn.dataset.plateAnnouncementAction==="official"){window.open(official.bid,"_blank","noopener");return}
-    if(btn.dataset.plateAnnouncementAction==="watch"){
+    const action=btn.dataset.plateAnnouncementAction;
+    if(action==="official"){window.open(official.bid,"_blank","noopener");return}
+    if(action==="detail"){
+      const row=(announcementData.items||[]).find(x=>x.id===btn.dataset.plateId);
+      if(row)openPlateDetail(row);
+      return;
+    }
+    if(action==="watch"){
       const value=normalize(btn.dataset.plateValue),end=btn.dataset.plateEnd||"";
       if(value){upsertWatch(value,0,0,end);if(window.toast)toast("已加入候選追蹤")}
     }
   };
+  const dialog=$p("#plateDetailDialog");
+  $p("#plateDetailClose")?.addEventListener("click",()=>dialog?.close());
+  dialog?.addEventListener("click",e=>{if(e.target===dialog)dialog.close()});
+  $p("#plateDetailBid")?.addEventListener("click",()=>window.open(official.bid,"_blank","noopener"));
+  $p("#plateDetailWatch")?.addEventListener("click",e=>{
+    const value=normalize(e.currentTarget.dataset.value),end=e.currentTarget.dataset.end||"";
+    if(value){upsertWatch(value,0,0,end);e.currentTarget.textContent="已在候選";if(window.toast)toast("已加入候選追蹤")}
+  });
 
   const last=localStorage.getItem("cola-go-last-plate-search");
   if(last&&searchInput)searchInput.value=last;
