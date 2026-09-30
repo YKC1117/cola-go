@@ -174,6 +174,44 @@
     );
   }
 
+  function primeChargingMajorStatus(){
+    document.querySelectorAll("#chargingMajorFilter [data-charge-major]").forEach(button=>{
+      const key=button.dataset.chargeMajor||"all";
+      const status=button.querySelector("[data-major-status]");
+      if(!status)return;
+      if(key==="all")status.textContent="站數載入中";
+      else if(key==="icharging")status.textContent="0 站 · 待新增導入中";
+      else if(key==="tesla")status.textContent="站數載入中 · TDX 即時＋Tesla 官方";
+      else status.textContent="官方站點已導入 · 站數載入中";
+    });
+  }
+
+  function primeChargingCoverageGrid(){
+    const grid=document.querySelector("#chargingCoverageGrid");
+    const summary=document.querySelector("#chargingCoverageSummary");
+    if(!grid)return;
+    if(summary)summary.textContent="站數載入中";
+    if(grid.children.length)return;
+    grid.innerHTML=CHARGING_MAJOR_KEYS.map(key=>{
+      const profile=CHARGING_OPERATOR_PROFILES.find(x=>x.key===key);
+      if(!profile)return "";
+      const source=key==="icharging"?"待新增導入中":key==="tesla"?"TDX 即時＋Tesla 官方":"官方站點已導入";
+      const badge=key==="icharging"?'<em class="official">待新增導入中</em>':key==="tesla"?'<em class="official">優先整合</em>':'';
+      return '<button type="button" data-coverage-major="'+key+'">'+
+        '<span class="charging-coverage-brand"><b>'+profile.brand+'</b><small>'+source+'</small></span>'+
+        '<span class="charging-coverage-stats"><strong>—</strong><small>站</small><em>資料載入中</em>'+badge+'</span>'+
+      '</button>';
+    }).join("");
+    grid.querySelectorAll("[data-coverage-major]").forEach(button=>button.onclick=()=>{
+      state.chargingMajor=button.dataset.coverageMajor||"all";
+      state.chargingOperator="all";
+      const select=document.querySelector("#chargingOperator");
+      if(select)select.value="all";
+      renderCharging();
+      document.querySelector("#chargingList")?.scrollIntoView({behavior:"smooth",block:"start"});
+    });
+  }
+
   function renderChargingCoverage(){
     const grid=document.querySelector("#chargingCoverageGrid");
     const summary=document.querySelector("#chargingCoverageSummary");
@@ -258,6 +296,7 @@
     if(currentCurated.length&&!curatedCharging.length)curatedCharging=currentCurated;
     if(!officialChargingAll.length){
       originalRenderCharging();
+      renderChargingCoverage();
       return;
     }
     const rawOfficial=state.road==="all"?chargingSubset():[];
@@ -351,6 +390,8 @@
       lastSuccessAt:result.value.lastSuccessAt||result.value.updatedAt||null,
       lastAttemptAt:result.value.lastAttemptAt||result.value.updatedAt||null
     }]));
+    const coverageGrid=document.querySelector("#chargingCoverageGrid");
+    if(coverageGrid)coverageGrid.dataset.sourceHealth=Object.keys(operatorSourceHealth).sort().join(",");
     operatorChargingAll=datasets.flatMap(({result,source})=>
       result.value.items.map(x=>({...x,officialSupplemental:true,networkKey:x.networkKey||source.key,officialSyncStatus:result.value.syncStatus||"ok"}))
     );
@@ -448,6 +489,8 @@
   });
 
   ensureChargingCityFilter();
+  primeChargingMajorStatus();
+  primeChargingCoverageGrid();
   Promise.resolve().then(loadOfficialCharging);
   Promise.resolve().then(loadOperatorCharging);
   Promise.resolve().then(loadOfficialCCTV);
