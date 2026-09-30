@@ -79,7 +79,7 @@
 
   function normalizedStationName(value){
     let name=String(value||"").replace(/臺/g,"台").toLowerCase()
-      .replace(/evoasis|tail|特爾電力|e-?value|華城電能|華城電機|u-?power|旭電馳科研/gi,"")
+      .replace(/evoasis|tail|特爾電力|e-?value|華城電能|華城電機|u-?power|旭電馳科研|tesla|特斯拉|supercharger|超級充電/gi,"")
       .replace(/[^\p{L}\p{N}]+/gu,"");
     for(const prefix of DEDUPE_CITY_PREFIXES){
       if(name.startsWith(prefix)&&name.length>prefix.length+4){
@@ -339,7 +339,8 @@
       {path:"./data/operators/upower.json",key:"upower"},
       {path:"./data/operators/evoasis.json",key:"evoasis"},
       {path:"./data/operators/tail.json",key:"tail"},
-      {path:"./data/operators/evalue.json",key:"evalue"}
+      {path:"./data/operators/evalue.json",key:"evalue"},
+      {path:"./data/operators/tesla.json",key:"tesla"}
     ];
     const results=await Promise.allSettled(sources.map(source=>officialGet(source.path)));
     const datasets=results.map((result,index)=>({result,source:sources[index]}))
