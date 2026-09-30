@@ -492,6 +492,25 @@ function chargingDisplayText(value){
     .replace(/\s*·\s*/g," · ")
     .trim();
 }
+function chargingDecisionRateLabel(x){
+  const station=chargingRateSummary(x?.chargingRate);
+  if(station)return "站點費率 "+station;
+  const key=chargingOperatorProfile(x)?.key||"";
+  if(key==="upower")return "會員 6.9／8.5／13.5・非會員 14 元/度";
+  if(key==="evoasis")return "指定站 6.5／8.4／14.9 元/度";
+  if(key==="tail")return "尖峰／離峰浮動・依現場";
+  if(key==="tesla")return "動態費率・App／車機";
+  return "";
+}
+function chargingDecisionPowerLabel(x){
+  const kw=chargingPowerKw(x);
+  if(kw>0)return "最高功率 "+chargingPowerLabel(x);
+  const raw=chargingPowerLabel(x);
+  const key=chargingOperatorProfile(x)?.key||"";
+  if(raw&&raw!=="功率未提供")return raw;
+  if(key==="tesla")return "最高功率依 Tesla App";
+  return "功率未提供";
+}
 function chargingRateSummary(value){
   const text=chargingDisplayText(value);
   if(!text)return "";
@@ -648,8 +667,12 @@ function renderCharging(){
     const meta=[tdx||supplemental?x.cityName:x.direction,chargingOperatorLabel(x)].filter(Boolean).join(" · ");
     const routeTag=supplemental?"業者官方":(tdx?"TDX":("國 "+x.road));
     const availableNow=tdx&&!x.liveStale&&chargingLiveCounts(x).available>0;
-    const majorNetwork=CHARGING_MAJOR_KEYS.includes(chargingOperatorProfile(x)?.key||"");
-    return '<article class="list-item charging-item '+(availableNow?'is-available ':'')+(majorNetwork?'is-major-network':'')+'">'+
+    const profile=chargingOperatorProfile(x);
+    const majorNetwork=CHARGING_MAJOR_KEYS.includes(profile?.key||"");
+    const priorityNetwork=CHARGING_PRIORITY_KEYS.includes(profile?.key||"");
+    const powerDecision=priorityNetwork?chargingDecisionPowerLabel(x):chargingPowerLabel(x);
+    const rateDecision=priorityNetwork?chargingDecisionRateLabel(x):chargingRateSummary(x.chargingRate);
+    return '<article class="list-item charging-item '+(availableNow?'is-available ':'')+(majorNetwork?'is-major-network':'')+(priorityNetwork?' is-priority-network':'')+'">'+
       '<div class="list-head">'+
         '<div><div class="charging-title-line"><h3>'+esc(x.name)+'</h3></div><div class="meta">'+esc(meta)+'</div></div>'+
         '<span class="route-tag">'+esc(routeTag)+'</span>'+
@@ -658,8 +681,8 @@ function renderCharging(){
       '<div class="specs charging-facts">'+
         (distance!=null?'<span class="charging-distance">'+esc(distance<10?distance.toFixed(1):Math.round(distance))+' km</span>':"")+
         (supplemental&&Number(x.spaces)<=0?'<span>席次未提供</span>':'<span>'+esc(x.spaces)+(supplemental?' 席':(tdx?' 充電點':' 車位'))+'</span>')+
-        '<span class="charging-power">'+esc(chargingPowerLabel(x))+'</span>'+
-        (chargingRateSummary(x.chargingRate)?'<span class="charging-rate">'+esc(chargingRateSummary(x.chargingRate))+'</span>':"")+
+        '<span class="charging-power">'+esc(powerDecision)+'</span>'+
+        (rateDecision?'<span class="charging-rate">'+esc(rateDecision)+'</span>':"")+
         chargingConnectors(x).map(c=>'<span class="charging-connector">'+esc(c)+'</span>').join("")+
         chargingCapabilities(x).map(c=>'<span class="charging-capability">'+esc(c.label)+'</span>').join("")+
       '</div>'+
