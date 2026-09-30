@@ -174,6 +174,18 @@
     );
   }
 
+  function primeChargingMajorStatus(){
+    document.querySelectorAll("#chargingMajorFilter [data-charge-major]").forEach(button=>{
+      const key=button.dataset.chargeMajor||"all";
+      const status=button.querySelector("[data-major-status]");
+      if(!status)return;
+      if(key==="all")status.textContent="站數載入中";
+      else if(key==="icharging")status.textContent="0 站 · 待新增導入中";
+      else if(key==="tesla")status.textContent="站數載入中 · TDX 即時＋Tesla 官方";
+      else status.textContent="官方站點已導入 · 站數載入中";
+    });
+  }
+
   function renderChargingCoverage(){
     const grid=document.querySelector("#chargingCoverageGrid");
     const summary=document.querySelector("#chargingCoverageSummary");
@@ -449,6 +461,7 @@
   });
 
   ensureChargingCityFilter();
+  primeChargingMajorStatus();
   Promise.resolve().then(loadOfficialCharging);
   Promise.resolve().then(loadOperatorCharging);
   Promise.resolve().then(loadOfficialCCTV);
