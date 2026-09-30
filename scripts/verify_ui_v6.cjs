@@ -36,7 +36,7 @@ let browser;
   const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
   await context.route('**/*',route=>new URL(route.request().url()).origin===base?route.continue():route.abort());
   await context.addInitScript(()=>{
-    const qaFixturesEnabled=sessionStorage.getItem('cola-go-ui-v6-qa-fixtures')!=='off';
+    const qaOfflineMode=sessionStorage.getItem('cola-go-ui-v6-qa-offline')==='on';
     const fixture={
       schema:1,source:'U-POWER 官方網站',updatedAt:new Date().toISOString(),count:2,totalSeats:12,
       items:[
@@ -46,8 +46,11 @@ let browser;
     };
     const nativeFetch=window.fetch.bind(window);
     window.fetch=(input,init)=>{
-      if(!qaFixturesEnabled)return nativeFetch(input,init);
       const url=typeof input==='string'?input:(input?.url||'');
+      if(qaOfflineMode&&(String(url).includes('/data/tdx/')||String(url).includes('/data/operators/'))){
+        return Promise.reject(new TypeError('QA offline live feed disabled'));
+      }
+      if(qaOfflineMode)return nativeFetch(input,init);
       if(String(url).includes('/data/tdx/charging.json')||String(url).includes('./data/tdx/charging.json')){
         return nativeFetch(input,init).then(async response=>{
           const data=await response.clone().json();
@@ -493,7 +496,7 @@ let browser;
   const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-39');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
-  await page.evaluate(()=>sessionStorage.setItem('cola-go-ui-v6-qa-fixtures','off'));
+  await page.evaluate(()=>sessionStorage.setItem('cola-go-ui-v6-qa-offline','on'));
   try{
     await context.setOffline(true);
     await page.reload();
@@ -504,7 +507,7 @@ let browser;
     check('No uncaught browser JavaScript errors',errors.length===0);
   }finally{
     await context.setOffline(false);
-    await page.evaluate(()=>sessionStorage.removeItem('cola-go-ui-v6-qa-fixtures'));
+    await page.evaluate(()=>sessionStorage.removeItem('cola-go-ui-v6-qa-offline'));
   }
   const report={browser:browser.version(),viewports:[390,430,1440],checks:results.length,passed:results,errors,externalNetwork:'blocked; checked-in data plus explicitly labelled charging/CCTV QA fixtures',fontSetup:fontCSS?'QA-only embedded Noto Sans TC; product CSS unchanged':'system fonts'};
   fs.writeFileSync(path.join(root,'docs/ui-v6/verification.json'),JSON.stringify(report,null,2)+'\n');
