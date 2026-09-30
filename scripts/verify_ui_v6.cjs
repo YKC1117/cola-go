@@ -221,6 +221,17 @@ let browser;
   check('Coverage panel explains live and official supplemental semantics',await page.locator('#chargingCoverage').textContent().then(x=>x.includes('即時')&&x.includes('官方補')));
   check('Charging cards expose decision-first availability',await page.locator('#chargingList .charging-availability-main').first().isVisible());
   check('Charging cards surface compact rate information when TDX provides it',await page.locator('#chargingList .charging-rate').count()>0);
+  check('Priority station rate fallback uses verified operator rules',await page.evaluate(()=>
+    chargingDecisionRateLabel({operator:'旭電馳科研'})==='會員 6.9／8.5／13.5・非會員 14 元/度'&&
+    chargingDecisionRateLabel({operator:'源點科技股份有限公司'}).includes('指定站 6.5')&&
+    chargingDecisionRateLabel({operator:'特爾電力股份有限公司'}).includes('依現場')&&
+    chargingDecisionRateLabel({operator:'台灣特斯拉汽車有限公司'}).includes('動態費率')
+  ));
+  check('Priority station power labels never confuse site total with connector maximum',await page.evaluate(()=>
+    chargingDecisionPowerLabel({operator:'旭電馳科研',maxPowerKw:360})==='最高功率 360 kW'&&
+    chargingDecisionPowerLabel({operator:'旭電馳科研',officialSupplemental:true,sitePowerKw:720})==='站點總功率 720 kW'&&
+    chargingDecisionPowerLabel({operator:'台灣特斯拉汽車有限公司'})==='最高功率依 Tesla App'
+  ));
   check('Charging city control stays in the first layer',await page.locator('#chargingCity').evaluate(el=>!el.closest('.charging-advanced')));
   check('Charging source HTML formatting becomes readable text',await page.evaluate(()=>chargingDisplayText('尖峰<br>12.7元&nbsp;每度')==='尖峰 · 12.7元 每度'));
   check('ConnectorType 2 and 5 normalize to CCS2 and J1772',await page.evaluate(()=>chargingConnectors({connectors:['2','5']}).join(',')==='CCS2,J1772'));
