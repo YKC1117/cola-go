@@ -13,6 +13,7 @@
 <link href="./assets/logo.svg" rel="icon" type="image/svg+xml"/>
 <link href="./assets/logo.svg" rel="apple-touch-icon"/>
 <link href="./assets/styles.css" rel="stylesheet"/>
+<link href="./assets/plate.css" rel="stylesheet"/>
 <title>COLA GO</title>
 </head>
 <body>
@@ -103,6 +104,9 @@
 </section><div class="support-line"><a href="https://lin.ee/Tu89Qyk" rel="noopener noreferrer" target="_blank"><span class="line-badge">LINE</span><span><b>問題回報・功能建議</b><small>資料有誤或想許願？透過 LINE 告訴我們</small></span><svg><use href="#i-arrow"></use></svg></a></div>
 <div aria-label="路況影像" class="home-more home-camera">
 <button data-go="cctv"><span><svg><use href="#i-camera"></use></svg></span><b>即時影像</b><svg class="arrow"><use href="#i-arrow"></use></svg></button>
+</div>
+<div aria-label="車牌中心" class="home-more home-plate">
+<button data-go="plate"><span><svg><use href="#i-car"></use></svg></span><div class="home-more-copy"><b>車牌中心</b><small>找牌・競標・候選提醒</small></div><svg class="arrow"><use href="#i-arrow"></use></svg></button>
 </div>
 <details class="more-tools">
 <summary>更多車主工具</summary>
@@ -354,7 +358,7 @@ Siri「特斯拉助手」：
 <button data-go="delivery"><span><svg><use href="#i-clipboard"></use></svg></span><b>驗車清單</b><small>交車逐項勾選</small></button>
 <button data-go="maintenance"><span><svg><use href="#i-tools"></use></svg></span><b>保養週期</b><small>常見檢查整理</small></button>
 <button data-go="parts"><span><svg><use href="#i-tools"></use></svg></span><b>Tesla 零件</b><small>官方目錄與料號</small></button>
-<button data-go="plate"><span><svg><use href="#i-car"></use></svg></span><b>選牌標牌</b><small>官方監理入口</small></button>
+<button data-go="plate"><span><svg><use href="#i-car"></use></svg></span><b>車牌中心</b><small>找牌・競標・提醒</small></button>
 <button data-go="lucky"><span><svg><use href="#i-hash"></use></svg></span><b>車牌數字</b><small>快速加總參考</small></button>
 <button data-go="warranty"><span><svg><use href="#i-clipboard"></use></svg></span><b>保固剩餘</b><small>日期＋里程一起算</small></button>
 <button data-go="connector"><span><svg><use href="#i-bolt"></use></svg></span><b>充電接頭</b><small>相容性快速判斷</small></button>
@@ -411,11 +415,77 @@ Siri「特斯拉助手」：
 </div>
 <p class="notice">台灣供貨、相容性與實際價格仍以 Tesla 台灣服務中心／官方目錄為準。</p>
 </section>
-<section class="view" data-view="plate">
-<div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"></use></svg></button><div><span class="mini-label">LICENSE PLATE</span><h1>選牌標牌</h1></div></div>
-<div class="info-box"><b>官方選號最可靠</b><p>監理服務網的可選號碼會即時變動，因此 COLA GO 不複製過期清單，直接帶你到官方選號／競標流程。</p></div>
-<button class="external-btn" data-url="https://www.mvdis.gov.tw/">開啟監理服務網<svg><use href="#i-external"></use></svg></button>
-<button class="external-btn secondary" data-url="https://www.gov.tw/News_Content_2_376850">查看官方選號說明<svg><use href="#i-external"></use></svg></button>
+<section class="view plate-center" data-view="plate">
+<div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"></use></svg></button><div><span class="mini-label">COLA GO PLATE CENTER</span><h1>車牌中心</h1></div></div>
+
+<div class="plate-hero">
+<div>
+<span class="plate-eyebrow">官方來源透明</span>
+<h2>找牌、守牌、競標一次搞定</h2>
+<p>先找喜歡的號碼、收藏候選、設定預算與結標時間。正式選號與出價仍在交通部公路局監理服務網完成。</p>
+</div>
+<div class="plate-source-pill"><i></i><span>交通部公路局</span></div>
+</div>
+
+<div class="plate-quick-actions" aria-label="官方車牌服務">
+<button data-url="https://www.mvdis.gov.tw/m3-emv-plate/webpickno/queryPickNo"><b>目前可選</b><small>監理服務網</small></button>
+<button data-url="https://www.mvdis.gov.tw/m3-emv-plate/bid/announce"><b>標牌公告</b><small>即將開標</small></button>
+<button data-url="https://www.mvdis.gov.tw/m3-emv-plate/bid/queryBiding"><b>競標中</b><small>官方即時頁</small></button>
+<button data-url="https://www.mvdis.gov.tw/m3-emv-plate/bid/queryBid"><b>歷史標售</b><small>查成交紀錄</small></button>
+</div>
+
+<section class="plate-panel">
+<div class="plate-panel-head"><div><span class="mini-label">FIND A PLATE</span><h2>找我想要的號碼</h2></div><span class="plate-trust">官方查詢</span></div>
+<div class="plate-search-row">
+<input autocomplete="off" id="plateSearchInput" inputmode="text" maxlength="12" placeholder="例如 1117、8888、EQA-1117"/>
+<button id="plateSearchOfficial" type="button"><svg><use href="#i-search"></use></svg><span>去官方找</span></button>
+</div>
+<p class="plate-helper" id="plateSearchHint">監理服務網目前仍需要選擇監理單位／車種並完成驗證碼；COLA GO 不會假裝能略過官方驗證。</p>
+</section>
+
+<section class="plate-panel plate-watch-panel">
+<div class="plate-panel-head"><div><span class="mini-label">MY WATCHLIST</span><h2>我的候選車牌</h2></div><span class="plate-count" id="plateWatchCount">0</span></div>
+<p class="plate-panel-intro">先把想搶的號碼與心理預算記下來。資料只存在你的這台裝置，不會公開到網站。</p>
+<div class="plate-watch-form">
+<label><small>候選號碼</small><input id="plateCandidate" maxlength="12" placeholder="例如 EQA-1117"/></label>
+<label><small>最高預算</small><input id="plateBudget" inputmode="numeric" min="0" placeholder="例如 20000" type="number"/></label>
+<label><small>目前官方價格（可選）</small><input id="plateCurrentPrice" inputmode="numeric" min="0" placeholder="例如 12000" type="number"/></label>
+<label><small>官方結標時間（可選）</small><input id="plateEndTime" type="datetime-local"/></label>
+<button class="primary" id="plateAddWatch" type="button">加入候選追蹤</button>
+</div>
+
+<div class="plate-notify-box">
+<div class="plate-notify-copy"><b>競標提醒</b><small id="plateNotifyState">頁面開啟時可使用瀏覽器提醒；背景 Web Push 與 LINE 個人化競標通知接續串接。</small></div>
+<div class="plate-notify-actions">
+<button id="plateEnableNotify" type="button">開啟瀏覽器通知</button>
+<button data-url="https://lin.ee/Tu89Qyk" type="button">加入 COLA GO LINE</button>
+</div>
+</div>
+<div class="plate-watch-list" id="plateWatchList"></div>
+</section>
+
+<details class="plate-guide">
+<summary><span><b>搶牌教學</b><small>怎麼搶、得標後怎麼做、Tesla 何時處理</small></span><svg><use href="#i-arrow"></use></svg></summary>
+<div class="plate-guide-body">
+<article><span>01</span><div><b>先確認交車時間</b><p>Tesla 台灣建議知道交車日期後再競標；競標號牌保留期限有限，不要太早搶。</p></div></article>
+<article><span>02</span><div><b>準備官方競標資格</b><p>正式競標在監理服務網完成。依官方規定準備會員資格、自然人憑證與讀卡設備等身分驗證。</p></div></article>
+<article><span>03</span><div><b>設定你真正能接受的最高金額</b><p>官方競標支援最高競標金額機制。COLA GO 的預算欄位是提醒工具，不會私自替你花錢或提高上限。</p></div></article>
+<article><span>04</span><div><b>最後幾分鐘不要離開</b><p>競標接近結束時價格與決標時間可能變動；以監理服務網顯示的最新價格與時間為準。</p></div></article>
+<article><span>05</span><div><b>得標後完成繳費並留存證明</b><p>依該次官方公告與得標頁面的期限完成付款；逾期可能視為放棄。付款完成後保留畫面與相關紀錄。</p></div></article>
+<article><span>06</span><div><b>Tesla 車主：通知交付顧問</b><p>Tesla 官方表示，代辦通常會在交車前約 1–7 天取得資料並聯絡討論車牌。若你已自行競標得標，完成繳費後就把牌號與證明主動告知交付顧問，實際送件時間依交付顧問安排。</p></div></article>
+</div>
+</details>
+
+<section class="plate-source-section">
+<div class="plate-panel-head"><div><span class="mini-label">DATA SOURCE</span><h2>資料從哪裡來</h2></div></div>
+<div class="plate-source-list">
+<button data-url="https://www.mvdis.gov.tw/m3-emv-plate/webpickno/queryPickNo"><span><b>可選號牌／選號</b><small>交通部公路局・監理服務網</small></span><svg><use href="#i-external"></use></svg></button>
+<button data-url="https://www.mvdis.gov.tw/m3-emv-plate/bid/announce"><span><b>標售公告／競標</b><small>交通部公路局・監理服務網</small></span><svg><use href="#i-external"></use></svg></button>
+<button data-url="https://data.gov.tw/dataset/96623"><span><b>標牌公告開放資料</b><small>政府資料開放平臺・每日更新資料集</small></span><svg><use href="#i-external"></use></svg></button>
+<button data-url="https://www.tesla.com/zh_TW/support/delivery-day"><span><b>Tesla 交付／領牌流程</b><small>Tesla 台灣官方支援</small></span><svg><use href="#i-external"></use></svg></button>
+</div>
+<p class="plate-disclaimer">COLA GO 是資訊整理與提醒工具，不是監理機關。正式可選號碼、出價、決標、付款與領牌結果，一律以交通部公路局監理服務網當下顯示為準。</p>
+</section>
 </section>
 <section class="view" data-view="lucky">
 <div class="page-head"><button class="back" data-go="tools"><svg><use href="#i-back"></use></svg></button><div><span class="mini-label">PLATE NUMBER</span><h1>車牌數字</h1></div></div>
@@ -611,5 +681,6 @@ Siri「特斯拉助手」：
 <div aria-live="polite" class="toast" id="toast" role="status"></div>
 <script defer="" src="./assets/app.js"></script>
 <script defer="" src="./assets/tdx-runtime.js"></script>
+<script defer="" src="./assets/plate.js"></script>
 </body>
 </html>

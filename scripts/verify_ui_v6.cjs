@@ -493,7 +493,7 @@ let browser;
   await page.waitForFunction(()=>document.querySelector('#toast')?.textContent.includes('已複製 Tesla 實車回報格式'));
   check('Tesla report copy feedback appears',await page.locator('#toast').textContent().then(x=>x.includes('已複製 Tesla 實車回報格式')));
   await page.evaluate(()=>navigator.serviceWorker.ready);
-  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-39');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
+  const cached=await page.evaluate(async()=>{const cache=await caches.open('cola-go-ui-v6-40');return (await cache.keys()).map(x=>new URL(x.url).pathname);});
   check('PWA caches all five local visual assets',['drive-hero','tunnel','trip-road','trip-parking','trip-charging'].every(name=>cached.includes(`/assets/images/${name}.webp`)));
   check('TDX official cache is network-only in service worker',fs.readFileSync(path.join(root,'sw.js'),'utf8').includes('u.pathname.includes("/data/tdx/")')&&!cached.some(pathname=>pathname.includes('/data/tdx/')));
   await page.evaluate(()=>sessionStorage.setItem('cola-go-ui-v6-qa-offline','on'));
