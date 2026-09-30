@@ -748,19 +748,28 @@ function updateNotifyText(){
   else if(Notification.permission==="denied")el.textContent="通知權限目前被封鎖；請到系統或瀏覽器的網站通知設定重新允許。";
   else el.textContent="按下「開啟瀏覽器通知」後才會要求系統權限；COLA GO 不會在你沒有操作時主動跳出授權視窗。";
 }
+function deadlineReminder(ms){
+  if(!Number.isFinite(ms)||ms<=0)return null;
+  if(ms<=60000)return {m:1,label:"1 分鐘"};
+  if(ms<=3*60000)return {m:3,label:"3 分鐘（延長可能區）"};
+  if(ms<=5*60000)return {m:5,label:"5 分鐘"};
+  if(ms<=15*60000)return {m:15,label:"15 分鐘"};
+  return null;
+}
 function checkDeadlines(){
   const now=Date.now(),alerts=loadAlerts();
   loadRows().forEach(row=>{
     if(!row.endTime)return;
     const ms=new Date(row.endTime).getTime()-now;
     if(!Number.isFinite(ms)||ms<=0)return;
-    [[15,"15 分鐘"],[5,"5 分鐘"],[1,"1 分鐘"]].forEach(([m,label])=>{
-      const key=row.id+"-manual-"+m;
-      if(ms<=m*60000&&!alerts[key]){
+    const reminder=deadlineReminder(ms);
+    if(reminder){
+      const key=row.id+"-manual-"+reminder.m;
+      if(!alerts[key]){
         alerts[key]=Date.now();
-        notify("COLA GO 車牌提醒",row.plate+" 距離你設定的結標時間約剩 "+label+"。請回官方頁確認最新價格與決標時間。",key);
+        notify("COLA GO 車牌提醒",row.plate+" 距離你設定的結標時間約剩 "+reminder.label+"。請回官方頁確認最新價格與決標時間。",key);
       }
-    });
+    }
   });
   saveAlerts(alerts);
 }
@@ -785,13 +794,14 @@ function checkAnnouncementAlerts(){
         });
       }
       if(status==="live"&&Number.isFinite(end)){
-        [[15,"15 分鐘"],[5,"5 分鐘"],[3,"3 分鐘（延長可能區）"],[1,"1 分鐘"]].forEach(([m,label])=>{
-          const key=base+"-end-"+m,ms=end-now;
-          if(ms>0&&ms<=m*60000&&!alerts[key]){
+        const ms=end-now,reminder=deadlineReminder(ms);
+        if(reminder){
+          const key=base+"-end-"+reminder.m;
+          if(!alerts[key]){
             alerts[key]=Date.now();
-            notify("COLA GO 車牌競標提醒",w.plate+" 距公告決標約剩 "+label+"。最後階段可能因官方規則延長，請以監理服務網最新時間為準。",key);
+            notify("COLA GO 車牌競標提醒",w.plate+" 距公告決標約剩 "+reminder.label+"。最後階段可能因官方規則延長，請以監理服務網最新時間為準。",key);
           }
-        });
+        }
       }
     });
   });
