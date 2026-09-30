@@ -38,9 +38,20 @@ function loadOfficeCache(){try{return JSON.parse(localStorage.getItem(OFFICE_CAC
 function saveOfficeCache(x){try{localStorage.setItem(OFFICE_CACHE_KEY,JSON.stringify(x))}catch{}}
 function loadPlateJson(key,fallback){try{const x=JSON.parse(localStorage.getItem(key)||"null");return x??fallback}catch{return fallback}}
 function savePlateJson(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch{}}
-function notify(title,body,tag="cola-go-plate"){
-  if(!("Notification" in window)||Notification.permission!=="granted")return;
-  try{new Notification(title,{body,icon:"./assets/logo.svg",tag})}catch{}
+async function notify(title,body,tag="cola-go-plate"){
+  if(!("Notification" in window)||Notification.permission!=="granted")return false;
+  const options={body,icon:"./assets/logo.svg",tag,data:{url:"./#plate"}};
+  if("serviceWorker" in navigator){
+    try{
+      const reg=await Promise.race([navigator.serviceWorker.ready,new Promise(resolve=>setTimeout(()=>resolve(null),1500))]);
+      if(reg&&"showNotification" in reg){
+        await reg.showNotification(title,options);
+        return true;
+      }
+    }catch{}
+  }
+  try{new Notification(title,options);return true}catch{}
+  return false;
 }
 function fmtTime(v){
   if(!v)return "未提供";
@@ -475,13 +486,75 @@ function renderAnnouncements(){
   }).join("");
   renderWatchList();
 }
+
+function isPlateStandalone(){
+  return window.matchMedia?.("(display-mode: standalone)")?.matches||window.navigator.standalone===true;
+}
+function isPlateIOS(){
+  const ua=navigator.userAgent||"";
+  return /iPhone|iPad|iPod/i.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+}
+function ensurePlateNotificationCenter(){
+  const box=$p(".plate-notify-box");
+  if(!box||$p("#plateNotifyCapability"))return;
+  const actions=box.querySelector(".plate-notify-actions");
+  if(actions&&!$p("#plateTestNotify"))actions.insertAdjacentHTML("beforeend",'<button id="plateTestNotify" type="button">測試提醒</button>');
+  const target=actions||box.querySelector(".plate-notify-copy");
+  if(!target)return;
+  target.insertAdjacentHTML("afterend",
+    '<div class="plate-watch-meta" id="plateNotifyCapability">'+
+      '<div><small>頁面／系統提醒</small><b id="plateNotifyPermission">檢查中</b></div>'+
+      '<div><small>PWA 狀態</small><b id="plateNotifyPwa">檢查中</b></div>'+
+      '<div><small>背景 Web Push</small><b id="plateNotifyPush">檢查中</b></div>'+
+      '<div><small>LINE 個人化</small><b id="plateNotifyLine">尚未綁定</b></div>'+
+    '</div>'+
+    '<div class="plate-detail-note" id="plateNotifyDetail">正在檢查這台裝置的通知能力。</div>'
+  );
+}
+async function platePushCapability(){
+  const result={worker:false,push:false,subscription:false};
+  if(!("serviceWorker" in navigator))return result;
+  try{
+    const reg=await Promise.race([navigator.serviceWorker.ready,new Promise(resolve=>setTimeout(()=>resolve(null),1500))]);
+    if(!reg)return result;
+    result.worker=true;
+    result.push=("PushManager" in window)&&!!reg.pushManager;
+    if(result.push)result.subscription=!!(await reg.pushManager.getSubscription());
+  }catch{}
+  return result;
+}
+async function updateNotificationCenter(){
+  const permission=$p("#plateNotifyPermission"),pwa=$p("#plateNotifyPwa"),push=$p("#plateNotifyPush"),line=$p("#plateNotifyLine"),detail=$p("#plateNotifyDetail");
+  if(!permission&&!pwa&&!push&&!line&&!detail)return;
+  const hasNotification="Notification" in window;
+  const standalone=isPlateStandalone(),ios=isPlateIOS();
+  const capability=await platePushCapability();
+  if(permission)permission.textContent=!hasNotification?"不支援":Notification.permission==="granted"?"已允許":Notification.permission==="denied"?"已封鎖":"待允許";
+  if(pwa)pwa.textContent=standalone?"主畫面 Web App":"瀏覽器模式";
+  if(push){
+    if(!capability.worker)push.textContent="Service Worker 未就緒";
+    else if(!capability.push)push.textContent="此環境不支援";
+    else if(ios&&!standalone)push.textContent="先加入主畫面";
+    else if(!hasNotification||Notification.permission!=="granted")push.textContent="待允許通知";
+    else if(capability.subscription)push.textContent="已建立訂閱";
+    else push.textContent="前端就緒・後端待啟用";
+  }
+  if(line)line.textContent="OA 可加入・個人化未綁定";
+  if(detail){
+    if(ios&&!standalone)detail.textContent="iPhone／iPad 的背景 Web Push 需先把 COLA GO 加到主畫面，再從主畫面開啟並由你主動允許通知。現在仍可使用頁面內候選追蹤。";
+    else if(hasNotification&&Notification.permission==="denied")detail.textContent="通知權限已被封鎖。請到系統或瀏覽器的網站通知設定重新允許；COLA GO 不會反覆跳出要求。";
+    else if(hasNotification&&Notification.permission==="granted"&&capability.worker)detail.textContent=capability.subscription?"這台裝置已有 Web Push 訂閱；仍以正式通知後端是否啟用為準。":"系統通知路徑已可測試；背景 Web Push 前端已就緒，但安全推播後端與訂閱儲存尚未啟用，所以目前不會假裝能在網站完全關閉時收到個人化競標通知。";
+    else detail.textContent="先按「開啟瀏覽器通知」完成使用者授權。COLA GO 只會在你主動操作後要求通知權限。";
+  }
+}
+
 function updateNotifyText(){
   const el=$p("#plateNotifyState");
   if(!el)return;
-  if(!("Notification" in window)){el.textContent="這個瀏覽器不支援網站通知；可先使用 LINE 官方帳號與頁面內追蹤。";return}
-  if(Notification.permission==="granted")el.textContent="瀏覽器通知已開啟。頁面開啟期間會比對官方標牌公告，並提醒候選號碼進入競標、接近起標／結標時間。背景 Web Push 與 LINE 個人化通知接續串接。";
-  else if(Notification.permission==="denied")el.textContent="瀏覽器通知目前被封鎖；請到瀏覽器網站設定重新允許。";
-  else el.textContent="可先開啟瀏覽器提醒；加入 COLA GO LINE 後，後續可再綁定個人化競標推播。";
+  if(!("Notification" in window)){el.textContent="這個瀏覽器不支援系統通知；仍可使用頁面內候選追蹤與 LINE 官方帳號。";return}
+  if(Notification.permission==="granted")el.textContent="通知權限已開啟。頁面開啟期間會比對官方標牌公告並提醒候選號碼；可用「測試提醒」確認這台裝置的系統通知路徑。";
+  else if(Notification.permission==="denied")el.textContent="通知權限目前被封鎖；請到系統或瀏覽器的網站通知設定重新允許。";
+  else el.textContent="按下「開啟瀏覽器通知」後才會要求系統權限；COLA GO 不會在你沒有操作時主動跳出授權視窗。";
 }
 function checkDeadlines(){
   const now=Date.now(),alerts=loadAlerts();
@@ -555,10 +628,11 @@ async function loadAnnouncements(){
 function bind(){
   if(!$p('[data-view="plate"]'))return;
   ensurePlateV4Panels();
+  ensurePlateNotificationCenter();
   renderChecklist();
   renderAnnouncementChanges();
   renderOfficeDirectory();
-  renderWatchList();updateNotifyText();loadAnnouncements();loadOffices();
+  renderWatchList();updateNotifyText();updateNotificationCenter();loadAnnouncements();loadOffices();
 
   const search=$p("#plateSearchBtn");
   if(search)search.onclick=()=>{
@@ -603,7 +677,21 @@ function bind(){
     if(!("Notification" in window)){alert("這個瀏覽器不支援網站通知");return}
     const p=await Notification.requestPermission();
     updateNotifyText();
-    if(p==="granted")notify("COLA GO 車牌提醒","通知已開啟。候選車牌出現在官方公告或接近起標／結標時間時，頁面開啟期間會提醒你。","notify-ready");
+    await updateNotificationCenter();
+    if(p==="granted")await notify("COLA GO 車牌提醒","通知已開啟。頁面開啟期間，候選車牌命中公告或接近起標／結標時間時會提醒你。","notify-ready");
+  };
+  const testNotify=$p("#plateTestNotify");
+  if(testNotify)testNotify.onclick=async()=>{
+    if(!("Notification" in window)){alert("這個瀏覽器不支援網站通知");return}
+    if(Notification.permission==="default")await Notification.requestPermission();
+    updateNotifyText();
+    await updateNotificationCenter();
+    if(Notification.permission!=="granted"){
+      if(window.toast)toast("尚未允許通知");
+      return;
+    }
+    const sent=await notify("COLA GO 測試提醒","如果你看到這則通知，代表這台裝置的系統通知路徑可以正常顯示。","plate-test-"+Date.now());
+    if(window.toast)toast(sent?"測試提醒已送出":"這台裝置目前無法顯示測試提醒");
   };
 
   const list=$p("#plateWatchList");
@@ -715,6 +803,7 @@ function bind(){
   setInterval(()=>{if(document.visibilityState==="visible"&&Date.now()-officeFetchAt>1800000)loadOffices()},1800000);
   document.addEventListener("visibilitychange",()=>{
     if(document.visibilityState!=="visible")return;
+    updateNotificationCenter();
     if(Date.now()-announcementFetchAt>300000)loadAnnouncements();
     if(Date.now()-officeFetchAt>1800000)loadOffices();
   });
