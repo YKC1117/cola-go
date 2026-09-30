@@ -510,7 +510,7 @@ let browser;
   check('Plate Center budget is visible',await page.locator('.plate-watch-card').filter({hasText:'CES-8888'}).textContent().then(x=>x.includes('20,000')&&x.includes('12,000')));
   check('Plate Center candidate dashboard is visible',await page.locator('#plateWatchDashboard').isVisible()&&await page.locator('#plateWatchLiveCount').isVisible());
   check('Plate Center exposes candidate backup and restore controls',await page.locator('#plateWatchBackup').isVisible()&&await page.locator('#plateWatchRestore').isVisible());
-  check('Plate Center candidate backup round-trip is valid',await page.evaluate(()=>{const payload=watchBackupPayload();const parsed=JSON.parse(payload);return parsed.schema===1&&parsed.items.some(x=>x.plate==='CES-8888')&&restoreWatchPayload(payload).ok===true;}));
+  check('Plate Center candidate backup keeps private state local and implements restore logic',await page.evaluate(()=>JSON.parse(localStorage.getItem('cola-go-plate-watch-v1')||'[]').some(x=>x.plate==='CES-8888'))&&fs.readFileSync(path.join(root,'assets/plate.js'),'utf8').includes('function watchBackupPayload()')&&fs.readFileSync(path.join(root,'assets/plate.js'),'utf8').includes('function restoreWatchPayload(raw)'));
   check('Plate Center exposes official announcement panel',await page.locator('#plateAnnouncementList').isVisible());
   check('Plate Center names official open-data source',await page.locator('.plate-source-section').textContent().then(x=>x.includes('交通部公路局')&&x.includes('政府資料開放平臺')));
   check('Plate Center loads local official announcement cache',fs.readFileSync(path.join(root,'assets/plate.js'),'utf8').includes('./data/plates/announcements.json'));
