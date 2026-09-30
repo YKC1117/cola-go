@@ -409,7 +409,7 @@ function upsertWatch(plate,budget=0,current=0,endTime=""){
 function ensurePlateWatchTools(){
   const panel=$p(".plate-watch-panel");
 
-  $p("[data-plate-watch-filter]").forEach(btn=>btn.onclick=()=>{
+  $$p("[data-plate-watch-filter]").forEach(btn=>btn.onclick=()=>{
     watchFilter=btn.dataset.plateWatchFilter||"all";
     renderWatchList();
   });
@@ -565,7 +565,7 @@ function renderWatchList(){
   const allRows=loadRows();
   const rows=visibleWatchRows();
   if(count)count.textContent=String(allRows.length);
-  $p("[data-plate-watch-filter]").forEach(btn=>btn.classList.toggle("active",btn.dataset.plateWatchFilter===watchFilter));
+  $$p("[data-plate-watch-filter]").forEach(btn=>btn.classList.toggle("active",btn.dataset.plateWatchFilter===watchFilter));
   const sort=$p("#plateWatchSort");if(sort)sort.value=watchSort;
   if(!allRows.length){root.innerHTML='<div class="plate-watch-empty"><b>還沒有候選號碼</b><br>把你喜歡的 1117、8888 或完整車牌先加進來。COLA GO 會一起比對官方標牌公告。</div>';renderWatchSummary();return}
   if(!rows.length){root.innerHTML='<div class="plate-watch-empty"><b>目前這個篩選沒有候選</b><br>可切回「全部候選」查看完整清單。</div>';renderWatchSummary();return}
