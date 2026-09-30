@@ -399,6 +399,7 @@ function upsertWatch(plate,budget=0,current=0,endTime=""){
   if(existing){existing.budget=budget||existing.budget||0;if(current>0){existing.current=current;existing.priceUpdatedAt=priceUpdatedAt}existing.endTime=endTime||existing.endTime||""}
   else rows.unshift({id:String(Date.now())+"-"+Math.random().toString(36).slice(2,7),plate,budget,current,endTime,priceUpdatedAt,createdAt:new Date().toISOString()});
   saveRows(rows);
+  watchFilter="all";
   renderWatchList();
   renderAnnouncements();
   checkAnnouncementAlerts();
