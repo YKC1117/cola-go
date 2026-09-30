@@ -3,7 +3,7 @@ name: Sync charging operator sources
 on:
   workflow_dispatch:
   schedule:
-    - cron: "18 3 * * *"
+    - cron: "21 3 * * *"
   push:
     branches: ["main"]
     paths:
