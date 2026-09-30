@@ -367,12 +367,14 @@ let browser;
   await page.locator('#chargingList [data-charge-go]').first().click();
   check('Charging direct navigation is one tap and prefers Google Maps on non-Apple platforms',await page.evaluate(()=>window.__opened.at(-1).startsWith('https://www.google.com/maps/dir/')));
   const firstNav=page.locator('#chargingList [data-charge-nav-toggle]').first();
+  const firstNavKey=await firstNav.getAttribute('data-charge-nav-toggle');
   await firstNav.click();
-  await page.locator('#chargingList [data-charge-google]').first().click();
+  const sameNavMenu=page.locator('#chargingList [data-charge-nav-menu="'+firstNavKey+'"]');
+  await sameNavMenu.locator('[data-charge-google]').click();
   check('Charging Google navigation prefers lat/lon coordinates',await page.evaluate(()=>{
     const u=new URL(window.__opened.at(-1)); return /^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test(u.searchParams.get('destination')||'');
   }));
-  await page.locator('#chargingList [data-charge-apple]').first().click();
+  await sameNavMenu.locator('[data-charge-apple]').click();
   check('Charging Apple navigation prefers lat/lon coordinates',await page.evaluate(()=>{
     const u=new URL(window.__opened.at(-1)); return /^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test(u.searchParams.get('daddr')||'');
   }));
