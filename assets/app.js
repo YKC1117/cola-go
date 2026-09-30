@@ -385,7 +385,7 @@ function renderChargingPriorityPanel(){
     const open=stats.liveRows.length?stats.available+" 空槍":"-- 空槍";
     return '<button type="button" data-charge-priority="'+esc(key)+'">'+
       '<span class="charging-coverage-brand"><b>'+esc(profile.brand)+'</b><small>'+esc(chargingIntegrationLabel(key))+'</small></span>'+
-      '<span class="charging-coverage-stats"><strong>'+esc(open)+'</strong><small>'+esc(live)+'</small><em>'+esc(power)+'</em></span>'+
+      '<span class="charging-coverage-stats"><strong>'+esc(open)+'</strong><small>'+esc(live)+'</small><em>最高功率 '+esc(power)+'</em></span>'+
       '<small class="charging-network-legend">'+esc(profile.rateShort||"費率依官方")+'</small>'+
     '</button>';
   }).join("");
