@@ -211,6 +211,11 @@ let browser;
   check('EVOASIS official selected-station time rate is clearly scoped',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='evoasis')?.rateShort.includes('指定站')&&CHARGING_OPERATOR_PROFILES.find(x=>x.key==='evoasis')?.rateShort.includes('14.9')));
   check('TAIL rate does not invent a network-wide number',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='tail')?.rateShort.includes('依現場')));
   check('Tesla rate stays dynamic and app-confirmed',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='tesla')?.rateShort.includes('動態費率')));
+  check('Tesla unknown TDX availability directs users to Tesla App instead of showing zero',await page.evaluate(()=>{
+    const html=chargingStatusMarkup({road:'tdx',operator:'台灣特斯拉汽車有限公司',liveStateCount:0,availableConnectors:0,liveStatusKnown:false,liveStale:false});
+    return html.includes('即時空槍待 Tesla App 確認')&&html.includes('<strong>--</strong>')&&!html.includes('目前無空槍');
+  }));
+  check('Priority charging cards expose first-layer official action',fs.readFileSync(path.join(root,'assets/app.js'),'utf8').includes('data-charge-official'));
   await page.waitForFunction(()=>document.querySelector('[data-charge-major="icharging"] [data-major-status]')?.textContent.includes('待新增導入中'));
   check('Incomplete iCharging official integration is explicitly marked pending',await page.locator('[data-charge-major="icharging"] [data-major-status]').textContent().then(x=>x.includes('待新增導入中')));
   await page.waitForFunction(()=>document.querySelectorAll('#chargingCoverageGrid [data-coverage-major]').length===6);
@@ -523,8 +528,12 @@ let browser;
   check('Plate Center exposes candidate backup and restore controls',await page.locator('#plateWatchBackup').isVisible()&&await page.locator('#plateWatchRestore').isVisible());
   check('Plate Center candidate backup keeps private state local and implements restore logic',await page.evaluate(()=>JSON.parse(localStorage.getItem('cola-go-plate-watch-v1')||'[]').some(x=>x.plate==='CES-8888'))&&fs.readFileSync(path.join(root,'assets/plate.js'),'utf8').includes('function watchBackupPayload()')&&fs.readFileSync(path.join(root,'assets/plate.js'),'utf8').includes('function restoreWatchPayload(raw)'));
   check('Plate Center candidate filters and sort controls are visible',await page.locator('[data-plate-watch-filter]').count()===4&&await page.locator('#plateWatchSort').isVisible()&&await page.locator('#plateWatchCopyList').isVisible());
-  await page.locator('#plateCandidate').fill('1117');
+  await page.locator('#plateCandidate').fill('1117、8888 CES-1688');
   await page.locator('#plateAddWatch').click();
+  check('Plate Center batch candidate input adds multiple valid numbers',await page.evaluate(()=>{
+    const rows=JSON.parse(localStorage.getItem('cola-go-plate-watch-v1')||'[]');
+    return ['1117','8888','CES-1688'].every(plate=>rows.some(x=>x.plate===plate));
+  }));
   await page.locator('#plateWatchSort').selectOption('plate');
   check('Plate Center candidate number sorting works',await page.locator('#plateWatchList .plate-watch-card .plate-watch-number').first().textContent()==='1117');
   await page.locator('[data-plate-watch-filter="nomatch"]').click();
