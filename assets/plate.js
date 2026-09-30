@@ -390,6 +390,16 @@ function bestOfficialMatch(value){
   });
   return rows[0]||null;
 }
+function parseCandidateList(value){
+  const tokens=String(value||"").split(/[\s,，;；、]+/).map(normalize).filter(Boolean);
+  const valid=[],invalid=[];
+  for(const token of tokens){
+    if(!plateParts(token)){invalid.push(token);continue}
+    if(!valid.includes(token))valid.push(token);
+    if(valid.length>=20)break;
+  }
+  return {valid,invalid};
+}
 function upsertWatch(plate,budget=0,current=0,endTime=""){
   plate=normalize(plate);
   if(!plate)return false;
@@ -821,17 +831,22 @@ function bind(){
 
   const add=$p("#plateAddWatch");
   if(add)add.onclick=()=>{
-    const plate=normalize($p("#plateCandidate")?.value);
-    if(!plate){window.toast?toast("先輸入候選號碼"):alert("先輸入候選號碼");return}
+    const parsed=parseCandidateList($p("#plateCandidate")?.value);
+    if(!parsed.valid.length){window.toast?toast("先輸入正確的候選號碼"):alert("先輸入正確的候選號碼");return}
     const budget=Math.max(0,Number($p("#plateBudget")?.value)||0);
     const current=Math.max(0,Number($p("#plateCurrentPrice")?.value)||0);
-    const endTime=$p("#plateEndTime")?.value||bestOfficialMatch(plate)?.endAt||"";
-    upsertWatch(plate,budget,current,endTime);
-    if(current&&budget){
-      if(current>budget)notify("COLA GO 車牌提醒",plate+" 目前價格已超過你設定的預算。","budget-"+plate);
-      else if(current>=budget*.9)notify("COLA GO 車牌提醒",plate+" 已接近你設定的預算上限。","budget-"+plate);
-    }
-    ["#plateCandidate","#plateBudget","#plateCurrentPrice","#plateEndTime"].forEach(s=>{const el=$p(s);if(el)el.value=""});
+    const manualEnd=$p("#plateEndTime")?.value||"";
+    parsed.valid.forEach(plate=>{
+      const endTime=manualEnd||bestOfficialMatch(plate)?.endAt||"";
+      upsertWatch(plate,budget,current,endTime);
+      if(current&&budget){
+        if(current>budget)notify("COLA GO 車牌提醒",plate+" 目前價格已超過你設定的預算。","budget-"+plate);
+        else if(current>=budget*.9)notify("COLA GO 車牌提醒",plate+" 已接近你設定的預算上限。","budget-"+plate);
+      }
+    });
+    const message=parsed.valid.length>1?"已加入 "+parsed.valid.length+" 筆候選":"已加入 "+parsed.valid[0];
+    if(window.toast)toast(message+(parsed.invalid.length?"；略過 "+parsed.invalid.length+" 筆格式錯誤":""));
+    ["#plateCandidate","#plateBudget","#plateCurrentPrice","#plateEndTime"].forEach(selector=>{const el=$p(selector);if(el)el.value=""});
   };
 
   const enable=$p("#plateEnableNotify");
