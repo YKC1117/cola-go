@@ -389,7 +389,7 @@ function renderChargingPriorityPanel(){
       '<small class="charging-network-legend">'+esc(profile.rateShort||"費率依官方")+'</small>'+
     '</button>';
   }).join("");
-  $("[data-charge-priority]",root).forEach(button=>button.onclick=()=>{
+  $$("[data-charge-priority]",root).forEach(button=>button.onclick=()=>{
     state.chargingMajor=button.dataset.chargePriority||"all";
     state.chargingOperator="all";
     const select=$("#chargingOperator");
