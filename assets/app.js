@@ -206,17 +206,25 @@ function parseChargingPower(value){
 const LEGACY_TDX_CONNECTOR_TYPES={"1":"CCS1","2":"CCS2","3":"CHAdeMO","4":"Tesla TPC","5":"J1772","6":"Type2","254":"其他","255":"其他","J1772(Type1)":"J1772","Mennekes(Type2)":"Type2"};
 const CHARGING_OPERATOR_PROFILES=[
   {key:"ev2",brand:"電小二 EV2",ids:["58430020"],names:["程豐資通股份有限公司"],aliases:["電小二","EV2","程豐"],official:"https://www.ev2.com.tw/",ios:"https://apps.apple.com/tw/app/%E9%9B%BB%E5%B0%8F%E4%BA%8C-%E9%9B%BB%E5%8B%95%E8%BB%8A%E5%85%85%E9%9B%BB%E7%AB%99/id6677032732",android:"https://play.google.com/store/apps/details?id=tw.delta.android"},
-  {key:"evoasis",brand:"EVOASIS",names:["源點科技股份有限公司"],aliases:["OASIS","源點科技"],official:"https://www.evoasis.com.tw/",stationMap:"https://www.evoasis.com.tw/charging-station",chargeGuide:"https://www.evoasis.com.tw/chargingapp",chargeHint:"EVOASIS App・掃碼／隨插即充"},
-  {key:"upower",brand:"U-POWER",ids:["83235398"],names:["旭電馳科研","旭電馳科研股份有限公司"],aliases:["U POWER","UPOWER","旭電馳","旭電馳科研"],official:"https://www.u-power.com.tw/",stationMap:"https://www.u-power.com.tw/",chargeGuide:"https://www.u-power.com.tw/service/",chargeHint:"U-POWER App・掃碼／自動充電"},
-  {key:"evalue",brand:"EVALUE 華城電機",names:["華城電能科技股份有限公司","華城電機股份有限公司"],aliases:["E-Value","華城電能","華城電機"],official:"https://www.evalue.com.tw/",stationMap:"https://www.evalue.com.tw/find",chargeGuide:"https://www.evalue.com.tw/app",chargeHint:"EVALUE App・即時狀態／預約充電"},
+  {key:"evoasis",brand:"EVOASIS",names:["源點科技股份有限公司"],aliases:["OASIS","源點科技"],official:"https://www.evoasis.com.tw/",stationMap:"https://www.evoasis.com.tw/charging-station",chargeGuide:"https://www.evoasis.com.tw/chargingapp",rateGuide:"https://www.evoasis.com.tw/search",chargeHint:"EVOASIS App・掃碼／隨插即充",rateShort:"指定站：離峰 6.5｜假日 8.4｜尖峰 14.9 元/度",rateHint:"星晴電價指定站：離峰 6.5、假日 8.4、尖峰 14.9 元/度；站點與時段適用範圍以 EVOASIS App 當下顯示為準",networkHint:"官方 DC 站點已導入；即時空槍只採可安全判讀的 TDX 槍況"},
+  {key:"upower",brand:"U-POWER",ids:["83235398"],names:["旭電馳科研","旭電馳科研股份有限公司"],aliases:["U POWER","UPOWER","旭電馳","旭電馳科研"],official:"https://www.u-power.com.tw/",stationMap:"https://www.u-power.com.tw/",chargeGuide:"https://www.u-power.com.tw/service/",rateGuide:"https://www.u-power.com.tw/service/",chargeHint:"U-POWER App・掃碼／AutoCharge",rateShort:"會員：離峰 6.9｜假日 8.5｜尖峰 13.5 元/度",rateHint:"2026 會員時段費率：離峰 6.9、假日 8.5、尖峰 13.5 元/度；非會員全天 14 元/度；整筆依起充時間費率計價，特例站點以 App 為準",networkHint:"官方站點已導入；即時空槍只採可安全判讀的 TDX 槍況"},
+  {key:"evalue",brand:"EVALUE 華城電機",names:["華城電能科技股份有限公司","華城電機股份有限公司"],aliases:["E-Value","華城電能","華城電機"],official:"https://www.evalue.com.tw/",stationMap:"https://www.evalue.com.tw/find",chargeGuide:"https://www.evalue.com.tw/app",rateGuide:"https://www.evalue.com.tw/recommended/3/84",chargeHint:"EVALUE App・即時狀態／預約充電",rateShort:"時間電價依功率級距，最低 6.6 元/度",rateHint:"2026/6/1 起指定站：120–180kW 離峰 6.6、假日 8.3、尖峰 13.5 元/度；240kW 以上離峰 8、假日 9、尖峰 13.5 元/度；部分站不適用，以 App 為準"},
   {key:"icharging",brand:"iCharging 中興電工",names:["中興電工機械股份有限公司"],aliases:["iCharging","中興電工"],official:"https://www.icharging.com.tw/tw",stationMap:"https://www.icharging.com.tw/tw/map/index.aspx",chargeGuide:"https://www.icharging.com.tw/tw/about/%E5%B8%B8%E8%A6%8B%E5%95%8F%E9%A1%8C",rateGuide:"https://www.icharging.com.tw/tw/about/%E8%B2%BB%E7%8E%87%E8%AA%AA%E6%98%8E",chargeHint:"iParking App・依站點支援",rateHint:"公告原價 12 元/度；iParking 高速 9.2–10 元/度、市區 8 元/度，部分市區站採每分鐘 7 元，實際依站點公告",networkHint:"官方網站可依區域、槍種搜尋；主要提供 CCS1、CCS2"},
   {key:"starcharger",brand:"星舟快充",names:["星舟快充"],aliases:["StarCharger","星舟"],official:"https://starcharger.com.tw/"},
-  {key:"tail",brand:"TAIL 特爾電力",names:["特爾電力股份有限公司"],aliases:["TAIL","特爾"],official:"https://www.evtail.com.tw/",stationMap:"https://www.evtail.com.tw/locations"},
+  {key:"tail",brand:"TAIL 特爾電力",names:["特爾電力股份有限公司"],aliases:["TAIL","特爾"],official:"https://www.evtail.com.tw/",stationMap:"https://www.evtail.com.tw/locations",chargeGuide:"https://www.evtail.com.tw/",rateGuide:"https://www.evtail.com.tw/",chargeHint:"TAIL App・掃碼充電",rateShort:"尖峰／離峰浮動・依現場與 App",rateHint:"TAIL 官方說明費率依用電量、離峰與尖峰浮動；目前未公開全網統一數字，詳細費率以現場與 App 當下標示為準",networkHint:"官方站點已導入；部分站點功率與席次仍需由 TDX 或官方補齊"},
   {key:"acon",brand:"Acon-eco",names:["連展電能科技股份有限公司"],aliases:["Acon","連展電能"],official:"https://www.acon-eco.com/"},
   {key:"noodoe",brand:"Noodoe",names:["拓廣科技","拓廣科技股份有限公司"],aliases:["拓廣","Noodoe EV"],official:"https://www.noodoe.com.tw/"},
-  {key:"tesla",brand:"Tesla 超級充電",names:["台灣特斯拉汽車有限公司"],aliases:["特斯拉","Tesla","Tesla Supercharger"],official:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",stationMap:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",chargeGuide:"https://www.tesla.com/zh_tw/support/charging/supercharging",chargeHint:"Tesla App・插槍自動充電",networkHint:"Tesla App 可查看可用超級充電座與充電狀態；COLA GO 不把官方網站清單假裝成即時空槍"}
+  {key:"tesla",brand:"Tesla 超級充電",names:["台灣特斯拉汽車有限公司"],aliases:["特斯拉","Tesla","Tesla Supercharger"],official:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",stationMap:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",chargeGuide:"https://www.tesla.com/zh_tw/support/charging/supercharging",rateGuide:"https://www.tesla.com/zh_tw/support/charging/supercharging",chargeHint:"Tesla App・插槍自動充電",rateShort:"動態費率・部分站分尖峰／離峰",rateHint:"Tesla 各站價格可能不同並採動態定價；部分站有尖峰／非尖峰費率，實際價格以車機或 Tesla App 站點頁當下顯示為準",networkHint:"Tesla App 可查看官方可用充電座、最高功率與站點價格；COLA GO 的即時空槍只顯示可安全判讀的 TDX 資料，不把官方網站清單假裝成即時空槍"}
 ];
 const CHARGING_MAJOR_KEYS=["evoasis","upower","tail","evalue","icharging","tesla"];
+const CHARGING_PRIORITY_KEYS=["evoasis","upower","tail","tesla"];
+const CHARGING_OFFICIAL_CACHE_KEYS=["evoasis","upower","tail","evalue"];
+function chargingIntegrationLabel(key){
+  if(CHARGING_OFFICIAL_CACHE_KEYS.includes(key))return "官方站點已導入";
+  if(key==="tesla")return "優先整合・TDX 即時＋Tesla 官方";
+  if(key==="icharging")return "待新增導入中";
+  return "TDX／官方資料";
+}
 const ICHARGING_PLUG_AND_CHARGE=[
   ["湖口服務區南向",["湖口服務區南向","湖口南向","湖口南"]],
   ["湖口服務區北向",["湖口服務區北向","湖口北向","湖口北"]],
@@ -344,6 +352,53 @@ function chargingOperatorLabel(value){
   if(/^\d{8}$/.test(legal))return "TDX 業者 "+legal;
   return legal;
 }
+
+function ensureChargingPriorityPanel(){
+  if($("#chargingPriorityPanel"))return;
+  const major=$("#chargingMajorFilter");
+  if(!major)return;
+  major.insertAdjacentHTML("afterend",
+    '<section class="charging-coverage" id="chargingPriorityPanel">'+
+      '<div class="charging-filter-label"><span>優先完善｜前三大＋Tesla</span><small>先看空槍、功率、費率</small></div>'+
+      '<div class="charging-coverage-grid" id="chargingPriorityGrid"></div>'+
+      '<p class="charging-network-legend">空槍只採可安全判讀的 TDX 即時槍況；業者官方站點補資料不會被當成即時可用。</p>'+
+    '</section>'
+  );
+}
+function chargingPriorityStats(key){
+  const rows=(state.charging||[]).filter(x=>chargingOperatorProfile(x)?.key===key);
+  const liveRows=rows.filter(x=>x.road==="tdx"&&!x.liveStale&&chargingLiveCounts(x).total>0);
+  const available=liveRows.reduce((sum,x)=>sum+chargingLiveCounts(x).available,0);
+  const maxKw=Math.max(0,...rows.map(chargingPowerKw).filter(v=>Number.isFinite(v)&&v>0));
+  return {rows,liveRows,available,maxKw};
+}
+function renderChargingPriorityPanel(){
+  ensureChargingPriorityPanel();
+  const root=$("#chargingPriorityGrid");
+  if(!root)return;
+  root.innerHTML=CHARGING_PRIORITY_KEYS.map(key=>{
+    const profile=CHARGING_OPERATOR_PROFILES.find(x=>x.key===key);
+    if(!profile)return "";
+    const stats=chargingPriorityStats(key);
+    const power=stats.maxKw?stats.maxKw+" kW":"依站點資料";
+    const live=stats.liveRows.length?stats.liveRows.length+" 站有即時":"即時覆蓋待補";
+    const open=stats.liveRows.length?stats.available+" 空槍":"-- 空槍";
+    return '<button type="button" data-charge-priority="'+esc(key)+'">'+
+      '<span class="charging-coverage-brand"><b>'+esc(profile.brand)+'</b><small>'+esc(chargingIntegrationLabel(key))+'</small></span>'+
+      '<span class="charging-coverage-stats"><strong>'+esc(open)+'</strong><small>'+esc(live)+'</small><em>最高功率 '+esc(power)+'</em></span>'+
+      '<small class="charging-network-legend">'+esc(profile.rateShort||"費率依官方")+'</small>'+
+    '</button>';
+  }).join("");
+  $$("[data-charge-priority]",root).forEach(button=>button.onclick=()=>{
+    state.chargingMajor=button.dataset.chargePriority||"all";
+    state.chargingOperator="all";
+    const select=$("#chargingOperator");
+    if(select)select.value="all";
+    renderCharging();
+    $("#chargingList")?.scrollIntoView({behavior:"smooth",block:"start"});
+  });
+}
+
 function chargingDirectionMatch(x){
   const d=String(x.direction||"");
   if(state.chargingDirection==="all")return true;
@@ -496,6 +551,7 @@ function chargingDetailMarkup(x){
 function renderCharging(){
   const root=$("#chargingList");
   if(!root)return;
+  renderChargingPriorityPanel();
 
   const q=($("#chargingSearch")?.value||"").trim().toLowerCase();
   const candidateRows=state.charging
