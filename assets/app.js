@@ -751,8 +751,9 @@ function renderCharging(){
   $("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
   $("[data-charge-show-nearby]",root)?.addEventListener("click",()=>{
     state.chargingAvailableOnly=false;
+    state.chargingSort="nearby";
     renderCharging();
-    toast(state.chargingSort==="nearby"?"已改看附近充電站":"已顯示充電站");
+    toast("已改看附近充電站");
   });
   $("[data-charge-clear-filters]",root)?.addEventListener("click",()=>$("#resetChargingFilters")?.click());
 }
