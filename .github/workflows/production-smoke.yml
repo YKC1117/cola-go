@@ -124,7 +124,7 @@ jobs:
           grep -Fq 'renderCCTVRoadOverview' "$work/app.js"
           grep -Fq 'renderCCTVGroups' "$work/app.js"
           grep -Fq '里程分段' "$work/app.js"
-          grep -Fq 'cola-go-ui-v6-39' "$work/sw.js"
+          grep -Fq 'cola-go-ui-v6-40' "$work/sw.js"
           ! grep -Fq 'www.icloud.com/shortcuts/' "$work/index.html"
           ! grep -Eqi 'waze\.com|data-map="waze"' "$work/index.html" "$work/app.js"
           grep -Fq 'el.hasAttribute("data-home-reload")' "$work/app.js"
