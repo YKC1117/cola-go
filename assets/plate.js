@@ -402,12 +402,105 @@ function upsertWatch(plate,budget=0,current=0,endTime=""){
   checkAnnouncementAlerts();
   return true;
 }
+
+function ensurePlateWatchTools(){
+  const panel=$p(".plate-watch-panel");
+
+  const backupWatch=$p("#plateWatchBackup");
+  if(backupWatch)backupWatch.onclick=async()=>{
+    const payload=watchBackupPayload();
+    try{
+      await navigator.clipboard.writeText(payload);
+      if(window.toast)toast("候選備份已複製");
+    }catch{
+      prompt("請複製這段候選備份",payload);
+    }
+  };
+  const restoreWatch=$p("#plateWatchRestore");
+  if(restoreWatch)restoreWatch.onclick=()=>{
+    const raw=prompt("貼上 COLA GO 候選備份");
+    if(raw===null)return;
+    const result=restoreWatchPayload(raw);
+    if(window.toast)toast(result.message);else alert(result.message);
+  };
+
+  const list=$p("#plateWatchList");
+  if(!panel||!list||$p("#plateWatchDashboard"))return;
+  list.insertAdjacentHTML("beforebegin",
+    '<div id="plateWatchDashboard">'+
+      '<div class="plate-announcement-summary">'+
+        '<div><b id="plateWatchLiveCount">0</b><small>候選競標中</small></div>'+
+        '<div><b id="plateWatchUpcomingCount">0</b><small>候選即將開標</small></div>'+
+        '<div><b id="plateWatchNoMatchCount">0</b><small>暫無公告</small></div>'+
+      '</div>'+
+      '<div class="plate-watch-actions">'+
+        '<button id="plateWatchBackup" type="button">複製候選備份</button>'+
+        '<button id="plateWatchRestore" type="button">貼上還原</button>'+
+      '</div>'+
+      '<p class="plate-helper">候選資料仍只存在你的裝置；可把備份文字存到自己的備忘錄，需要時再貼回 COLA GO。</p>'+
+    '</div>'
+  );
+}
+function renderWatchSummary(){
+  ensurePlateWatchTools();
+  const rows=loadRows();
+  let live=0,upcoming=0,noMatch=0;
+  rows.forEach(row=>{
+    const match=bestOfficialMatch(row.plate);
+    if(!match){noMatch++;return}
+    const status=auctionState(match);
+    if(status==="live")live++;
+    else if(status==="upcoming")upcoming++;
+    else noMatch++;
+  });
+  if($p("#plateWatchLiveCount"))$p("#plateWatchLiveCount").textContent=String(live);
+  if($p("#plateWatchUpcomingCount"))$p("#plateWatchUpcomingCount").textContent=String(upcoming);
+  if($p("#plateWatchNoMatchCount"))$p("#plateWatchNoMatchCount").textContent=String(noMatch);
+}
+function watchBackupPayload(){
+  return JSON.stringify({schema:1,exportedAt:new Date().toISOString(),items:loadRows().map(row=>({
+    plate:normalize(row.plate),
+    budget:Math.max(0,Number(row.budget)||0),
+    current:Math.max(0,Number(row.current)||0),
+    endTime:row.endTime||"",
+    priceUpdatedAt:row.priceUpdatedAt||""
+  }))});
+}
+function restoreWatchPayload(raw){
+  let data;
+  try{data=JSON.parse(String(raw||"").trim())}catch{return {ok:false,message:"備份格式無法讀取"}}
+  if(!data||!Array.isArray(data.items))return {ok:false,message:"備份內容不完整"};
+  const now=Date.now();
+  const rows=data.items.slice(0,100).map((row,index)=>{
+    const plate=normalize(row?.plate);
+    if(!plate)return null;
+    return {
+      id:String(now+index)+"-restore",
+      plate,
+      budget:Math.max(0,Number(row?.budget)||0),
+      current:Math.max(0,Number(row?.current)||0),
+      endTime:String(row?.endTime||""),
+      priceUpdatedAt:String(row?.priceUpdatedAt||""),
+      createdAt:new Date().toISOString()
+    };
+  }).filter(Boolean);
+  if(!rows.length)return {ok:false,message:"備份裡沒有可用候選"};
+  const merged=new Map(loadRows().map(row=>[row.plate,row]));
+  rows.forEach(row=>merged.set(row.plate,{...merged.get(row.plate),...row}));
+  saveRows([...merged.values()]);
+  renderWatchList();
+  renderAnnouncements();
+  checkAnnouncementAlerts();
+  return {ok:true,message:"已還原 "+rows.length+" 筆候選"};
+}
+
 function renderWatchList(){
   const root=$p("#plateWatchList"),count=$p("#plateWatchCount");
   if(!root)return;
+  ensurePlateWatchTools();
   const rows=loadRows();
   if(count)count.textContent=String(rows.length);
-  if(!rows.length){root.innerHTML='<div class="plate-watch-empty"><b>還沒有候選號碼</b><br>把你喜歡的 1117、8888 或完整車牌先加進來。COLA GO 會一起比對官方標牌公告。</div>';return}
+  if(!rows.length){root.innerHTML='<div class="plate-watch-empty"><b>還沒有候選號碼</b><br>把你喜歡的 1117、8888 或完整車牌先加進來。COLA GO 會一起比對官方標牌公告。</div>';renderWatchSummary();return}
   root.innerHTML=rows.map(row=>{
     const s=budgetState(row),budget=Number(row.budget)||0,current=Number(row.current)||0,remain=budget&&current?budget-current:null;
     const match=bestOfficialMatch(row.plate),officialState=match?auctionState(match):"";
@@ -421,9 +514,10 @@ function renderWatchList(){
         '<div><small>距離預算</small><b>'+(remain===null?"—":remain>=0?moneyPlate(remain):"超過 "+moneyPlate(Math.abs(remain)))+'</b></div>'+
         '<div><small>結標時間</small><b>'+escPlate(fmtTime(row.endTime||match?.endAt))+'</b></div>'+
       '</div>'+priceLine+
-      '<div class="plate-watch-actions"><button data-plate-action="price" type="button">更新手動價</button><button data-plate-action="official" type="button">官方即時競標</button><button class="danger" data-plate-action="remove" type="button">移除</button></div>'+
+      '<div class="plate-watch-actions"><button data-plate-action="budget" type="button">改預算</button><button data-plate-action="price" type="button">更新手動價</button>'+(match?'<button data-plate-action="detail" type="button">公告詳情</button>':'')+'<button data-plate-action="official" type="button">官方即時競標</button><button class="danger" data-plate-action="remove" type="button">移除</button></div>'+
     '</article>'
   }).join("");
+  renderWatchSummary();
 }
 function announcementMatchesWatch(row){
   return loadRows().filter(w=>rangeContains(row,w.plate));
@@ -705,6 +799,18 @@ function bind(){
     const action=btn.dataset.plateAction;
     if(action==="remove"){saveRows(rows.filter(x=>x.id!==id));renderWatchList();renderAnnouncements();return}
     if(action==="official"){window.open(official.bid,"_blank","noopener");return}
+    if(action==="detail"){
+      const match=bestOfficialMatch(row.plate);
+      if(match)openPlateDetail(match);
+      return;
+    }
+    if(action==="budget"){
+      const raw=prompt("輸入 "+row.plate+" 的最高預算",row.budget||"");
+      if(raw===null)return;
+      row.budget=Math.max(0,Number(String(raw).replace(/[^0-9.]/g,""))||0);
+      saveRows(rows);renderWatchList();
+      return;
+    }
     if(action==="price"){
       const raw=prompt("輸入 "+row.plate+" 在官方頁看到的目前價格",row.current||"");
       if(raw===null)return;
