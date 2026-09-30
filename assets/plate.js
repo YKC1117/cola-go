@@ -537,8 +537,7 @@ function watchOfficialState(row){
   const match=bestOfficialMatch(row.plate);
   return match?auctionState(match):"nomatch";
 }
-function watchFinalStage(row,now=Date.now()){
-  const match=bestOfficialMatch(row.plate);
+function auctionFinalStage(match,now=Date.now()){
   if(!match||auctionState(match,now)!=="live")return {active:false,level:"",label:"",ms:null,match};
   const end=Date.parse(match.endAt||"");
   if(!Number.isFinite(end))return {active:false,level:"",label:"",ms:null,match};
@@ -549,6 +548,9 @@ function watchFinalStage(row,now=Date.now()){
   if(ms<=5*60000)return {active:true,level:"urgent",label:"剩 5 分鐘內",ms,match};
   if(ms<=15*60000)return {active:true,level:"watch",label:"剩 15 分鐘內",ms,match};
   return {active:false,level:"",label:"",ms,match};
+}
+function watchFinalStage(row,now=Date.now()){
+  return auctionFinalStage(bestOfficialMatch(row.plate),now);
 }
 function watchBudgetUsage(row){
   const budget=Number(row.budget)||0,current=Number(row.current)||0;
@@ -663,17 +665,19 @@ function renderAnnouncements(){
   const queryPlate=plateParts(q)?q:"";
   root.innerHTML=rows.slice(0,80).map(row=>{
     const status=auctionState(row,now),start=Date.parse(row.startAt||""),end=Date.parse(row.endAt||"");
+    const stage=auctionFinalStage(row,now);
     const countdown=status==="upcoming"&&Number.isFinite(start)?"距起標 "+fmtCountdown(start-now):status==="live"&&Number.isFinite(end)?"距公告決標 "+fmtCountdown(end-now):"";
+    const stageMarkup=stage.active?'<div class="plate-final-stage '+escPlate(stage.level)+'"><b>'+escPlate(stage.label)+'</b><span>'+escPlate(fmtCountdown(stage.ms))+'</span>'+(stage.level==="extension"||stage.level==="critical"?'<small>最後 3 分鐘若有兩人以上繼續出高價，官方會延長 3 分鐘、最多 10 次；請以正式競標頁最後時間為準。</small>':'')+'</div>':"";
     const matches=announcementMatchesWatch(row);
     const matchMarkup=matches.length?'<div class="plate-watch-match">'+matches.map(w=>'<span>候選 '+escPlate(w.plate)+'</span>').join("")+'</div>':"";
     const range=row.startNumber===row.endNumber?row.startNumber:row.startNumber+" ～ "+row.endNumber;
     const addButton=queryPlate&&rangeContains(row,queryPlate)&&!loadRows().some(w=>w.plate===queryPlate)?'<button data-plate-announcement-action="watch" data-plate-value="'+escPlate(queryPlate)+'" data-plate-end="'+escPlate(row.endAt||"")+'" type="button">追蹤 '+escPlate(queryPlate)+'</button>':"";
-    return '<article class="plate-announcement-card">'+
+    return '<article class="plate-announcement-card'+(stage.active?' is-final-stage':'')+'">'+
       '<div class="plate-announcement-top"><div><div class="plate-announcement-range">'+escPlate(range)+'</div><div class="plate-announcement-office">'+escPlate(row.office||"")+'・'+escPlate(row.category||"")+'</div></div><span class="plate-auction-state '+status+'">'+auctionLabel(status)+'</span></div>'+
       '<div class="plate-announcement-timing"><div><small>起標</small><b>'+escPlate(fmtTime(row.startAt))+'</b></div><div><small>公告決標</small><b>'+escPlate(fmtTime(row.endAt))+'</b></div></div>'+
-      (countdown?'<div class="plate-countdown">'+escPlate(countdown)+'</div>':"")+matchMarkup+
+      (countdown?'<div class="plate-countdown">'+escPlate(countdown)+'</div>':"")+stageMarkup+matchMarkup+
       (status==="live"?'<div class="plate-detail-note"><b>官方同步：</b>競標狀態、起標／公告決標時間<br><b>需官方即時確認：</b>目前出價、出價次數、最後延長後時間</div>':"")+
-      '<div class="plate-announcement-actions">'+addButton+'<button data-plate-announcement-action="detail" data-plate-id="'+escPlate(row.id)+'" type="button">查看詳情</button>'+(status==="live"?'<button class="official" data-plate-announcement-action="official" type="button">正式競標</button>':"")+'</div>'+
+      '<div class="plate-announcement-actions">'+addButton+'<button data-plate-announcement-action="detail" data-plate-id="'+escPlate(row.id)+'" type="button">查看詳情</button>'+(status==="live"?'<button class="'+(stage.active?'official plate-bid-now':'official')+'" data-plate-announcement-action="official" type="button">'+(stage.active?'立即正式競標':'正式競標')+'</button>':"")+'</div>'+
     '</article>'
   }).join("");
   renderWatchList();
