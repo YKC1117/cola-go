@@ -504,6 +504,10 @@ function renderPrimaryTarget(){
       '<div><small>官方公告決標</small><b>'+escPlate(fmtTime(match?.endAt||row.endTime))+'</b></div>'+
     '</div>'+stageMarkup+
     '<div class="plate-primary-actions">'+
+      '<button data-plate-primary-action="price" type="button">更新手動價</button>'+
+      '<button data-plate-primary-action="budget" type="button">改最高預算</button>'+
+      '<button data-plate-primary-action="copy" type="button">複製主攻摘要</button>'+
+      '<button data-plate-primary-action="next" type="button">切換下一張</button>'+
       (match?'<button data-plate-primary-action="detail" type="button">公告詳情</button>':'')+
       '<button data-plate-primary-action="history" type="button">官方歷史</button>'+
       '<button class="'+(stage.active?'official plate-bid-now':'official')+'" data-plate-primary-action="official" type="button">'+(stage.active?'立即正式競標':'官方即時競標')+'</button>'+
@@ -528,6 +532,57 @@ function renderWatchSummary(){
   if($p("#plateWatchUpcomingCount"))$p("#plateWatchUpcomingCount").textContent=String(upcoming);
   if($p("#plateWatchFinalCount"))$p("#plateWatchFinalCount").textContent=String(finalStage);
   if($p("#plateWatchNoMatchCount"))$p("#plateWatchNoMatchCount").textContent=String(noMatch);
+}
+function editWatchBudget(plate){
+  const rows=loadRows(),row=rows.find(x=>x.plate===normalize(plate));
+  if(!row)return false;
+  const raw=prompt("輸入 "+row.plate+" 的最高預算",row.budget||"");
+  if(raw===null)return false;
+  row.budget=Math.max(0,Number(String(raw).replace(/[^0-9.]/g,""))||0);
+  saveRows(rows);renderWatchList();
+  return true;
+}
+function editWatchPrice(plate){
+  const rows=loadRows(),row=rows.find(x=>x.plate===normalize(plate));
+  if(!row)return false;
+  const raw=prompt("輸入 "+row.plate+" 在官方頁看到的目前價格",row.current||"");
+  if(raw===null)return false;
+  const value=Math.max(0,Number(String(raw).replace(/[^0-9.]/g,""))||0);
+  row.current=value;
+  row.priceUpdatedAt=value?new Date().toISOString():"";
+  saveRows(rows);renderWatchList();
+  if(value&&row.budget){
+    if(value>row.budget)notify("COLA GO 車牌提醒",row.plate+" 目前價格 "+moneyPlate(value)+"，已超過你的預算 "+moneyPlate(row.budget)+"。","budget-"+row.id+"-over");
+    else if(value>=row.budget*.9)notify("COLA GO 車牌提醒",row.plate+" 目前價格已接近你的預算上限。","budget-"+row.id+"-near");
+  }
+  return true;
+}
+function primarySummaryText(row){
+  if(!row)return "";
+  const match=bestOfficialMatch(row.plate),status=match?auctionLabel(auctionState(match)):"未命中目前公告";
+  const budget=Number(row.budget)||0,current=Number(row.current)||0,remain=budget&&current?budget-current:null;
+  return [
+    "COLA GO 主攻車牌："+row.plate,
+    "官方狀態："+status+(match?.office?"｜"+match.office:""),
+    "最高預算："+moneyPlate(budget),
+    "手動記錄價："+moneyPlate(current),
+    "距離預算："+(remain===null?"—":remain>=0?moneyPlate(remain):"超過 "+moneyPlate(Math.abs(remain))),
+    "官方公告決標："+fmtTime(match?.endAt||row.endTime),
+    "提醒：目前出價為手動記錄，正式價格與最後決標時間請以監理服務網為準。"
+  ].join("\n");
+}
+function nextPrimaryPlate(){
+  const rows=loadRows().slice();
+  if(!rows.length)return "";
+  rows.sort((a,b)=>{
+    const ar=watchPriorityRank(a),br=watchPriorityRank(b);
+    if(ar.stageRank!==br.stageRank)return ar.stageRank-br.stageRank;
+    if(ar.primaryRank!==br.primaryRank)return ar.primaryRank-br.primaryRank;
+    if(ar.statusRank!==br.statusRank)return ar.statusRank-br.statusRank;
+    return br.risk-ar.risk||String(a.plate||"").localeCompare(String(b.plate||""),"en");
+  });
+  const current=loadPrimaryPlate(),index=rows.findIndex(x=>x.plate===current);
+  return rows[(index>=0?index+1:0)%rows.length]?.plate||"";
 }
 function watchBackupPayload(){
   return JSON.stringify({schema:2,exportedAt:new Date().toISOString(),primaryPlate:loadPrimaryPlate(),items:loadRows().map(row=>({
@@ -968,33 +1023,31 @@ function bind(){
       if(match)openPlateDetail(match);
       return;
     }
-    if(action==="budget"){
-      const raw=prompt("輸入 "+row.plate+" 的最高預算",row.budget||"");
-      if(raw===null)return;
-      row.budget=Math.max(0,Number(String(raw).replace(/[^0-9.]/g,""))||0);
-      saveRows(rows);renderWatchList();
-      return;
-    }
-    if(action==="price"){
-      const raw=prompt("輸入 "+row.plate+" 在官方頁看到的目前價格",row.current||"");
-      if(raw===null)return;
-      const value=Math.max(0,Number(String(raw).replace(/[^0-9.]/g,""))||0);
-      row.current=value;row.priceUpdatedAt=value?new Date().toISOString():"";saveRows(rows);renderWatchList();
-      if(value&&row.budget){
-        if(value>row.budget)notify("COLA GO 車牌提醒",row.plate+" 目前價格 "+moneyPlate(value)+"，已超過你的預算 "+moneyPlate(row.budget)+"。","budget-"+row.id+"-over");
-        else if(value>=row.budget*.9)notify("COLA GO 車牌提醒",row.plate+" 目前價格已接近你的預算上限。","budget-"+row.id+"-near");
-      }
-    }
+    if(action==="budget"){editWatchBudget(row.plate);return}
+    if(action==="price"){editWatchPrice(row.plate);return}
   };
 
 
   const primaryTarget=$p("#platePrimaryTarget");
-  if(primaryTarget)primaryTarget.onclick=e=>{
+  if(primaryTarget)primaryTarget.onclick=async e=>{
     const btn=e.target.closest("[data-plate-primary-action]");
     if(!btn)return;
     const primary=loadPrimaryPlate(),row=loadRows().find(x=>x.plate===primary);
     const action=btn.dataset.platePrimaryAction;
     if(action==="clear"){savePrimaryPlate("");renderWatchList();if(window.toast)toast("已取消主攻號碼");return}
+    if(action==="budget"&&row){editWatchBudget(row.plate);return}
+    if(action==="price"&&row){editWatchPrice(row.plate);return}
+    if(action==="copy"&&row){
+      const summary=primarySummaryText(row);
+      try{await navigator.clipboard.writeText(summary);if(window.toast)toast("主攻摘要已複製")}
+      catch{prompt("請複製主攻摘要",summary)}
+      return;
+    }
+    if(action==="next"){
+      const next=nextPrimaryPlate();
+      if(next){savePrimaryPlate(next);renderWatchList();if(window.toast)toast("主攻已切換為 "+next)}
+      return;
+    }
     if(action==="official"){window.open(official.bid,"_blank","noopener");return}
     if(action==="history"){window.open(official.history,"_blank","noopener");return}
     if(action==="detail"&&row){const match=bestOfficialMatch(row.plate);if(match)openPlateDetail(match)}
