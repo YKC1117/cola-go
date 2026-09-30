@@ -258,6 +258,7 @@
     if(currentCurated.length&&!curatedCharging.length)curatedCharging=currentCurated;
     if(!officialChargingAll.length){
       originalRenderCharging();
+      renderChargingCoverage();
       return;
     }
     const rawOfficial=state.road==="all"?chargingSubset():[];
