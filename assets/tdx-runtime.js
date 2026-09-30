@@ -390,6 +390,8 @@
       lastSuccessAt:result.value.lastSuccessAt||result.value.updatedAt||null,
       lastAttemptAt:result.value.lastAttemptAt||result.value.updatedAt||null
     }]));
+    const coverageGrid=document.querySelector("#chargingCoverageGrid");
+    if(coverageGrid)coverageGrid.dataset.sourceHealth=Object.keys(operatorSourceHealth).sort().join(",");
     operatorChargingAll=datasets.flatMap(({result,source})=>
       result.value.items.map(x=>({...x,officialSupplemental:true,networkKey:x.networkKey||source.key,officialSyncStatus:result.value.syncStatus||"ok"}))
     );
