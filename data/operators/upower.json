@@ -2,9 +2,9 @@
   "schema": 2,
   "source": "U-POWER 官方網站",
   "sourceUrl": "https://www.u-power.com.tw/",
-  "updatedAt": "2026-09-29T07:48:38.033160Z",
-  "lastSuccessAt": "2026-09-29T07:48:38.033160Z",
-  "lastAttemptAt": "2026-09-29T07:48:38.033160Z",
+  "updatedAt": "2026-09-30T07:56:36.753401Z",
+  "lastSuccessAt": "2026-09-30T07:56:36.753401Z",
+  "lastAttemptAt": "2026-09-30T07:56:36.753401Z",
   "syncStatus": "ok",
   "count": 66,
   "items": [
@@ -451,17 +451,17 @@
       "officialSource": "U-POWER 官方網站",
       "officialSourceURL": "https://www.u-power.com.tw/",
       "officialSupplemental": true,
-      "sitePowerKw": 840,
+      "sitePowerKw": 1320,
       "maxPowerKw": null,
       "power": "",
-      "spaces": 10,
-      "connectorCount": 10,
+      "spaces": 16,
+      "connectorCount": 16,
       "connectors": [
         "CCS1",
         "CCS2"
       ],
-      "ccs1Seats": 5,
-      "ccs2Seats": 5,
+      "ccs1Seats": 7,
+      "ccs2Seats": 9,
       "liveStateCount": 0,
       "availableConnectors": 0,
       "occupiedConnectors": 0,
@@ -1182,7 +1182,7 @@
       "officialSource": "U-POWER 官方網站",
       "officialSourceURL": "https://www.u-power.com.tw/",
       "officialSupplemental": true,
-      "sitePowerKw": 720,
+      "sitePowerKw": 840,
       "maxPowerKw": null,
       "power": "",
       "spaces": 8,
@@ -1191,8 +1191,8 @@
         "CCS1",
         "CCS2"
       ],
-      "ccs1Seats": 6,
-      "ccs2Seats": 2,
+      "ccs1Seats": 4,
+      "ccs2Seats": 4,
       "liveStateCount": 0,
       "availableConnectors": 0,
       "occupiedConnectors": 0,
@@ -2847,5 +2847,5 @@
       "description": ""
     }
   ],
-  "totalSeats": 446
+  "totalSeats": 452
 }
