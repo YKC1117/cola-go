@@ -340,6 +340,8 @@ function openPlateDetail(row){
       '<div><small>公告決標</small><b>'+escPlate(fmtTime(row.endAt))+'</b></div>'+
       '<div><small>轉帳截止</small><b>'+escPlate(fmtTime(row.transferDeadline))+'</b></div>'+
       '<div><small>資料來源</small><b>交通部公路局</b></div>'+
+      '<div><small>目前出價</small><b>需官方即時確認</b></div>'+
+      '<div><small>出價次數</small><b>需官方即時確認</b></div>'+
     '</div>'+
     (officeInfo?'<div class="plate-detail-match"><b>監理站資訊</b><div><span>'+escPlate(officeInfo.address||"地址未提供")+'</span>'+(officeInfo.tel?'<span>'+escPlate(officeInfo.tel)+'</span>':"")+'</div></div>':"")+
     (matches.length?'<div class="plate-detail-match"><b>你的候選命中</b><div>'+matches.map(x=>'<span>'+escPlate(x.plate)+'</span>').join("")+'</div></div>':'')+
@@ -380,8 +382,9 @@ function upsertWatch(plate,budget=0,current=0,endTime=""){
   if(!plate)return false;
   const rows=loadRows();
   const existing=rows.find(x=>x.plate===plate);
-  if(existing){existing.budget=budget||existing.budget||0;existing.current=current||existing.current||0;existing.endTime=endTime||existing.endTime||""}
-  else rows.unshift({id:String(Date.now())+"-"+Math.random().toString(36).slice(2,7),plate,budget,current,endTime,createdAt:new Date().toISOString()});
+  const priceUpdatedAt=current>0?new Date().toISOString():"";
+  if(existing){existing.budget=budget||existing.budget||0;if(current>0){existing.current=current;existing.priceUpdatedAt=priceUpdatedAt}existing.endTime=endTime||existing.endTime||""}
+  else rows.unshift({id:String(Date.now())+"-"+Math.random().toString(36).slice(2,7),plate,budget,current,endTime,priceUpdatedAt,createdAt:new Date().toISOString()});
   saveRows(rows);
   renderWatchList();
   renderAnnouncements();
@@ -397,7 +400,8 @@ function renderWatchList(){
   root.innerHTML=rows.map(row=>{
     const s=budgetState(row),budget=Number(row.budget)||0,current=Number(row.current)||0,remain=budget&&current?budget-current:null;
     const match=bestOfficialMatch(row.plate),officialState=match?auctionState(match):"";
-    const officialLine=match?'<div class="plate-watch-official">官方公告：'+escPlate(auctionLabel(officialState))+'・'+escPlate(match.office||"監理單位")+'</div>':"";
+    const officialLine=match?'<div class="plate-watch-official">官方同步：'+escPlate(auctionLabel(officialState))+'・'+escPlate(match.office||"監理單位")+'</div>':"";
+    const priceLine=current?'<div class="plate-detail-note"><b>價格來源：手動記錄</b><br>'+escPlate(row.priceUpdatedAt?fmtTime(row.priceUpdatedAt)+" 更新":"先前儲存的手動價格")+'；正式出價前請回官方頁確認最新價格與出價次數。</div>':'<div class="plate-detail-note"><b>即時價格：需官方確認</b><br>COLA GO 目前沒有官方逐筆出價資料，不會自行猜測目前價格。</div>';
     return '<article class="plate-watch-card" data-plate-id="'+escPlate(row.id)+'">'+
       '<div class="plate-watch-top"><div><div class="plate-watch-number">'+escPlate(row.plate)+'</div><small class="meta">存在此裝置</small>'+officialLine+'</div><span class="plate-budget-state '+s.cls+'">'+escPlate(s.label)+'</span></div>'+
       '<div class="plate-watch-meta">'+
@@ -405,8 +409,8 @@ function renderWatchList(){
         '<div><small>手動記錄價</small><b>'+moneyPlate(current)+'</b></div>'+
         '<div><small>距離預算</small><b>'+(remain===null?"—":remain>=0?moneyPlate(remain):"超過 "+moneyPlate(Math.abs(remain)))+'</b></div>'+
         '<div><small>結標時間</small><b>'+escPlate(fmtTime(row.endTime||match?.endAt))+'</b></div>'+
-      '</div>'+
-      '<div class="plate-watch-actions"><button data-plate-action="price" type="button">更新目前價</button><button data-plate-action="official" type="button">官方即時競標</button><button class="danger" data-plate-action="remove" type="button">移除</button></div>'+
+      '</div>'+priceLine+
+      '<div class="plate-watch-actions"><button data-plate-action="price" type="button">更新手動價</button><button data-plate-action="official" type="button">官方即時競標</button><button class="danger" data-plate-action="remove" type="button">移除</button></div>'+
     '</article>'
   }).join("");
 }
@@ -465,6 +469,7 @@ function renderAnnouncements(){
       '<div class="plate-announcement-top"><div><div class="plate-announcement-range">'+escPlate(range)+'</div><div class="plate-announcement-office">'+escPlate(row.office||"")+'・'+escPlate(row.category||"")+'</div></div><span class="plate-auction-state '+status+'">'+auctionLabel(status)+'</span></div>'+
       '<div class="plate-announcement-timing"><div><small>起標</small><b>'+escPlate(fmtTime(row.startAt))+'</b></div><div><small>公告決標</small><b>'+escPlate(fmtTime(row.endAt))+'</b></div></div>'+
       (countdown?'<div class="plate-countdown">'+escPlate(countdown)+'</div>':"")+matchMarkup+
+      (status==="live"?'<div class="plate-detail-note"><b>官方同步：</b>競標狀態、起標／公告決標時間<br><b>需官方即時確認：</b>目前出價、出價次數、最後延長後時間</div>':"")+
       '<div class="plate-announcement-actions">'+addButton+'<button data-plate-announcement-action="detail" data-plate-id="'+escPlate(row.id)+'" type="button">查看詳情</button>'+(status==="live"?'<button class="official" data-plate-announcement-action="official" type="button">正式競標</button>':"")+'</div>'+
     '</article>'
   }).join("");
@@ -616,7 +621,7 @@ function bind(){
       const raw=prompt("輸入 "+row.plate+" 在官方頁看到的目前價格",row.current||"");
       if(raw===null)return;
       const value=Math.max(0,Number(String(raw).replace(/[^0-9.]/g,""))||0);
-      row.current=value;saveRows(rows);renderWatchList();
+      row.current=value;row.priceUpdatedAt=value?new Date().toISOString():"";saveRows(rows);renderWatchList();
       if(value&&row.budget){
         if(value>row.budget)notify("COLA GO 車牌提醒",row.plate+" 目前價格 "+moneyPlate(value)+"，已超過你的預算 "+moneyPlate(row.budget)+"。","budget-"+row.id+"-over");
         else if(value>=row.budget*.9)notify("COLA GO 車牌提醒",row.plate+" 目前價格已接近你的預算上限。","budget-"+row.id+"-near");
