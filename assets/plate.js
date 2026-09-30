@@ -6,7 +6,9 @@ const ANNOUNCEMENT_CACHE_KEY="cola-go-plate-announcements-v1";
 const ANNOUNCEMENT_SNAPSHOT_KEY="cola-go-plate-announcement-snapshot-v1";
 const CHANGE_LOG_KEY="cola-go-plate-change-log-v1";
 const CHECKLIST_KEY="cola-go-plate-checklist-v1";
+const OFFICE_CACHE_KEY="cola-go-plate-offices-v1";
 const ANNOUNCEMENT_URL="./data/plates/announcements.json";
+const OFFICE_URL="./data/plates/offices.json";
 const official={
   pick:"https://www.mvdis.gov.tw/m3-emv-plate/webpickno/queryPickNo",
   bid:"https://www.mvdis.gov.tw/m3-emv-plate/bid/queryBiding",
@@ -19,9 +21,12 @@ const escPlate=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;","
 const moneyPlate=v=>Number.isFinite(Number(v))&&Number(v)>0?"NT$ "+new Intl.NumberFormat("zh-TW",{maximumFractionDigits:0}).format(Number(v)):"—";
 const normalize=v=>String(v||"").trim().toUpperCase().replace(/\s+/g,"");
 let announcementData={status:"idle",items:[],updatedAt:null,stale:false,error:""};
+let officeData={status:"idle",items:[],updatedAt:null,stale:false,error:""};
 let announcementFilter="all";
 let announcementQuery="";
+let officeQuery="";
 let announcementFetchAt=0;
+let officeFetchAt=0;
 
 function loadRows(){try{const x=JSON.parse(localStorage.getItem(STORE_KEY)||"[]");return Array.isArray(x)?x:[]}catch{return[]}}
 function saveRows(rows){try{localStorage.setItem(STORE_KEY,JSON.stringify(rows))}catch{}}
@@ -29,6 +34,8 @@ function loadAlerts(){try{return JSON.parse(localStorage.getItem(ALERT_KEY)||"{}
 function saveAlerts(x){try{localStorage.setItem(ALERT_KEY,JSON.stringify(x))}catch{}}
 function loadAnnouncementCache(){try{return JSON.parse(localStorage.getItem(ANNOUNCEMENT_CACHE_KEY)||"null")}catch{return null}}
 function saveAnnouncementCache(x){try{localStorage.setItem(ANNOUNCEMENT_CACHE_KEY,JSON.stringify(x))}catch{}}
+function loadOfficeCache(){try{return JSON.parse(localStorage.getItem(OFFICE_CACHE_KEY)||"null")}catch{return null}}
+function saveOfficeCache(x){try{localStorage.setItem(OFFICE_CACHE_KEY,JSON.stringify(x))}catch{}}
 function loadPlateJson(key,fallback){try{const x=JSON.parse(localStorage.getItem(key)||"null");return x??fallback}catch{return fallback}}
 function savePlateJson(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch{}}
 function notify(title,body,tag="cola-go-plate"){
@@ -125,6 +132,17 @@ function ensurePlateV4Panels(){
       '<div class="plate-watch-actions"><button id="plateChecklistReset" type="button">全部重設</button></div>'+
       '</section>');
   }
+  const checklistPanel=$p("#plateChecklistPanel");
+  if(checklistPanel&&!$p("#plateOfficePanel")){
+    checklistPanel.insertAdjacentHTML("afterend",
+      '<section class="plate-panel" id="plateOfficePanel">'+
+      '<div class="plate-panel-head"><div><span class="mini-label">MOTOR VEHICLES OFFICE</span><h2>監理站資訊</h2></div><span class="plate-source-state" id="plateOfficeSourceState">讀取中</span></div>'+
+      '<div class="plate-search-row"><input autocomplete="off" id="plateOfficeSearchInput" placeholder="搜尋監理站、縣市、行政區"/><button id="plateOfficeSearchBtn" type="button"><span>搜尋</span></button></div>'+
+      '<div class="plate-announcement-meta"><span id="plateOfficeUpdated">等待官方資料</span><span id="plateOfficeCount">—</span></div>'+
+      '<div class="plate-watch-list" id="plateOfficeList"><div class="plate-watch-empty">正在讀取交通部公路局監理所及轄站資料。</div></div>'+
+      '<p class="plate-helper">地址、電話與管轄區域來自交通部公路局開放資料；實際辦理車牌業務前仍可先電話確認該站可受理項目。</p>'+
+      '</section>');
+  }
   const manualLabel=$p("#plateCurrentPrice")?.closest("label")?.querySelector("small");
   if(manualLabel)manualLabel.textContent="手動記錄目前價格（可選）";
   $$p(".plate-guide-body article").forEach(article=>{
@@ -151,6 +169,62 @@ function renderChecklist(){
       '</article>';
   }).join("");
 }
+
+function officeKey(value){return String(value||"").trim().replace(/\s+/g,"").replace(/臺/g,"台").toUpperCase()}
+function findOfficeInfo(name){
+  const key=officeKey(name);
+  if(!key)return null;
+  return (officeData.items||[]).find(row=>[row.name,row.station,row.office].some(v=>officeKey(v)===key))||null;
+}
+function renderOfficeDirectory(){
+  const root=$p("#plateOfficeList"),count=$p("#plateOfficeCount"),state=$p("#plateOfficeSourceState"),updated=$p("#plateOfficeUpdated");
+  if(!root)return;
+  const items=Array.isArray(officeData.items)?officeData.items:[];
+  if(state){
+    state.className="plate-source-state"+(officeData.error&&!items.length?" error":officeData.stale?" stale":"");
+    state.textContent=officeData.error&&!items.length?"同步中":officeData.stale?"上次可用":"官方資料";
+  }
+  if(updated)updated.textContent=fmtUpdated(officeData.updatedAt);
+  let rows=items.slice();
+  const q=officeKey(officeQuery);
+  if(q)rows=rows.filter(row=>officeKey([row.name,row.office,row.station,row.address,row.tel,row.precinct].join(" ")).includes(q));
+  if(count)count.textContent=items.length?(q?rows.length+" / "+items.length:String(items.length)):"—";
+  if(!items.length){
+    root.innerHTML='<div class="plate-watch-empty"><b>監理站資料正在同步</b><br>若正式資料尚未產生，COLA GO 會保留此區並在資料可用時自動讀取；車牌公告功能不受影響。</div>';
+    return;
+  }
+  if(!rows.length){
+    root.innerHTML='<div class="plate-watch-empty"><b>沒有符合的監理站</b><br>可改用監理站名稱、縣市或行政區搜尋。</div>';
+    return;
+  }
+  root.innerHTML=rows.slice(0,40).map(row=>{
+    const parent=row.station&&row.office?row.office:"監理機關";
+    return '<article class="plate-watch-card">'+
+      '<div class="plate-watch-top"><div><div class="plate-watch-number" style="font-size:16px">'+escPlate(row.name||row.office||"監理站")+'</div><small class="meta">'+escPlate(parent)+'</small></div><span class="plate-budget-state">官方資料</span></div>'+
+      '<div class="plate-watch-meta"><div><small>地址</small><b>'+escPlate(row.address||"未提供")+'</b></div><div><small>電話</small><b>'+escPlate(row.tel||"未提供")+'</b></div></div>'+
+      (row.precinct?'<div class="plate-detail-note"><b>管轄／服務</b><br>'+escPlate(row.precinct)+'</div>':"")+
+      '<div class="plate-watch-actions"><button data-plate-office-action="copy" data-value="'+escPlate(row.address||"")+'" type="button">複製地址</button>'+
+      (row.tel?'<button data-plate-office-action="call" data-value="'+escPlate(row.tel)+'" type="button">撥打電話</button>':"")+
+      '</div></article>';
+  }).join("");
+}
+async function loadOffices(){
+  officeFetchAt=Date.now();
+  try{
+    const res=await fetch(OFFICE_URL+"?v="+Date.now(),{cache:"no-store"});
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    const data=await res.json();
+    if(!data||!Array.isArray(data.items))throw new Error("invalid office directory");
+    officeData={...data,stale:false,error:""};
+    saveOfficeCache(data);
+  }catch(error){
+    const cached=loadOfficeCache();
+    if(cached&&Array.isArray(cached.items))officeData={...cached,stale:true,error:""};
+    else officeData={status:"error",items:[],updatedAt:null,stale:false,error:String(error?.message||error)};
+  }
+  renderOfficeDirectory();
+}
+
 function logicalAnnouncementKey(row){return [row.office||"",row.category||"",row.startNumber||"",row.endNumber||""].join("|")}
 function loadChangeLog(){const x=loadPlateJson(CHANGE_LOG_KEY,[]);return Array.isArray(x)?x:[]}
 function saveChangeLog(rows){savePlateJson(CHANGE_LOG_KEY,rows.slice(0,80))}
@@ -256,6 +330,7 @@ function openPlateDetail(row){
   const status=auctionState(row),range=row.startNumber===row.endNumber?row.startNumber:row.startNumber+" ～ "+row.endNumber;
   title.textContent=range;
   const matches=announcementMatchesWatch(row);
+  const officeInfo=findOfficeInfo(row.office);
   body.innerHTML=
     '<div class="plate-detail-status"><span class="plate-auction-state '+status+'">'+escPlate(auctionLabel(status))+'</span><span>'+escPlate(row.office||"監理單位")+'</span></div>'+
     '<div class="plate-detail-grid">'+
@@ -266,6 +341,7 @@ function openPlateDetail(row){
       '<div><small>轉帳截止</small><b>'+escPlate(fmtTime(row.transferDeadline))+'</b></div>'+
       '<div><small>資料來源</small><b>交通部公路局</b></div>'+
     '</div>'+
+    (officeInfo?'<div class="plate-detail-match"><b>監理站資訊</b><div><span>'+escPlate(officeInfo.address||"地址未提供")+'</span>'+(officeInfo.tel?'<span>'+escPlate(officeInfo.tel)+'</span>':"")+'</div></div>':"")+
     (matches.length?'<div class="plate-detail-match"><b>你的候選命中</b><div>'+matches.map(x=>'<span>'+escPlate(x.plate)+'</span>').join("")+'</div></div>':'')+
     '<div class="plate-detail-note">COLA GO 顯示的是官方公告資料。公開開放資料不含逐筆目前出價與出價次數；正式競標前請到監理服務網確認。官方規則為截止前 3 分鐘內若有兩人以上繼續出高價，該號牌自動延長 3 分鐘，最多延長 10 次。</div>';
   if(bid){
@@ -476,7 +552,8 @@ function bind(){
   ensurePlateV4Panels();
   renderChecklist();
   renderAnnouncementChanges();
-  renderWatchList();updateNotifyText();loadAnnouncements();
+  renderOfficeDirectory();
+  renderWatchList();updateNotifyText();loadAnnouncements();loadOffices();
 
   const search=$p("#plateSearchBtn");
   if(search)search.onclick=()=>{
@@ -574,6 +651,33 @@ function bind(){
     if(window.toast)toast("領牌進度已重設");
   };
 
+
+  const officeSearch=$p("#plateOfficeSearchBtn"),officeSearchInput=$p("#plateOfficeSearchInput");
+  if(officeSearch)officeSearch.onclick=()=>{
+    officeQuery=officeSearchInput?.value||"";
+    renderOfficeDirectory();
+  };
+  if(officeSearchInput)officeSearchInput.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();officeSearch?.click()}});
+  const officeList=$p("#plateOfficeList");
+  if(officeList)officeList.onclick=async e=>{
+    const btn=e.target.closest("[data-plate-office-action]");
+    if(!btn)return;
+    const action=btn.dataset.plateOfficeAction,value=btn.dataset.value||"";
+    if(action==="call"&&value){
+      const phone=value.replace(/[^0-9+]/g,"");
+      if(phone)window.location.href="tel:"+phone;
+      return;
+    }
+    if(action==="copy"&&value){
+      try{
+        await navigator.clipboard.writeText(value);
+        if(window.toast)window.toast("地址已複製");
+      }catch{
+        prompt("請複製地址",value);
+      }
+    }
+  };
+
   const announcementList=$p("#plateAnnouncementList");
   if(announcementList)announcementList.onclick=e=>{
     const btn=e.target.closest("[data-plate-announcement-action]");
@@ -603,7 +707,12 @@ function bind(){
   if(last&&searchInput)searchInput.value=last;
   setInterval(()=>{checkDeadlines();checkAnnouncementAlerts();renderAnnouncements()},10000);
   setInterval(()=>{if(document.visibilityState==="visible")loadAnnouncements()},600000);
-  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&Date.now()-announcementFetchAt>300000)loadAnnouncements()});
+  setInterval(()=>{if(document.visibilityState==="visible"&&Date.now()-officeFetchAt>1800000)loadOffices()},1800000);
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState!=="visible")return;
+    if(Date.now()-announcementFetchAt>300000)loadAnnouncements();
+    if(Date.now()-officeFetchAt>1800000)loadOffices();
+  });
   checkDeadlines();
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",bind,{once:true});else bind();
