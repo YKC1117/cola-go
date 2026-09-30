@@ -192,11 +192,17 @@
       const ratio=tdxBrand.length?Math.round(live/tdxBrand.length*100):0;
       const health=operatorSourceHealth[profile.key]||null;
       const degraded=health?.syncStatus==="degraded";
-      const officialGuideOnly=profile.key==="icharging"||profile.key==="tesla";
-      const source=supplementBrand.length
-        ?(degraded?"TDX＋官方舊資料":"TDX＋業者官方")
-        :(officialGuideOnly?(live?"TDX 即時＋官方入口":"TDX＋官方入口"):(live?"TDX 即時":"TDX"));
-      return {profile,tdx:tdxBrand.length,supplement:supplementBrand.length,live,merged,ratio,source,degraded,officialGuideOnly};
+      const pendingOfficial=profile.key==="icharging"&&!health;
+      const teslaPriority=profile.key==="tesla";
+      const officialGuideOnly=pendingOfficial||teslaPriority;
+      const source=pendingOfficial
+        ?(live?"TDX 即時・官方資料待新增":"TDX・官方資料待新增")
+        :teslaPriority
+          ?(live?"TDX 即時＋Tesla 官方":"TDX＋Tesla 官方")
+          :supplementBrand.length
+            ?(degraded?"TDX＋官方舊資料":"TDX＋業者官方")
+            :(live?"TDX 即時":"TDX");
+      return {profile,tdx:tdxBrand.length,supplement:supplementBrand.length,live,merged,ratio,source,degraded,officialGuideOnly,pendingOfficial,teslaPriority};
     });
 
     const mergedTotal=rows.reduce((sum,x)=>sum+x.merged,0);
@@ -217,8 +223,10 @@
       }
       const row=rows.find(item=>item.profile.key===key);
       if(!row)return;
-      if(status)status.textContent=row.merged+" 站 · "+row.live+" 即時";
-      button.dataset.sourceMode=row.supplement?"official-cache":(row.officialGuideOnly?"official-guide":"tdx");
+      if(status)status.textContent=row.pendingOfficial
+        ?row.merged+" 站 · 待新增導入中"
+        :row.merged+" 站 · "+row.live+" 即時";
+      button.dataset.sourceMode=row.pendingOfficial?"pending":row.supplement?"official-cache":(row.officialGuideOnly?"official-guide":"tdx");
       button.classList.toggle("has-live",row.live>0);
       button.classList.toggle("has-official-supplement",row.supplement>0);
       button.setAttribute("aria-label",row.profile.brand+"，"+row.merged+" 站，"+row.live+" 站有即時槍況");
@@ -230,7 +238,7 @@
         '<span class="charging-coverage-stats">'+
           '<strong>'+row.merged+'</strong><small>站</small>'+
           '<em>'+row.live+' 即時</em>'+
-          (row.supplement?'<em class="official">'+row.supplement+' 官方補</em>':'')+
+          (row.pendingOfficial?'<em class="official">待新增導入中</em>':row.teslaPriority?'<em class="official">優先整合</em>':row.supplement?'<em class="official">'+row.supplement+' 官方補</em>':'')+
         '</span>'+
       '</button>'
     ).join("");
