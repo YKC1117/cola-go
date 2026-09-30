@@ -183,7 +183,7 @@ function renderAnnouncements(){
     stateEl.textContent=announcementData.error&&!items.length?"讀取失敗":announcementData.stale?"上次可用":"官方資料";
   }
   if($p("#plateAnnouncementUpdated"))$p("#plateAnnouncementUpdated").textContent=fmtUpdated(announcementData.updatedAt);
-  $p("[data-plate-filter]").forEach(b=>b.classList.toggle("active",b.dataset.plateFilter===announcementFilter));
+  $$p("[data-plate-filter]").forEach(b=>b.classList.toggle("active",b.dataset.plateFilter===announcementFilter));
   if(!items.length){
     const msg=announcementData.status==="pending-sync"?"官方資料第一次同步中；仍可先使用上方監理服務網入口。":announcementData.error?"目前讀不到公告資料，請直接開啟監理服務網確認。":"目前沒有未決標公告資料。";
     root.innerHTML='<div class="plate-watch-empty">'+escPlate(msg)+'</div>';
@@ -313,8 +313,8 @@ function bind(){
   const clear=$p("#plateClearSearch");
   if(clear)clear.onclick=()=>{announcementQuery="";if(searchInput)searchInput.value="";renderAnnouncements()};
 
-  $p("[data-plate-filter]").forEach(btn=>btn.onclick=()=>{announcementFilter=btn.dataset.plateFilter||"all";renderAnnouncements()});
-  ${PLACEHOLDER2}(btn=>btn.onclick=()=>{
+  $$p("[data-plate-filter]").forEach(btn=>btn.onclick=()=>{announcementFilter=btn.dataset.plateFilter||"all";renderAnnouncements()});
+  $$p("[data-plate-jump]").forEach(btn=>btn.onclick=()=>{
     const target=btn.dataset.plateJump;
     if(target==="search"){scrollToPlate("#plateSearchInput");$p("#plateSearchInput")?.focus();return}
     if(target==="watch"){announcementFilter="watch";renderAnnouncements();scrollToPlate(".plate-watch-panel");return}
