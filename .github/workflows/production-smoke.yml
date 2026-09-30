@@ -48,6 +48,8 @@ jobs:
           curl -fsSL "$base/" -o "$work/index.html"
           curl -fsSL "$base/assets/app.js" -o "$work/app.js"
           curl -fsSL "$base/assets/tdx-runtime.js" -o "$work/tdx-runtime.js"
+          curl -fsSL "$base/assets/plate.js" -o "$work/plate.js"
+          curl -fsSL "$base/data/plates/announcements.json" -o "$work/plate-announcements.json"
           curl -fsSL "$base/manifest.webmanifest" -o "$work/manifest.webmanifest"
           curl -fsSL "$base/sw.js" -o "$work/sw.js"
           curl -fsSL "$base/downloads/oil-driver.shortcut" -o "$work/oil-driver.shortcut"
@@ -77,6 +79,8 @@ jobs:
           fi
 
           grep -Fq 'assets/tdx-runtime.js' "$work/index.html"
+          grep -Fq 'assets/plate.js' "$work/index.html"
+          grep -Fq './data/plates/announcements.json' "$work/plate.js"
           grep -Fq './downloads/oil-driver.shortcut' "$work/index.html"
           grep -Fq './downloads/tesla-driver.shortcut' "$work/index.html"
           grep -Fq '下載油車助手 v1.3（正式檔）' "$work/index.html"
@@ -124,7 +128,7 @@ jobs:
           grep -Fq 'renderCCTVRoadOverview' "$work/app.js"
           grep -Fq 'renderCCTVGroups' "$work/app.js"
           grep -Fq '里程分段' "$work/app.js"
-          grep -Fq 'cola-go-ui-v6-40' "$work/sw.js"
+          grep -Fq 'cola-go-ui-v6-41' "$work/sw.js"
           ! grep -Fq 'www.icloud.com/shortcuts/' "$work/index.html"
           ! grep -Eqi 'waze\.com|data-map="waze"' "$work/index.html" "$work/app.js"
           grep -Fq 'el.hasAttribute("data-home-reload")' "$work/app.js"
@@ -143,6 +147,7 @@ jobs:
           import json, pathlib, sys
           root=pathlib.Path(sys.argv[1])
           status=json.load(open(root/"status.json", encoding="utf-8"))
+plate_announcements=json.load(open(root/"plate-announcements.json", encoding="utf-8"))
           charging=json.load(open(root/"charging.json", encoding="utf-8"))
           traffic=json.load(open(root/"traffic.json", encoding="utf-8"))
           tunnel=json.load(open(root/"tunnel.json", encoding="utf-8"))
@@ -156,6 +161,8 @@ jobs:
           tail=json.load(open(tail_path, encoding="utf-8")) if tail_path.exists() else None
 
           assert status["source"] == "TDX／交通部"
+assert plate_announcements.get("status") in {"pending-sync","live","stale"}
+assert isinstance(plate_announcements.get("items"), list)
           assert status["datasets"]["charging"]["count"] > 0
           assert status["datasets"]["traffic"]["count"] > 0
           assert status["datasets"]["tunnel"]["count"] > 0
