@@ -127,7 +127,7 @@ function ensurePlateV4Panels(){
   }
   const manualLabel=$p("#plateCurrentPrice")?.closest("label")?.querySelector("small");
   if(manualLabel)manualLabel.textContent="手動記錄目前價格（可選）";
-  $p(".plate-guide-body article").forEach(article=>{
+  $$p(".plate-guide-body article").forEach(article=>{
     const title=article.querySelector("b")?.textContent||"";
     const p=article.querySelector("p");
     if(!p)return;
