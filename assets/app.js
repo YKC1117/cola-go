@@ -462,6 +462,9 @@ function chargingStatusMarkup(x){
   if(x.liveStale)return unknown("狀態已逾時","不列入「有空槍」 · "+updated,"is-stale");
   const counts=chargingLiveCounts(x);
   if(!counts.total){
+    if(profile?.key==="tesla"){
+      return unknown("即時空槍待 Tesla App 確認","TDX 暫無可安全判讀的即時槍況 · 請以 Tesla App／車機當下顯示為準");
+    }
     const detail=profile
       ? "TDX 尚未收到 "+profile.brand+" 即時槍況 · 可由業者官方確認"
       : "TDX 目前沒有可安全判讀的即時槍況 · "+updated;
@@ -672,6 +675,8 @@ function renderCharging(){
     const priorityNetwork=CHARGING_PRIORITY_KEYS.includes(profile?.key||"");
     const powerDecision=priorityNetwork?chargingDecisionPowerLabel(x):chargingPowerLabel(x);
     const rateDecision=priorityNetwork?chargingDecisionRateLabel(x):chargingRateSummary(x.chargingRate);
+    const officialDecisionURL=priorityNetwork?(x.officialSourceURL||profile?.rateGuide||profile?.stationMap||profile?.official||""):"";
+    const officialDecisionLabel=profile?.key==="tesla"?"Tesla 官方":"官方費率";
     return '<article class="list-item charging-item '+(availableNow?'is-available ':'')+(majorNetwork?'is-major-network':'')+(priorityNetwork?' is-priority-network':'')+'">'+
       '<div class="list-head">'+
         '<div><div class="charging-title-line"><h3>'+esc(x.name)+'</h3></div><div class="meta">'+esc(meta)+'</div></div>'+
@@ -692,6 +697,7 @@ function renderCharging(){
         '<button class="go charging-go-primary" data-charge-go="'+destination+'">直接導航</button>'+
         '<button class="charging-map-choice" data-charge-nav-toggle="'+esc(key)+'">選地圖</button>'+
         '<button class="favorite-action '+(favorite?'active':'')+'" data-charge-favorite="'+esc(key)+'" aria-pressed="'+favorite+'">'+(favorite?'已收藏':'收藏')+'</button>'+
+        (officialDecisionURL?'<button data-charge-official="'+esc(officialDecisionURL)+'">'+esc(officialDecisionLabel)+'</button>':"")+
         (!tdx&&["1","3","5"].includes(String(x.road))?'<button data-camera-road="'+esc(x.road)+'">CCTV</button>':"")+
       '</div>'+
       '<div class="charging-nav-menu" data-charge-nav-menu="'+esc(key)+'" hidden>'+
@@ -724,8 +730,9 @@ function renderCharging(){
     window.open(url,"_blank","noopener");
   });
   $$("[data-charge-google]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/dir/?api=1&destination="+b.dataset.chargeGoogle+"&travelmode=driving","_blank","noopener"));
-  $$("[data-charge-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?daddr="+b.dataset.chargeApple+"&dirflg=d","_blank","noopener"));
-  $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
+  $("[data-charge-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?daddr="+b.dataset.chargeApple+"&dirflg=d","_blank","noopener"));
+  $("[data-charge-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.chargeOfficial,"_blank","noopener"));
+  $("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
   $("[data-charge-show-nearby]",root)?.addEventListener("click",()=>{
     state.chargingAvailableOnly=false;
     renderCharging();
