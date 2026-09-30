@@ -27,6 +27,7 @@ jobs:
           python3 -m json.tool data/marketplace.json >/dev/null
           python3 -m json.tool data/community.json >/dev/null
           python3 -m json.tool data/tesla-locations.json >/dev/null
+          python3 -m json.tool data/plates/announcements.json >/dev/null
       - name: Smoke test Tainan live parking source
         if: github.ref == 'refs/heads/feature/tainan-live-parking'
         run: |

@@ -435,12 +435,37 @@ Siri「特斯拉助手」：
 </div>
 
 <section class="plate-panel">
-<div class="plate-panel-head"><div><span class="mini-label">FIND A PLATE</span><h2>找我想要的號碼</h2></div><span class="plate-trust">官方查詢</span></div>
+<div class="plate-panel-head"><div><span class="mini-label">FIND A PLATE</span><h2>找我想要的號碼</h2></div><span class="plate-trust">官方資料</span></div>
 <div class="plate-search-row">
-<input autocomplete="off" id="plateSearchInput" inputmode="text" maxlength="12" placeholder="例如 1117、8888、EQA-1117"/>
-<button id="plateSearchOfficial" type="button"><svg><use href="#i-search"></use></svg><span>去官方找</span></button>
+<input autocomplete="off" id="plateSearchInput" inputmode="text" maxlength="12" placeholder="例如 1117、8888、CES-8888"/>
+<button id="plateSearchBtn" type="button"><svg><use href="#i-search"></use></svg><span>查公告</span></button>
 </div>
-<p class="plate-helper" id="plateSearchHint">監理服務網目前仍需要選擇監理單位／車種並完成驗證碼；COLA GO 不會假裝能略過官方驗證。</p>
+<div class="plate-search-actions">
+<button class="plate-inline-link" id="plateClearSearch" type="button">清除搜尋</button>
+<button class="plate-inline-link" data-url="https://www.mvdis.gov.tw/m3-emv-plate/webpickno/queryPickNo" type="button">開啟官方可選號碼</button>
+</div>
+<p class="plate-helper" id="plateSearchHint">COLA GO 會先搜尋交通部公路局每日更新的標牌公告；一般可選號碼仍以監理服務網即時查詢為準。</p>
+</section>
+
+<section class="plate-panel plate-announcement-panel">
+<div class="plate-panel-head">
+<div><span class="mini-label">OFFICIAL AUCTION DATA</span><h2>官方標牌公告</h2></div>
+<span class="plate-source-state" id="plateAnnouncementSourceState">讀取中</span>
+</div>
+<div class="plate-announcement-summary">
+<div><b id="plateLiveCount">—</b><small>競標中</small></div>
+<div><b id="plateUpcomingCount">—</b><small>即將開標</small></div>
+<div><b id="plateMatchedCount">—</b><small>符合候選</small></div>
+</div>
+<div class="plate-filter-row" aria-label="標牌公告篩選">
+<button class="active" data-plate-filter="all" type="button">全部</button>
+<button data-plate-filter="live" type="button">競標中</button>
+<button data-plate-filter="upcoming" type="button">即將開標</button>
+<button data-plate-filter="watch" type="button">我的候選</button>
+</div>
+<div class="plate-announcement-meta"><span id="plateAnnouncementUpdated">等待官方資料</span><button data-url="https://data.gov.tw/dataset/96623" type="button">查看資料來源</button></div>
+<div class="plate-announcement-list" id="plateAnnouncementList"><div class="plate-watch-empty">正在讀取交通部公路局標牌公告。</div></div>
+<p class="plate-helper">這裡使用交通部公路局開放資料整理「未決標標牌公告」。官方資料集更新頻率為每日；競標中的目前價格、出價次數與延長決標時間，仍請按「官方即時競標」確認。</p>
 </section>
 
 <section class="plate-panel plate-watch-panel">
@@ -481,7 +506,7 @@ Siri「特斯拉助手」：
 <div class="plate-source-list">
 <button data-url="https://www.mvdis.gov.tw/m3-emv-plate/webpickno/queryPickNo"><span><b>可選號牌／選號</b><small>交通部公路局・監理服務網</small></span><svg><use href="#i-external"></use></svg></button>
 <button data-url="https://www.mvdis.gov.tw/m3-emv-plate/bid/announce"><span><b>標售公告／競標</b><small>交通部公路局・監理服務網</small></span><svg><use href="#i-external"></use></svg></button>
-<button data-url="https://data.gov.tw/dataset/96623"><span><b>標牌公告開放資料</b><small>政府資料開放平臺・每日更新資料集</small></span><svg><use href="#i-external"></use></svg></button>
+<button data-url="https://data.gov.tw/dataset/96623"><span><b>標牌公告開放資料</b><small>政府資料開放平臺・每日更新／COLA GO 自動同步</small></span><svg><use href="#i-external"></use></svg></button>
 <button data-url="https://www.tesla.com/zh_TW/support/delivery-day"><span><b>Tesla 交付／領牌流程</b><small>Tesla 台灣官方支援</small></span><svg><use href="#i-external"></use></svg></button>
 </div>
 <p class="plate-disclaimer">COLA GO 是資訊整理與提醒工具，不是監理機關。正式可選號碼、出價、決標、付款與領牌結果，一律以交通部公路局監理服務網當下顯示為準。</p>

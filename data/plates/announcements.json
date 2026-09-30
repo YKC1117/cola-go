@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "status": "pending-sync",
+  "source": "交通部公路局開放資料：標牌公告",
+  "sourceUrl": "https://www.thb.gov.tw/News_Content_thbOpenData.aspx?n=13&s=506",
+  "datasetUrl": "https://data.gov.tw/dataset/96623",
+  "downloadUrl": "https://www.thb.gov.tw/Common/ThbOpenDataService.ashx?SN=506&format=1",
+  "updatedAt": null,
+  "sourceUpdatedAt": null,
+  "sourceHash": null,
+  "count": 0,
+  "items": []
+}

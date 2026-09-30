@@ -1,0 +1,48 @@
+name: Sync official plate announcements
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "scripts/sync_plate_announcements.py"
+      - ".github/workflows/sync-plate-announcements.yml"
+  schedule:
+    - cron: "27 1,13 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cola-go-plate-announcements
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate parser syntax
+        run: python3 -m py_compile scripts/sync_plate_announcements.py
+      - name: Sync official plate announcements
+        run: python3 scripts/sync_plate_announcements.py
+      - name: Commit changed official cache
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add data/plates/announcements.json
+          if git diff --cached --quiet; then
+            echo "No plate announcement change."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: refresh official plate announcements"
+          git pull --rebase origin main
+          git push origin HEAD:main
