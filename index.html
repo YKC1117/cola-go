@@ -427,11 +427,11 @@ Siri「特斯拉助手」：
 <div class="plate-source-pill"><i></i><span>交通部公路局</span></div>
 </div>
 
-<div class="plate-quick-actions" aria-label="官方車牌服務">
-<button data-url="https://www.mvdis.gov.tw/m3-emv-plate/webpickno/queryPickNo"><b>目前可選</b><small>監理服務網</small></button>
-<button data-url="https://www.mvdis.gov.tw/m3-emv-plate/bid/announce"><b>標牌公告</b><small>即將開標</small></button>
-<button data-url="https://www.mvdis.gov.tw/m3-emv-plate/bid/queryBiding"><b>競標中</b><small>官方即時頁</small></button>
-<button data-url="https://www.mvdis.gov.tw/m3-emv-plate/bid/queryBid"><b>歷史標售</b><small>查成交紀錄</small></button>
+<div class="plate-quick-actions" aria-label="車牌中心快速操作">
+<button data-plate-jump="search"><b>找號碼</b><small>直接在 COLA GO 查</small></button>
+<button data-plate-jump="live"><b>競標中</b><small>看正在進行</small></button>
+<button data-plate-jump="upcoming"><b>即將開標</b><small>提前準備</small></button>
+<button data-plate-jump="watch"><b>我的候選</b><small>守住想要的牌</small></button>
 </div>
 
 <section class="plate-panel">
@@ -442,9 +442,9 @@ Siri「特斯拉助手」：
 </div>
 <div class="plate-search-actions">
 <button class="plate-inline-link" id="plateClearSearch" type="button">清除搜尋</button>
-<button class="plate-inline-link" data-url="https://www.mvdis.gov.tw/m3-emv-plate/webpickno/queryPickNo" type="button">開啟官方可選號碼</button>
+<span class="plate-inline-note">查詢、篩選、收藏都留在 COLA GO</span>
 </div>
-<p class="plate-helper" id="plateSearchHint">COLA GO 會先搜尋交通部公路局每日更新的標牌公告；一般可選號碼仍以監理服務網即時查詢為準。</p>
+<p class="plate-helper" id="plateSearchHint">先在這裡查官方標牌公告、競標中與即將開標資料。只有正式選號、出價或付款時，才需要進監理服務網。</p>
 </section>
 
 <section class="plate-panel plate-announcement-panel">
@@ -465,8 +465,20 @@ Siri「特斯拉助手」：
 </div>
 <div class="plate-announcement-meta"><span id="plateAnnouncementUpdated">等待官方資料</span><button data-url="https://data.gov.tw/dataset/96623" type="button">查看資料來源</button></div>
 <div class="plate-announcement-list" id="plateAnnouncementList"><div class="plate-watch-empty">正在讀取交通部公路局標牌公告。</div></div>
-<p class="plate-helper">這裡使用交通部公路局開放資料整理「未決標標牌公告」。官方資料集更新頻率為每日；競標中的目前價格、出價次數與延長決標時間，仍請按「官方即時競標」確認。</p>
+<p class="plate-helper">這裡使用交通部公路局開放資料整理「未決標標牌公告」。查詢、篩選與候選比對都在 COLA GO 完成；只有真的要正式出價時才會離開本站。</p>
 </section>
+
+<dialog class="plate-detail-dialog" id="plateDetailDialog">
+<div class="plate-detail-shell">
+<div class="plate-detail-head"><div><span class="mini-label">PLATE DETAIL</span><h2 id="plateDetailTitle">號牌詳情</h2></div><button aria-label="關閉" id="plateDetailClose" type="button"><svg><use href="#i-close"></use></svg></button></div>
+<div class="plate-detail-body" id="plateDetailBody"></div>
+<div class="plate-detail-actions">
+<button class="secondary-action" id="plateDetailWatch" type="button">加入候選</button>
+<button class="primary" id="plateDetailBid" type="button">正式競標</button>
+</div>
+<p class="plate-helper">正式出價、登入與付款由交通部公路局監理服務網處理；COLA GO 不代替你花錢。</p>
+</div>
+</dialog>
 
 <section class="plate-panel plate-watch-panel">
 <div class="plate-panel-head"><div><span class="mini-label">MY WATCHLIST</span><h2>我的候選車牌</h2></div><span class="plate-count" id="plateWatchCount">0</span></div>
