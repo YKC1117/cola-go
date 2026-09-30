@@ -3,10 +3,14 @@
 const STORE_KEY="cola-go-plate-watch-v1";
 const ALERT_KEY="cola-go-plate-alerts-v2";
 const ANNOUNCEMENT_CACHE_KEY="cola-go-plate-announcements-v1";
+const ANNOUNCEMENT_SNAPSHOT_KEY="cola-go-plate-announcement-snapshot-v1";
+const CHANGE_LOG_KEY="cola-go-plate-change-log-v1";
+const CHECKLIST_KEY="cola-go-plate-checklist-v1";
 const ANNOUNCEMENT_URL="./data/plates/announcements.json";
 const official={
   pick:"https://www.mvdis.gov.tw/m3-emv-plate/webpickno/queryPickNo",
-  bid:"https://www.mvdis.gov.tw/m3-emv-plate/bid/queryBiding"
+  bid:"https://www.mvdis.gov.tw/m3-emv-plate/bid/queryBiding",
+  history:"https://www.mvdis.gov.tw/m3-emv-plate/bid/queryBid"
 };
 let detailRow=null;
 const $p=q=>document.querySelector(q);
@@ -25,6 +29,8 @@ function loadAlerts(){try{return JSON.parse(localStorage.getItem(ALERT_KEY)||"{}
 function saveAlerts(x){try{localStorage.setItem(ALERT_KEY,JSON.stringify(x))}catch{}}
 function loadAnnouncementCache(){try{return JSON.parse(localStorage.getItem(ANNOUNCEMENT_CACHE_KEY)||"null")}catch{return null}}
 function saveAnnouncementCache(x){try{localStorage.setItem(ANNOUNCEMENT_CACHE_KEY,JSON.stringify(x))}catch{}}
+function loadPlateJson(key,fallback){try{const x=JSON.parse(localStorage.getItem(key)||"null");return x??fallback}catch{return fallback}}
+function savePlateJson(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch{}}
 function notify(title,body,tag="cola-go-plate"){
   if(!("Notification" in window)||Notification.permission!=="granted")return;
   try{new Notification(title,{body,icon:"./assets/logo.svg",tag})}catch{}
@@ -78,6 +84,171 @@ function scrollToPlate(selector){
   const el=$p(selector);
   if(el)el.scrollIntoView({behavior:"smooth",block:"start"});
 }
+
+const CHECKLIST_STEPS=[
+  {id:"order",title:"訂車",desc:"先確認訂單與預計交車安排，車牌作業不要早到和交車進度脫節。"},
+  {id:"vin",title:"VIN／車身號碼",desc:"取得車輛資料後，再進行需要車身資料的選號或領牌作業。"},
+  {id:"find",title:"找牌",desc:"先在 COLA GO 查標牌公告、收藏候選並設定心理預算。"},
+  {id:"bid",title:"選號／競標",desc:"正式選號、登入、身分驗證與出價仍由交通部公路局監理服務網處理。"},
+  {id:"win",title:"確認得標／選號結果",desc:"以監理服務網當下顯示的正式結果為準，COLA GO 不代替官方裁定。"},
+  {id:"pay",title:"付款＋保存證明",desc:"依該次官方公告與得標頁面期限完成付款，並保留繳費與得標證明。"},
+  {id:"advisor",title:"通知 Tesla 交付顧問",desc:"自行競標得標並完成繳費後，盡快把牌號與證明提供交付顧問；實際送件時間依交付顧問安排。"},
+  {id:"register",title:"領牌作業",desc:"確認領牌由本人或交付端辦理，並依實際送件進度準備所需文件。"},
+  {id:"delivery",title:"交車",desc:"交車前再次核對車牌、文件與車輛資料，完成最後確認。"}
+];
+function ensurePlateV4Panels(){
+  const searchPanel=$p("#plateSearchInput")?.closest(".plate-panel");
+  if(searchPanel&&!$p("#plateSearchResultPanel")){
+    searchPanel.insertAdjacentHTML("afterend",
+      '<section class="plate-panel" id="plateSearchResultPanel" hidden>'+
+      '<div class="plate-panel-head"><div><span class="mini-label">COLA GO CHECK</span><h2>站內查詢判讀</h2></div><span class="plate-trust" id="plateSearchResultState">站內判讀</span></div>'+
+      '<div id="plateSearchResult"></div>'+
+      '<p class="plate-helper">COLA GO 會先比對已同步的官方標牌公告；一般可選號碼仍需到監理服務網完成監理單位、車種等條件與驗證碼查詢，本站不會把未驗證資料標成「可選」。</p>'+
+      '</section>');
+  }
+  const announcementPanel=$p(".plate-announcement-panel");
+  if(announcementPanel&&!$p("#plateChangePanel")){
+    announcementPanel.insertAdjacentHTML("afterend",
+      '<section class="plate-panel" id="plateChangePanel">'+
+      '<div class="plate-panel-head"><div><span class="mini-label">WHAT CHANGED</span><h2>官方公告最新變化</h2></div><span class="plate-count" id="plateChangeCount">0</span></div>'+
+      '<p class="plate-panel-intro">由這台裝置比對每次成功取得的官方公告快照，標出新公告、開始競標、決標時間或轉帳期限變動與候選命中。這不是逐筆出價即時行情。</p>'+
+      '<div class="plate-watch-list" id="plateChangeList"></div>'+
+      '</section>');
+  }
+  const watchPanel=$p(".plate-watch-panel");
+  if(watchPanel&&!$p("#plateChecklistPanel")){
+    watchPanel.insertAdjacentHTML("afterend",
+      '<section class="plate-panel" id="plateChecklistPanel">'+
+      '<div class="plate-panel-head"><div><span class="mini-label">PLATE CHECKLIST</span><h2>領牌進度 Checklist</h2></div><span class="plate-count" id="plateChecklistProgress">0 / '+CHECKLIST_STEPS.length+'</span></div>'+
+      '<p class="plate-panel-intro">照自己的實際進度勾選，資料只存在這台裝置。正式資格、付款與領牌仍以官方及交付端實際安排為準。</p>'+
+      '<div class="plate-watch-list" id="plateChecklist"></div>'+
+      '<div class="plate-watch-actions"><button id="plateChecklistReset" type="button">全部重設</button></div>'+
+      '</section>');
+  }
+  const manualLabel=$p("#plateCurrentPrice")?.closest("label")?.querySelector("small");
+  if(manualLabel)manualLabel.textContent="手動記錄目前價格（可選）";
+  $$p(".plate-guide-body article").forEach(article=>{
+    const title=article.querySelector("b")?.textContent||"";
+    const p=article.querySelector("p");
+    if(!p)return;
+    if(title.includes("最後幾分鐘"))p.textContent="官方規則：截止前 3 分鐘內若有兩人以上繼續出高價，該號牌會自動延長 3 分鐘，最多延長 10 次；仍以監理服務網當下時間為準。";
+    if(title.includes("Tesla 車主"))p.textContent="自行競標得標並完成繳費後，就把牌號與證明盡快提供 Tesla 交付顧問；實際送件與領牌時間依交付顧問安排。";
+  });
+}
+function loadChecklist(){const x=loadPlateJson(CHECKLIST_KEY,{});return x&&typeof x==="object"&&!Array.isArray(x)?x:{}}
+function renderChecklist(){
+  const root=$p("#plateChecklist"),progress=$p("#plateChecklistProgress");
+  if(!root)return;
+  const state=loadChecklist();
+  const done=CHECKLIST_STEPS.filter(x=>state[x.id]).length;
+  if(progress)progress.textContent=done+" / "+CHECKLIST_STEPS.length;
+  root.innerHTML=CHECKLIST_STEPS.map((step,index)=>{
+    const checked=!!state[step.id];
+    return '<article class="plate-watch-card">'+
+      '<div class="plate-watch-top"><div><div class="plate-watch-number" style="font-size:15px">'+String(index+1).padStart(2,"0")+'・'+escPlate(step.title)+'</div><small class="meta">'+escPlate(step.desc)+'</small></div>'+
+      '<span class="plate-budget-state '+(checked?"":"warn")+'">'+(checked?"已完成":"待完成")+'</span></div>'+
+      '<div class="plate-watch-actions"><button data-plate-check-toggle="'+escPlate(step.id)+'" type="button">'+(checked?"改為未完成":"標記完成")+'</button></div>'+
+      '</article>';
+  }).join("");
+}
+function logicalAnnouncementKey(row){return [row.office||"",row.category||"",row.startNumber||"",row.endNumber||""].join("|")}
+function loadChangeLog(){const x=loadPlateJson(CHANGE_LOG_KEY,[]);return Array.isArray(x)?x:[]}
+function saveChangeLog(rows){savePlateJson(CHANGE_LOG_KEY,rows.slice(0,80))}
+function addAnnouncementChange(events,event){
+  const key=[event.type,event.key,event.from||"",event.to||""].join("|");
+  if(events.some(x=>x.dedupe===key))return;
+  events.unshift({...event,dedupe:key,at:new Date().toISOString()});
+}
+function renderAnnouncementChanges(){
+  const root=$p("#plateChangeList"),count=$p("#plateChangeCount");
+  if(!root)return;
+  const events=loadChangeLog();
+  if(count)count.textContent=String(events.length);
+  if(!events.length){
+    root.innerHTML='<div class="plate-watch-empty"><b>已建立變化追蹤區</b><br>第一次成功同步會先建立基準；之後官方公告有新增、時間調整或候選命中時，會在這裡留下這台裝置的差異紀錄。</div>';
+    return;
+  }
+  root.innerHTML=events.slice(0,20).map(event=>
+    '<article class="plate-watch-card">'+
+      '<div class="plate-watch-top"><div><div class="plate-watch-number" style="font-size:15px">'+escPlate(event.title||event.type)+'</div><small class="meta">'+escPlate(event.range||"")+(event.office?"・"+escPlate(event.office):"")+'</small></div><span class="plate-budget-state">'+escPlate(event.type)+'</span></div>'+
+      '<div class="plate-watch-official">'+escPlate(fmtTime(event.at))+'・依官方公告快照比對</div>'+
+      (event.note?'<div class="plate-detail-note">'+escPlate(event.note)+'</div>':"")+
+    '</article>'
+  ).join("");
+}
+function recordAnnouncementChanges(data){
+  if(!data||!Array.isArray(data.items)||data.stale||data.error)return;
+  const previous=loadPlateJson(ANNOUNCEMENT_SNAPSHOT_KEY,null);
+  const currentItems=data.items.map(row=>({
+    key:logicalAnnouncementKey(row),office:row.office||"",category:row.category||"",startNumber:row.startNumber||"",endNumber:row.endNumber||"",
+    startAt:row.startAt||null,endAt:row.endAt||null,transferDeadline:row.transferDeadline||null,status:auctionState(row)
+  }));
+  const snapshot={sourceHash:data.sourceHash||"",updatedAt:data.updatedAt||null,capturedAt:new Date().toISOString(),items:currentItems};
+  if(!previous||!Array.isArray(previous.items)){
+    savePlateJson(ANNOUNCEMENT_SNAPSHOT_KEY,snapshot);
+    renderAnnouncementChanges();
+    return;
+  }
+  const prevMap=new Map(previous.items.map(row=>[row.key,row]));
+  const curMap=new Map(currentItems.map(row=>[row.key,row]));
+  const currentByKey=new Map(data.items.map(row=>[logicalAnnouncementKey(row),row]));
+  const events=loadChangeLog();
+  currentItems.forEach(row=>{
+    const old=prevMap.get(row.key),raw=currentByKey.get(row.key);
+    const range=row.startNumber===row.endNumber?row.startNumber:row.startNumber+" ～ "+row.endNumber;
+    const watched=raw?announcementMatchesWatch(raw):[];
+    if(!old){
+      addAnnouncementChange(events,{type:"新公告",key:row.key,title:"新增標牌公告",range,office:row.office,note:"官方公告清單出現新的號牌範圍。"});
+      if(watched.length)addAnnouncementChange(events,{type:"候選命中",key:row.key,title:"候選號碼出現",range,office:row.office,note:"命中："+watched.map(x=>x.plate).join("、")});
+      return;
+    }
+    if(old.status!==row.status&&row.status==="live")addAnnouncementChange(events,{type:"開始競標",key:row.key,title:"公告已進入競標",range,office:row.office,from:old.status,to:row.status,note:"依官方公告起標時間判讀，目前已進入競標時段。"});
+    if(old.endAt!==row.endAt)addAnnouncementChange(events,{type:"時間變更",key:row.key,title:"決標時間有更新",range,office:row.office,from:old.endAt||"",to:row.endAt||"",note:"原："+fmtTime(old.endAt)+"；新："+fmtTime(row.endAt)});
+    if(old.startAt!==row.startAt)addAnnouncementChange(events,{type:"時間變更",key:row.key,title:"起標時間有更新",range,office:row.office,from:old.startAt||"",to:row.startAt||"",note:"原："+fmtTime(old.startAt)+"；新："+fmtTime(row.startAt)});
+    if(old.transferDeadline!==row.transferDeadline)addAnnouncementChange(events,{type:"期限變更",key:row.key,title:"轉帳截止有更新",range,office:row.office,from:old.transferDeadline||"",to:row.transferDeadline||"",note:"原："+fmtTime(old.transferDeadline)+"；新："+fmtTime(row.transferDeadline)});
+  });
+  previous.items.forEach(old=>{
+    if(curMap.has(old.key))return;
+    const range=old.startNumber===old.endNumber?old.startNumber:old.startNumber+" ～ "+old.endNumber;
+    addAnnouncementChange(events,{type:"公告移除",key:old.key,title:"公告已不在目前清單",range,office:old.office,note:"可能已結束、撤下或被官方更新；結果請以監理服務網為準。"});
+  });
+  saveChangeLog(events);
+  savePlateJson(ANNOUNCEMENT_SNAPSHOT_KEY,snapshot);
+  renderAnnouncementChanges();
+}
+function renderPlateSearchResult(value){
+  const panel=$p("#plateSearchResultPanel"),root=$p("#plateSearchResult"),state=$p("#plateSearchResultState");
+  if(!panel||!root)return;
+  const q=normalize(value);
+  if(!q){panel.hidden=true;root.innerHTML="";return}
+  panel.hidden=false;
+  const parts=plateParts(q);
+  if(!parts){
+    if(state)state.textContent="請檢查格式";
+    root.innerHTML='<div class="plate-watch-empty"><b>無法判讀這個號碼</b><br>可輸入 1117、8888 或 CES-8888 這類數字／完整車牌格式。</div>';
+    return;
+  }
+  const rows=matchingAnnouncements(q).slice().sort((a,b)=>{
+    const p={live:0,upcoming:1,ended:2};
+    return p[auctionState(a)]-p[auctionState(b)]||Date.parse(a.startAt||0)-Date.parse(b.startAt||0);
+  });
+  if(state)state.textContent=rows.length?"命中官方公告":"未命中公告";
+  if(rows.length){
+    root.innerHTML=rows.slice(0,8).map(row=>{
+      const status=auctionState(row),range=row.startNumber===row.endNumber?row.startNumber:row.startNumber+" ～ "+row.endNumber;
+      return '<article class="plate-watch-card">'+
+        '<div class="plate-watch-top"><div><div class="plate-watch-number">'+escPlate(range)+'</div><small class="meta">'+escPlate(row.office||"監理單位")+'・'+escPlate(row.category||"")+'</small></div><span class="plate-auction-state '+status+'">'+escPlate(auctionLabel(status))+'</span></div>'+
+        '<div class="plate-watch-meta"><div><small>起標</small><b>'+escPlate(fmtTime(row.startAt))+'</b></div><div><small>公告決標</small><b>'+escPlate(fmtTime(row.endAt))+'</b></div></div>'+
+      '</article>';
+    }).join("")+
+    '<div class="plate-watch-actions"><button data-plate-search-action="watch" data-value="'+escPlate(q)+'" type="button">加入候選</button>'+
+    (rows.some(x=>auctionState(x)==="live")?'<button data-plate-search-action="bid" type="button">正式競標</button>':"")+'</div>';
+    return;
+  }
+  root.innerHTML='<div class="plate-watch-empty"><b>目前公開標牌公告沒有找到 '+escPlate(q)+'</b><br>這只代表「未命中目前已同步的標牌公告」，不代表這個號碼現在一定可選或不可選。一般可選號碼的官方即時查詢還需要選擇監理單位、車種等條件並輸入驗證碼。</div>'+
+    '<div class="plate-watch-actions"><button data-plate-search-action="watch" data-value="'+escPlate(q)+'" type="button">先加入候選</button><button data-plate-search-action="pick" type="button">官方即時可選確認</button></div>';
+}
+
 function openPlateDetail(row){
   detailRow=row||null;
   const dialog=$p("#plateDetailDialog"),body=$p("#plateDetailBody"),title=$p("#plateDetailTitle"),bid=$p("#plateDetailBid"),watch=$p("#plateDetailWatch");
@@ -96,7 +267,7 @@ function openPlateDetail(row){
       '<div><small>資料來源</small><b>交通部公路局</b></div>'+
     '</div>'+
     (matches.length?'<div class="plate-detail-match"><b>你的候選命中</b><div>'+matches.map(x=>'<span>'+escPlate(x.plate)+'</span>').join("")+'</div></div>':'')+
-    '<div class="plate-detail-note">COLA GO 顯示的是官方公告資料。競標中的目前出價、出價次數與最後階段延長時間，只有正式競標前才需要到監理服務網確認。</div>';
+    '<div class="plate-detail-note">COLA GO 顯示的是官方公告資料。公開開放資料不含逐筆目前出價與出價次數；正式競標前請到監理服務網確認。官方規則為截止前 3 分鐘內若有兩人以上繼續出高價，該號牌自動延長 3 分鐘，最多延長 10 次。</div>';
   if(bid){
     bid.hidden=status!=="live";
     bid.textContent="正式競標";
@@ -155,7 +326,7 @@ function renderWatchList(){
       '<div class="plate-watch-top"><div><div class="plate-watch-number">'+escPlate(row.plate)+'</div><small class="meta">存在此裝置</small>'+officialLine+'</div><span class="plate-budget-state '+s.cls+'">'+escPlate(s.label)+'</span></div>'+
       '<div class="plate-watch-meta">'+
         '<div><small>最高預算</small><b>'+moneyPlate(budget)+'</b></div>'+
-        '<div><small>目前價格</small><b>'+moneyPlate(current)+'</b></div>'+
+        '<div><small>手動記錄價</small><b>'+moneyPlate(current)+'</b></div>'+
         '<div><small>距離預算</small><b>'+(remain===null?"—":remain>=0?moneyPlate(remain):"超過 "+moneyPlate(Math.abs(remain)))+'</b></div>'+
         '<div><small>結標時間</small><b>'+escPlate(fmtTime(row.endTime||match?.endAt))+'</b></div>'+
       '</div>'+
@@ -202,7 +373,7 @@ function renderAnnouncements(){
   const priority={live:0,upcoming:1,ended:2};
   rows.sort((a,b)=>priority[auctionState(a,now)]-priority[auctionState(b,now)]||Date.parse(a.startAt||0)-Date.parse(b.startAt||0));
   if(!rows.length){
-    root.innerHTML='<div class="plate-watch-empty"><b>沒有符合的官方公告</b><br>若你找的是一般「可選號碼」，請使用上方「開啟官方可選號碼」。</div>';
+    root.innerHTML='<div class="plate-watch-empty"><b>沒有符合的官方公告</b><br>若你找的是一般「可選號碼」，上方站內判讀會先說明是否命中公開公告；即時可選狀態仍需完成官方驗證碼查詢。</div>';
     renderWatchList();
     return;
   }
@@ -289,16 +460,22 @@ async function loadAnnouncements(){
     if(!data||!Array.isArray(data.items))throw new Error("invalid announcements");
     announcementData={...data,stale:false,error:""};
     saveAnnouncementCache(data);
+    recordAnnouncementChanges(announcementData);
   }catch(error){
     const cached=loadAnnouncementCache();
     if(cached&&Array.isArray(cached.items))announcementData={...cached,stale:true,error:""};
     else announcementData={status:"error",items:[],updatedAt:null,stale:false,error:String(error?.message||error)};
   }
   renderAnnouncements();
+  renderAnnouncementChanges();
+  if(announcementQuery)renderPlateSearchResult(announcementQuery);
   checkAnnouncementAlerts();
 }
 function bind(){
   if(!$p('[data-view="plate"]'))return;
+  ensurePlateV4Panels();
+  renderChecklist();
+  renderAnnouncementChanges();
   renderWatchList();updateNotifyText();loadAnnouncements();
 
   const search=$p("#plateSearchBtn");
@@ -306,12 +483,13 @@ function bind(){
     announcementQuery=normalize($p("#plateSearchInput")?.value);
     if(announcementQuery)try{localStorage.setItem("cola-go-last-plate-search",announcementQuery)}catch{}
     renderAnnouncements();
-    $p("#plateAnnouncementList")?.scrollIntoView({behavior:"smooth",block:"start"});
+    renderPlateSearchResult(announcementQuery);
+    $p("#plateSearchResultPanel")?.scrollIntoView({behavior:"smooth",block:"start"});
   };
   const searchInput=$p("#plateSearchInput");
   if(searchInput)searchInput.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();search?.click()}});
   const clear=$p("#plateClearSearch");
-  if(clear)clear.onclick=()=>{announcementQuery="";if(searchInput)searchInput.value="";renderAnnouncements()};
+  if(clear)clear.onclick=()=>{announcementQuery="";if(searchInput)searchInput.value="";renderAnnouncements();renderPlateSearchResult("")};
 
   $$p("[data-plate-filter]").forEach(btn=>btn.onclick=()=>{announcementFilter=btn.dataset.plateFilter||"all";renderAnnouncements()});
   $$p("[data-plate-jump]").forEach(btn=>btn.onclick=()=>{
@@ -367,6 +545,33 @@ function bind(){
         else if(value>=row.budget*.9)notify("COLA GO 車牌提醒",row.plate+" 目前價格已接近你的預算上限。","budget-"+row.id+"-near");
       }
     }
+  };
+
+
+  const searchResult=$p("#plateSearchResult");
+  if(searchResult)searchResult.onclick=e=>{
+    const btn=e.target.closest("[data-plate-search-action]");
+    if(!btn)return;
+    const action=btn.dataset.plateSearchAction,value=normalize(btn.dataset.value||announcementQuery);
+    if(action==="watch"){if(value){upsertWatch(value,0,0,bestOfficialMatch(value)?.endAt||"");if(window.toast)toast("已加入候選追蹤")}return}
+    if(action==="bid"){window.open(official.bid,"_blank","noopener");return}
+    if(action==="pick"){window.open(official.pick,"_blank","noopener")}
+  };
+
+  const checklist=$p("#plateChecklist");
+  if(checklist)checklist.onclick=e=>{
+    const btn=e.target.closest("[data-plate-check-toggle]");
+    if(!btn)return;
+    const id=btn.dataset.plateCheckToggle,state=loadChecklist();
+    state[id]=!state[id];
+    savePlateJson(CHECKLIST_KEY,state);
+    renderChecklist();
+  };
+  const resetChecklist=$p("#plateChecklistReset");
+  if(resetChecklist)resetChecklist.onclick=()=>{
+    savePlateJson(CHECKLIST_KEY,{});
+    renderChecklist();
+    if(window.toast)toast("領牌進度已重設");
   };
 
   const announcementList=$p("#plateAnnouncementList");
