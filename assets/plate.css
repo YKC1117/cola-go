@@ -124,21 +124,3 @@
 .plate-final-stage.extension small,.plate-final-stage.critical small{color:#dcb0b6}
 .plate-watch-actions .plate-bid-now{background:#ff3650;border-color:#ff6578;color:#fff;font-weight:850}
 @media(max-width:430px){.plate-watch-panel .plate-announcement-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.plate-final-stage{grid-template-columns:1fr}.plate-final-stage span{justify-self:start}}
-
-/* Plate Center V11: primary target */
-.plate-primary-target{margin-bottom:12px;padding:14px;border:1px solid #3d354c;border-radius:14px;background:linear-gradient(135deg,#171322,#0c1012 68%)}
-.plate-primary-empty{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.plate-primary-empty b{display:block;margin-top:3px;font-size:14px}.plate-primary-empty small{display:block;margin-top:4px;color:var(--muted);font-size:10px;line-height:1.55}
-.plate-primary-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.plate-primary-number{margin-top:4px;font-size:25px;font-weight:900;letter-spacing:.04em}
-.plate-primary-head small{display:block;margin-top:3px;color:var(--muted);font-size:10px}
-.plate-primary-badge,.plate-primary-chip{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#2a1c3a;color:#cf9cff;font-size:9px;font-weight:850}
-.plate-primary-badge{padding:6px 9px}.plate-primary-chip{margin-left:7px;padding:3px 6px;vertical-align:middle;letter-spacing:0}
-.plate-primary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:11px}
-.plate-primary-grid>div{padding:9px 10px;border-radius:10px;background:#171a20}
-.plate-primary-grid small{display:block;color:var(--muted);font-size:9px}.plate-primary-grid b{display:block;margin-top:2px;font-size:12px}
-.plate-primary-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
-.plate-primary-actions button{min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card);font-size:11px;font-weight:700}
-.plate-primary-actions .official{color:#ff8795;border-color:#5c2c36}.plate-primary-actions .plate-bid-now{background:#ff3650;border-color:#ff6578;color:#fff}
-.plate-watch-card.is-primary-target{border-color:#624d79;box-shadow:inset 0 0 0 1px #33253f}
-@media(max-width:380px){.plate-primary-grid{grid-template-columns:1fr}.plate-primary-actions{display:grid;grid-template-columns:1fr 1fr}.plate-primary-actions button{width:100%}}
