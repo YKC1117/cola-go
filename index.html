@@ -105,6 +105,7 @@
 <div aria-label="路況影像" class="home-more home-camera">
 <button data-go="cctv"><span><svg><use href="#i-camera"></use></svg></span><b>即時影像</b><svg class="arrow"><use href="#i-arrow"></use></svg></button>
 </div>
+<div class="home-cctv-saved" id="homeCctvSaved" hidden aria-label="常用 CCTV 路段"></div>
 <div aria-label="車牌中心" class="home-more home-plate">
 <button data-go="plate"><span><svg><use href="#i-car"></use></svg></span><div class="home-more-copy"><b>車牌中心</b><small>找牌・競標・候選提醒</small></div><svg class="arrow"><use href="#i-arrow"></use></svg></button>
 </div>
@@ -330,7 +331,7 @@ Siri「特斯拉助手」：
 <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"></use></svg></button><div><span class="mini-label">LIVE CAMERA</span><h1>即時影像</h1></div></div>
 <div class="live-source-head">
 <div><span class="mini-label">FREEWAY CCTV</span><h2>國道攝影機</h2></div>
-<span class="updated" id="cctvSourceState">點進頁面後讀取官方清單</span>
+<div class="cctv-source-tools"><span class="updated" id="cctvSourceState">點進頁面後讀取官方清單</span><button id="cctvRefreshBtn" type="button">重新整理清單</button></div>
 </div>
 <div class="filter-row" id="cctvRoadFilter">
 <button class="active" data-cctv-road="all">全部</button>
@@ -341,9 +342,12 @@ Siri「特斯拉助手」：
 <button class="active" data-cctv-direction="all">全部方向</button><button data-cctv-direction="north">北上</button><button data-cctv-direction="south">南下</button><button data-cctv-direction="east">東向</button><button data-cctv-direction="west">西向</button><button data-cctv-direction="other">其他</button>
 </div>
 <div class="cctv-helper"><b>道路 → 方向 → 路段 → 鏡頭</b><span id="cctvResultSummary" role="status">等待官方清單</span></div>
+<div class="cctv-active-context" id="cctvActiveContext" hidden aria-label="目前查看路段"></div>
+<div class="cctv-saved-routes" id="cctvSavedRoutes" hidden aria-label="常用與最近查看路段"></div>
 <label class="inline-search"><svg><use href="#i-search"></use></svg><input id="cctvSearch" aria-label="搜尋攝影機路段或里程" placeholder="搜尋交流道、服務區、地名或里程，例如：永康、新營、321K" type="search"/></label>
 <div class="cctv-nearby-tools"><button id="cctvNearbyBtn" type="button" aria-pressed="false"><svg><use href="#i-pin"></use></svg><span><b>找附近鏡頭</b><small>裝置內依距離排序，不上傳位置</small></span></button></div>
 <div class="cctv-quick-landmarks" id="cctvQuickLandmarks" hidden aria-label="官方地名快速查找"></div>
+<section class="cctv-corridor" id="cctvCorridor" hidden aria-label="同道路同方向路段連看"></section>
 <p class="notice">依官方起訖路段分組；攝影機 ID 有官方地名時會優先顯示交流道、系統、服務區等名稱；未提供名稱才保留里程，不自行推測所在地。</p>
 <div class="cctv-list" id="cctvList"></div>
 <div class="section-head cctv-official-head"><div><span class="mini-label">OFFICIAL</span><h2>官方入口</h2></div></div>
