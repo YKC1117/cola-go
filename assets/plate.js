@@ -7,7 +7,6 @@ const ANNOUNCEMENT_SNAPSHOT_KEY="cola-go-plate-announcement-snapshot-v1";
 const CHANGE_LOG_KEY="cola-go-plate-change-log-v1";
 const CHECKLIST_KEY="cola-go-plate-checklist-v1";
 const OFFICE_CACHE_KEY="cola-go-plate-offices-v1";
-const PRIMARY_PLATE_KEY="cola-go-plate-primary-v1";
 const ANNOUNCEMENT_URL="./data/plates/announcements.json";
 const OFFICE_URL="./data/plates/offices.json";
 const official={
@@ -33,8 +32,6 @@ let officeFetchAt=0;
 
 function loadRows(){try{const x=JSON.parse(localStorage.getItem(STORE_KEY)||"[]");return Array.isArray(x)?x:[]}catch{return[]}}
 function saveRows(rows){try{localStorage.setItem(STORE_KEY,JSON.stringify(rows))}catch{}}
-function loadPrimaryPlate(){try{return normalize(localStorage.getItem(PRIMARY_PLATE_KEY)||"")}catch{return""}}
-function savePrimaryPlate(plate){try{plate=normalize(plate);if(plate)localStorage.setItem(PRIMARY_PLATE_KEY,plate);else localStorage.removeItem(PRIMARY_PLATE_KEY)}catch{}}
 function loadAlerts(){try{return JSON.parse(localStorage.getItem(ALERT_KEY)||"{}")||{}}catch{return{}}}
 function saveAlerts(x){try{localStorage.setItem(ALERT_KEY,JSON.stringify(x))}catch{}}
 function loadAnnouncementCache(){try{return JSON.parse(localStorage.getItem(ANNOUNCEMENT_CACHE_KEY)||"null")}catch{return null}}
@@ -455,7 +452,6 @@ function ensurePlateWatchTools(){
   if(!panel||!list||$p("#plateWatchDashboard"))return;
   list.insertAdjacentHTML("beforebegin",
     '<div id="plateWatchDashboard">'+
-      '<section class="plate-primary-target" id="platePrimaryTarget"></section>'+
       '<div class="plate-announcement-summary">'+
         '<div><b id="plateWatchLiveCount">0</b><small>候選競標中</small></div>'+
         '<div><b id="plateWatchUpcomingCount">0</b><small>候選即將開標</small></div>'+
@@ -481,35 +477,6 @@ function ensurePlateWatchTools(){
     '</div>'
   );
 }
-function renderPrimaryTarget(){
-  const root=$p("#platePrimaryTarget");
-  if(!root)return;
-  const primary=loadPrimaryPlate();
-  const row=loadRows().find(x=>x.plate===primary);
-  if(!row){
-    if(primary)savePrimaryPlate("");
-    root.innerHTML='<div class="plate-primary-empty"><div><span class="mini-label">PRIMARY TARGET</span><b>尚未設定主攻號碼</b><small>從候選清單選一張「設為主攻」，最後階段就不用再翻找。</small></div></div>';
-    return;
-  }
-  const match=bestOfficialMatch(row.plate),status=match?auctionState(match):"nomatch",stage=watchFinalStage(row);
-  const budget=Number(row.budget)||0,current=Number(row.current)||0,remain=budget&&current?budget-current:null,usage=watchBudgetUsage(row);
-  const stageMarkup=stage.active?'<div class="plate-final-stage '+escPlate(stage.level)+'"><b>'+escPlate(stage.label)+'</b><span>距公告決標 '+escPlate(fmtCountdown(stage.ms))+'</span>'+(stage.level==="extension"||stage.level==="critical"?'<small>最後 3 分鐘可能延長；請以正式競標頁最後時間為準。</small>':'')+'</div>':"";
-  root.innerHTML=
-    '<div class="plate-primary-head"><div><span class="mini-label">PRIMARY TARGET</span><div class="plate-primary-number">'+escPlate(row.plate)+'</div><small>'+escPlate(match?(match.office||"監理單位")+"・"+auctionLabel(status):"尚未命中目前官方公告")+'</small></div><span class="plate-primary-badge">主攻</span></div>'+
-    '<div class="plate-primary-grid">'+
-      '<div><small>最高預算</small><b>'+moneyPlate(budget)+'</b></div>'+
-      '<div><small>手動記錄價</small><b>'+moneyPlate(current)+'</b></div>'+
-      '<div><small>距離預算</small><b>'+(remain===null?"—":remain>=0?moneyPlate(remain):"超過 "+moneyPlate(Math.abs(remain)))+'</b></div>'+
-      '<div><small>預算使用</small><b>'+(usage===null?"—":escPlate(usage+"%"))+'</b></div>'+
-      '<div><small>官方公告決標</small><b>'+escPlate(fmtTime(match?.endAt||row.endTime))+'</b></div>'+
-    '</div>'+stageMarkup+
-    '<div class="plate-primary-actions">'+
-      (match?'<button data-plate-primary-action="detail" type="button">公告詳情</button>':'')+
-      '<button data-plate-primary-action="history" type="button">官方歷史</button>'+
-      '<button class="'+(stage.active?'official plate-bid-now':'official')+'" data-plate-primary-action="official" type="button">'+(stage.active?'立即正式競標':'官方即時競標')+'</button>'+
-      '<button data-plate-primary-action="clear" type="button">取消主攻</button>'+
-    '</div>';
-}
 function renderWatchSummary(){
   ensurePlateWatchTools();
   const rows=loadRows();
@@ -530,7 +497,7 @@ function renderWatchSummary(){
   if($p("#plateWatchNoMatchCount"))$p("#plateWatchNoMatchCount").textContent=String(noMatch);
 }
 function watchBackupPayload(){
-  return JSON.stringify({schema:2,exportedAt:new Date().toISOString(),primaryPlate:loadPrimaryPlate(),items:loadRows().map(row=>({
+  return JSON.stringify({schema:1,exportedAt:new Date().toISOString(),items:loadRows().map(row=>({
     plate:normalize(row.plate),
     budget:Math.max(0,Number(row.budget)||0),
     current:Math.max(0,Number(row.current)||0),
@@ -559,10 +526,7 @@ function restoreWatchPayload(raw){
   if(!rows.length)return {ok:false,message:"備份裡沒有可用候選"};
   const merged=new Map(loadRows().map(row=>[row.plate,row]));
   rows.forEach(row=>merged.set(row.plate,{...merged.get(row.plate),...row}));
-  const mergedRows=[...merged.values()];
-  saveRows(mergedRows);
-  const restoredPrimary=normalize(data.primaryPlate||"");
-  if(restoredPrimary&&mergedRows.some(row=>row.plate===restoredPrimary))savePrimaryPlate(restoredPrimary);
+  saveRows([...merged.values()]);
   renderWatchList();
   renderAnnouncements();
   checkAnnouncementAlerts();
@@ -597,11 +561,10 @@ function watchPriorityRank(row){
   const status=watchOfficialState(row);
   const stage=watchFinalStage(row);
   const stageRank=stage.active?({critical:0,extension:1,urgent:2,watch:3}[stage.level]??4):9;
-  const primaryRank=row.plate===loadPrimaryPlate()?0:1;
   const statusRank={live:0,upcoming:1,ended:2,nomatch:3}[status]??4;
   const budget=Number(row.budget)||0,current=Number(row.current)||0;
   const risk=budget&&current?current/budget:0;
-  return {stageRank,primaryRank,statusRank,risk};
+  return {stageRank,statusRank,risk};
 }
 function visibleWatchRows(){
   let rows=loadRows();
@@ -619,7 +582,6 @@ function visibleWatchRows(){
     if(watchSort==="plate")return String(a.plate||"").localeCompare(String(b.plate||""),"en");
     const ar=watchPriorityRank(a),br=watchPriorityRank(b);
     if(ar.stageRank!==br.stageRank)return ar.stageRank-br.stageRank;
-    if(ar.primaryRank!==br.primaryRank)return ar.primaryRank-br.primaryRank;
     if(ar.statusRank!==br.statusRank)return ar.statusRank-br.statusRank;
     return br.risk-ar.risk||Date.parse(b.createdAt||0)-Date.parse(a.createdAt||0);
   });
@@ -631,22 +593,20 @@ function renderWatchList(){
   ensurePlateWatchTools();
   const allRows=loadRows();
   const rows=visibleWatchRows();
-  const primary=loadPrimaryPlate();
   if(count)count.textContent=String(allRows.length);
   $$p("[data-plate-watch-filter]").forEach(btn=>btn.classList.toggle("active",btn.dataset.plateWatchFilter===watchFilter));
   const sort=$p("#plateWatchSort");if(sort)sort.value=watchSort;
-  if(!allRows.length){root.innerHTML='<div class="plate-watch-empty"><b>還沒有候選號碼</b><br>把你喜歡的 1117、8888 或完整車牌先加進來。COLA GO 會一起比對官方標牌公告。</div>';renderPrimaryTarget();renderWatchSummary();return}
-  if(!rows.length){root.innerHTML='<div class="plate-watch-empty"><b>目前這個篩選沒有候選</b><br>可切回「全部候選」查看完整清單。</div>';renderPrimaryTarget();renderWatchSummary();return}
+  if(!allRows.length){root.innerHTML='<div class="plate-watch-empty"><b>還沒有候選號碼</b><br>把你喜歡的 1117、8888 或完整車牌先加進來。COLA GO 會一起比對官方標牌公告。</div>';renderWatchSummary();return}
+  if(!rows.length){root.innerHTML='<div class="plate-watch-empty"><b>目前這個篩選沒有候選</b><br>可切回「全部候選」查看完整清單。</div>';renderWatchSummary();return}
   root.innerHTML=rows.map(row=>{
     const s=budgetState(row),budget=Number(row.budget)||0,current=Number(row.current)||0,remain=budget&&current?budget-current:null;
     const match=bestOfficialMatch(row.plate),officialState=match?auctionState(match):"";
-    const isPrimary=row.plate===primary;
     const stage=watchFinalStage(row),budgetUsage=watchBudgetUsage(row);
     const officialLine=match?'<div class="plate-watch-official">官方同步：'+escPlate(auctionLabel(officialState))+'・'+escPlate(match.office||"監理單位")+'</div>':"";
     const stageLine=stage.active?'<div class="plate-final-stage '+escPlate(stage.level)+'"><b>'+escPlate(stage.label)+'</b><span>距公告決標 '+escPlate(fmtCountdown(stage.ms))+'</span>'+(stage.level==="extension"||stage.level==="critical"?'<small>官方最後 3 分鐘若有兩人以上繼續出高價，會延長 3 分鐘，最多 10 次；請以官方頁最後時間為準。</small>':'')+'</div>':"";
     const priceLine=current?'<div class="plate-detail-note"><b>價格來源：手動記錄</b><br>'+escPlate(row.priceUpdatedAt?fmtTime(row.priceUpdatedAt)+" 更新":"先前儲存的手動價格")+'；正式出價前請回官方頁確認最新價格與出價次數。</div>':'<div class="plate-detail-note"><b>即時價格：需官方確認</b><br>COLA GO 目前沒有官方逐筆出價資料，不會自行猜測目前價格。</div>';
-    return '<article class="plate-watch-card'+(stage.active?' is-final-stage':'')+(isPrimary?' is-primary-target':'')+'" data-plate-id="'+escPlate(row.id)+'">'+
-      '<div class="plate-watch-top"><div><div class="plate-watch-number">'+escPlate(row.plate)+(isPrimary?'<span class="plate-primary-chip">主攻</span>':'')+'</div><small class="meta">存在此裝置</small>'+officialLine+'</div><span class="plate-budget-state '+s.cls+'">'+escPlate(s.label)+'</span></div>'+
+    return '<article class="plate-watch-card'+(stage.active?' is-final-stage':'')+'" data-plate-id="'+escPlate(row.id)+'">'+
+      '<div class="plate-watch-top"><div><div class="plate-watch-number">'+escPlate(row.plate)+'</div><small class="meta">存在此裝置</small>'+officialLine+'</div><span class="plate-budget-state '+s.cls+'">'+escPlate(s.label)+'</span></div>'+
       '<div class="plate-watch-meta">'+
         '<div><small>最高預算</small><b>'+moneyPlate(budget)+'</b></div>'+
         '<div><small>手動記錄價</small><b>'+moneyPlate(current)+'</b></div>'+
@@ -654,10 +614,9 @@ function renderWatchList(){
         '<div><small>預算使用</small><b>'+(budgetUsage===null?"—":escPlate(budgetUsage+"%"))+'</b></div>'+
         '<div><small>官方公告決標</small><b>'+escPlate(fmtTime(match?.endAt||row.endTime))+'</b></div>'+
       '</div>'+stageLine+priceLine+
-      '<div class="plate-watch-actions"><button data-plate-action="primary" type="button">'+(isPrimary?'主攻中':'設為主攻')+'</button><button data-plate-action="copy" type="button">複製號碼</button><button data-plate-action="budget" type="button">改預算</button><button data-plate-action="price" type="button">更新手動價</button>'+(match?'<button data-plate-action="detail" type="button">公告詳情</button>':'')+'<button data-plate-action="history" type="button">官方歷史</button><button class="'+(stage.active?'official plate-bid-now':'official')+'" data-plate-action="official" type="button">'+(stage.active?'立即正式競標':'官方即時競標')+'</button><button class="danger" data-plate-action="remove" type="button">移除</button></div>'+
+      '<div class="plate-watch-actions"><button data-plate-action="copy" type="button">複製號碼</button><button data-plate-action="budget" type="button">改預算</button><button data-plate-action="price" type="button">更新手動價</button>'+(match?'<button data-plate-action="detail" type="button">公告詳情</button>':'')+'<button data-plate-action="history" type="button">官方歷史</button><button class="'+(stage.active?'official plate-bid-now':'official')+'" data-plate-action="official" type="button">'+(stage.active?'立即正式競標':'官方即時競標')+'</button><button class="danger" data-plate-action="remove" type="button">移除</button></div>'+
     '</article>'
   }).join("");
-  renderPrimaryTarget();
   renderWatchSummary();
 }
 function announcementMatchesWatch(row){
@@ -950,8 +909,7 @@ function bind(){
     const rows=loadRows(),row=rows.find(x=>x.id===id);
     if(!row)return;
     const action=btn.dataset.plateAction;
-    if(action==="remove"){if(loadPrimaryPlate()===row.plate)savePrimaryPlate("");saveRows(rows.filter(x=>x.id!==id));renderWatchList();renderAnnouncements();return}
-    if(action==="primary"){savePrimaryPlate(row.plate);renderWatchList();if(window.toast)toast(row.plate+" 已設為主攻");return}
+    if(action==="remove"){saveRows(rows.filter(x=>x.id!==id));renderWatchList();renderAnnouncements();return}
     if(action==="official"){window.open(official.bid,"_blank","noopener");return}
     if(action==="history"){window.open(official.history,"_blank","noopener");return}
     if(action==="copy"){
@@ -987,18 +945,6 @@ function bind(){
     }
   };
 
-
-  const primaryTarget=$p("#platePrimaryTarget");
-  if(primaryTarget)primaryTarget.onclick=e=>{
-    const btn=e.target.closest("[data-plate-primary-action]");
-    if(!btn)return;
-    const primary=loadPrimaryPlate(),row=loadRows().find(x=>x.plate===primary);
-    const action=btn.dataset.platePrimaryAction;
-    if(action==="clear"){savePrimaryPlate("");renderWatchList();if(window.toast)toast("已取消主攻號碼");return}
-    if(action==="official"){window.open(official.bid,"_blank","noopener");return}
-    if(action==="history"){window.open(official.history,"_blank","noopener");return}
-    if(action==="detail"&&row){const match=bestOfficialMatch(row.plate);if(match)openPlateDetail(match)}
-  };
 
   const searchResult=$p("#plateSearchResult");
   if(searchResult)searchResult.onclick=e=>{
