@@ -2,9 +2,9 @@
   "schema": 2,
   "source": "EVALUE 官方充電站",
   "sourceUrl": "https://www.evalue.com.tw/find",
-  "updatedAt": "2026-09-30T08:16:02.342049Z",
-  "lastSuccessAt": "2026-09-30T08:16:02.342049Z",
-  "lastAttemptAt": "2026-09-30T08:16:02.342049Z",
+  "updatedAt": "2026-10-01T10:12:34.491188Z",
+  "lastSuccessAt": "2026-10-01T10:12:34.491188Z",
+  "lastAttemptAt": "2026-10-01T10:12:34.491188Z",
   "syncStatus": "ok",
   "count": 783,
   "items": [
@@ -29811,15 +29811,12 @@
       "officialSourceURL": "https://www.evalue.com.tw/find/684",
       "officialSupplemental": true,
       "officialStationType": "",
-      "sitePowerKw": 7.0,
-      "maxPowerKw": 7.0,
-      "power": "AC 7kW",
-      "spaces": 4,
-      "connectorCount": 4,
-      "connectors": [
-        "J1772",
-        "Type2"
-      ],
+      "sitePowerKw": 0,
+      "maxPowerKw": null,
+      "power": "",
+      "spaces": 0,
+      "connectorCount": 0,
+      "connectors": [],
       "liveStateCount": 0,
       "availableConnectors": 0,
       "occupiedConnectors": 0,
@@ -29837,7 +29834,7 @@
       "parkingRate": "",
       "telephone": "",
       "operatorTelephone": "",
-      "description": "EVALUE 官方站點 · AC 4座"
+      "description": "EVALUE 官方站點"
     },
     {
       "id": "official-evalue-fdb64e7ab754b6",
