@@ -199,7 +199,19 @@ let browser;
     const row=state.charging.find(x=>x.name==='TAIL 測試官方補站');
     return row&&row.officialSupplemental===true&&chargingOperatorProfile(row)?.key==='tail'&&chargingPowerKw(row)===0&&Number(row.spaces)===0;
   }));
-  check('Charging driver-first controls are visible',await page.locator('#chargingFindNow').isVisible()&&await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingAvailableOnly').isVisible()&&await page.locator('#chargingCity').isVisible()&&await page.locator('#chargingSearch').isVisible());
+  check('Charging driver-first controls are visible',await page.locator('#chargingFindNow').isVisible()&&await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingAvailableOnly').isVisible()&&await page.locator('#chargingPriorityFast').isVisible()&&await page.locator('#chargingCity').isVisible()&&await page.locator('#chargingSearch').isVisible());
+  check('Charging first-layer action grid is 2x2-ready',(()=>{const html=fs.readFileSync(path.join(root,'index.html'),'utf8');const css=fs.readFileSync(path.join(root,'assets/styles.css'),'utf8');return html.includes('id="chargingPriorityFast"')&&css.includes('grid-template-columns:repeat(2,minmax(0,1fr))');})());
+  check('Available and priority-fast first-layer actions show city-scoped live station and availability counts',await page.evaluate(()=>{const original=state.charging,city=state.chargingCity;state.chargingCity='Tainan';state.charging=[{id:'u1',city:'Tainan',operator:'旭電馳科研',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:180},{id:'e1',city:'Tainan',operator:'源點科技股份有限公司',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:6,availableConnectors:3,maxPowerKw:120},{id:'t1',city:'Tainan',operator:'特爾電力股份有限公司',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:2,availableConnectors:1,maxPowerKw:80},{id:'x1',city:'Taipei',operator:'特爾電力股份有限公司',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:2,availableConnectors:2,maxPowerKw:180}];const available=chargingAvailableSnapshot(),priority=chargingPriorityFastSnapshot();state.charging=original;state.chargingCity=city;return available.stations===3&&available.available===6&&priority.stations===2&&priority.available===5;})&&(()=>{const html=fs.readFileSync(path.join(root,'index.html'),'utf8');return html.includes('data-available-status')&&html.includes('data-priority-fast-status');})());
+  check('First-layer charging snapshots defensively deduplicate the same station',await page.evaluate(()=>{const rows=[{id:'dup',operator:'旭電馳科研',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:180},{id:'dup',operator:'旭電馳科研',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:180}];const snap=chargingSnapshot(rows);return snap.stations===1&&snap.available===2;}));
+  check('Priority fast first-layer action has visible pressed state',(()=>{const css=fs.readFileSync(path.join(root,'assets/styles.css'),'utf8');return css.includes('.charging-priority-fast[aria-pressed="true"]');})());
+  check('Plate final stage exposes compact two-step handoff',(()=>{const js=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');const css=fs.readFileSync(path.join(root,'assets/plate.css'),'utf8');return js.includes('plate-primary-final-actions')&&js.includes('最後階段快捷')&&js.includes('立即正式競標')&&css.includes('.plate-primary-final-actions');})());
+  check('Charging cards expose a compact decision strip',(()=>{const js=fs.readFileSync(path.join(root,'assets/app.js'),'utf8');const css=fs.readFileSync(path.join(root,'assets/styles.css'),'utf8');return js.includes('chargingDecisionStripMarkup')&&js.includes('charging-decision-strip')&&css.includes('.charging-decision-strip');})());
+  check('Every final-stage watched plate has two-step quick actions and collapsed secondary actions',(()=>{const js=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');const css=fs.readFileSync(path.join(root,'assets/plate.css'),'utf8');return js.includes('plate-watch-final-actions')&&js.includes('plate-watch-more')&&js.includes('立即正式競標')&&css.includes('.plate-watch-final-actions')&&css.includes('.plate-watch-more');})());
+  check('Charging active filters stay visible in a sticky result bar with one-tap clear',(()=>{const html=fs.readFileSync(path.join(root,'index.html'),'utf8');const js=fs.readFileSync(path.join(root,'assets/app.js'),'utf8');const css=fs.readFileSync(path.join(root,'assets/styles.css'),'utf8');return html.includes('id="chargingResultBar"')&&html.includes('id="chargingResultClear"')&&js.includes('chargingResultClear')&&css.includes('.charging-result-bar { position:sticky');})());
+  check('Primary plate final stage exposes a mobile fixed dock above bottom navigation',(()=>{const js=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');const css=fs.readFileSync(path.join(root,'assets/plate.css'),'utf8');return js.includes('renderPlateFinalDock')&&js.includes('data-plate-dock-action="official"')&&css.includes('.plate-final-dock{position:fixed')&&css.includes('bottom:calc(var(--nav)');})());
+  check('Mobile plate view reserves content space while the final-stage dock is active',(()=>{const js=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');const css=fs.readFileSync(path.join(root,'assets/plate.css'),'utf8');return js.includes('classList.toggle("has-final-dock",active)')&&css.includes('[data-view="plate"].has-final-dock{padding-bottom:calc(104px');})());
+  check('Visible plate countdowns tick every second without fetching or rerendering the page',(()=>{const js=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');return js.includes('function updatePlateCountdowns')&&js.includes('data-plate-countdown-at')&&js.includes("setInterval(()=>{if(document.visibilityState===\"visible\"&&$p('[data-view=\"plate\"].active'))updatePlateCountdowns()},1000)");})());
+  check('Charging secondary facts no longer repeat distance and power already shown in the decision strip',(()=>{const js=fs.readFileSync(path.join(root,'assets/app.js'),'utf8');const marker=js.indexOf("'<div class=\"specs charging-facts\">'");const end=js.indexOf("'</div>'+",marker);const block=js.slice(marker,end);return marker>=0&&!block.includes('charging-distance')&&!block.includes('charging-power')&&block.includes('charging-rate')&&block.includes('charging-connector');})());
   check('Six primary charging networks are first-layer controls',await page.locator('#chargingMajorFilter [data-charge-major]').evaluateAll(nodes=>nodes.map(n=>n.dataset.chargeMajor).join(',')==='all,evoasis,upower,tail,evalue,icharging,tesla'));
   await page.waitForFunction(()=>[...document.querySelectorAll('#chargingMajorFilter [data-major-status]')].every(el=>/站/.test(el.textContent||'')));
   check('Major network controls expose station and live counts',await page.locator('#chargingMajorFilter [data-major-status]').evaluateAll(nodes=>nodes.length===7&&nodes.every(n=>n.textContent.includes('站'))));
@@ -207,25 +219,84 @@ let browser;
   await page.waitForFunction(()=>document.querySelectorAll('#chargingPriorityGrid [data-charge-priority]').length===4);
   check('Priority charging panel focuses on top three plus Tesla',await page.locator('#chargingPriorityGrid [data-charge-priority]').evaluateAll(nodes=>nodes.map(n=>n.dataset.chargePriority).join(',')==='evoasis,upower,tail,tesla'));
   check('Priority charging panel surfaces availability, power and rate context',await page.locator('#chargingPriorityPanel').textContent().then(x=>x.includes('空槍')&&x.includes('kW')&&x.includes('元/度')));
-  check('U-POWER 2026 official member rate summary is present',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='upower')?.rateShort.includes('6.9')&&CHARGING_OPERATOR_PROFILES.find(x=>x.key==='upower')?.rateShort.includes('13.5')));
-  check('EVOASIS official selected-station time rate is clearly scoped',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='evoasis')?.rateShort.includes('指定站')&&CHARGING_OPERATOR_PROFILES.find(x=>x.key==='evoasis')?.rateShort.includes('14.9')));
+  check('Priority charging panel includes live-data freshness context',await page.evaluate(()=>{
+    const original=state.charging;
+    state.charging=[
+      {operator:'旭電馳科研',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:180,statusUpdatedAt:'2026-10-01T06:40:00Z'},
+      {operator:'旭電馳科研',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:1,maxPowerKw:120,statusUpdatedAt:'2026-10-01T06:45:00Z'}
+    ];
+    const stats=chargingPriorityStats('upower');
+    state.charging=original;
+    return stats.available===3&&stats.maxKw===180&&stats.latestUpdatedAt==='2026-10-01T06:45:00.000Z';
+  })&&fs.readFileSync(path.join(root,'assets/app.js'),'utf8').includes('charging-priority-freshness'));
+  check('U-POWER 2026 official member rate summary is present',await page.evaluate(()=>{const p=CHARGING_OPERATOR_PROFILES.find(x=>x.key==='upower');return p?.rateShort.includes('夏月會員')&&p?.rateShort.includes('6.9')&&p?.rateShort.includes('13.5')&&p?.rateHint.includes('5/16–10/15')&&p?.rateHint.includes('16:00–22:00')&&p?.rateHint.includes('非會員全天 14 元/度');}));
+  check('EVOASIS official selected-station time rate is clearly scoped',await page.evaluate(()=>{const p=CHARGING_OPERATOR_PROFILES.find(x=>x.key==='evoasis');return p?.rateShort.includes('指定站')&&p?.rateShort.includes('14.9')&&p?.rateHint.includes('21:00～隔日 14:59')&&p?.rateHint.includes('臺南市公有停車場尖峰 12.7')&&p?.rateHint.includes('分段計費');}));
   check('TAIL rate does not invent a network-wide number',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='tail')?.rateShort.includes('依現場')));
   check('Tesla rate stays dynamic and app-confirmed',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='tesla')?.rateShort.includes('動態費率')));
-  await page.waitForFunction(()=>document.querySelector('[data-charge-major="icharging"] [data-major-status]')?.textContent.includes('待新增導入中'));
-  check('Incomplete iCharging official integration is explicitly marked pending',await page.locator('[data-charge-major="icharging"] [data-major-status]').textContent().then(x=>x.includes('待新增導入中')));
+  check('Primary charging networks carry current official rate verification dates',await page.evaluate(()=>['evoasis','upower','tail','tesla','evalue','icharging'].every(key=>CHARGING_OPERATOR_PROFILES.find(x=>x.key===key)?.rateCheckedAt==='2026-10-01')&&chargingRateCheckedLabel({operator:'台灣特斯拉汽車有限公司'}).includes('2026/10/1')&&chargingRateCheckedLabel({operator:'中興電工機械股份有限公司'}).includes('2026/10/1')));
+  await page.waitForFunction(()=>document.querySelector('[data-charge-major="icharging"] [data-major-status]')?.textContent.includes('官方地圖可用'));
+  check('iCharging exposes official map availability without pretending the station cache is complete',await page.locator('[data-charge-major="icharging"] [data-major-status]').textContent().then(x=>x.includes('官方地圖可用'))&&(()=>{const src=fs.readFileSync(path.join(root,'assets/tdx-runtime.js'),'utf8');return src.includes('站點快取待導入')&&!src.includes('待新增導入中');})());
+  check('Public charging copy matches iCharging current integration state',(()=>{const html=fs.readFileSync(path.join(root,'index.html'),'utf8');return html.includes('iCharging 官方充電地圖與費率入口已可使用')&&!html.includes('獨立官方站點資料標示「待新增導入中」');})());
+  check('Advanced operator filter is built from actual charging operators',await page.evaluate(()=>{syncChargingOperatorOptions();const values=[...document.querySelectorAll('#chargingOperator option')].map(x=>x.value);return values[0]==='all'&&values.includes('中興電工機械股份有限公司')&&values.includes('華城電能科技股份有限公司');}));
+  check('All six primary networks expose an official first-layer card action',await page.evaluate(()=>['evoasis','upower','tail','evalue','icharging','tesla'].every(key=>{const p=CHARGING_OPERATOR_PROFILES.find(x=>x.key===key);const sample={operator:p.names?.[0]||'',networkKey:key};return Boolean(chargingPriorityOfficialUrl(sample))&&chargingPriorityOfficialLabel(sample).includes('官方');})));
+  check('EVALUE and iCharging cards expose verified operator rate context',await page.evaluate(()=>chargingDecisionRateLabel({operator:'華城電能科技股份有限公司'}).includes('6.6')&&chargingDecisionRateLabel({operator:'中興電工機械股份有限公司'}).includes('9.2')&&chargingRateCheckedLabel({operator:'中興電工機械股份有限公司'}).includes('2026/10/1')));
   await page.waitForFunction(()=>document.querySelectorAll('#chargingCoverageGrid [data-coverage-major]').length===6);
   await page.waitForFunction(()=>state.charging.some(x=>x.officialSupplemental&&x.networkKey==='evalue'),{timeout:12000}).catch(()=>{});
   check('EVALUE official source is loaded when available',await page.evaluate(()=>state.charging.some(x=>x.networkKey==='evalue')));
   check('Coverage panel reports all six primary networks',await page.locator('#chargingCoverageGrid [data-coverage-major]').evaluateAll(nodes=>nodes.map(n=>n.dataset.coverageMajor).join(',')==='evoasis,upower,tail,evalue,icharging,tesla'));
   check('Coverage panel keeps operator source health contract',(()=>{const src=fs.readFileSync(path.join(root,'assets/tdx-runtime.js'),'utf8');return src.includes('grid.dataset.sourceHealth=healthKeys.join(",")')&&src.includes('operatorSourceHealth=Object.fromEntries');})());
   check('Coverage panel explains live and official supplemental semantics',await page.locator('#chargingCoverage').textContent().then(x=>x.includes('即時')&&x.includes('官方補')));
-  check('Charging cards expose decision-first availability',await page.locator('#chargingList .charging-availability-main').first().isVisible());
+  check('Charging cards expose decision-first availability without repeating a large live-state panel',await page.locator('#chargingList .charging-decision-strip').first().isVisible()&&await page.locator('#chargingList .charging-trust').first().isVisible());
+  check('Charging source trust clearly distinguishes live, stale, official supplemental, and station-only data',await page.evaluate(()=>chargingTrustInfo({road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:2,availableConnectors:1,statusUpdatedAt:new Date().toISOString()}).level==='live'&&chargingTrustInfo({road:'tdx',liveStale:true,statusUpdatedAt:new Date().toISOString()}).level==='stale'&&chargingTrustInfo({officialSupplemental:true,road:'operator'}).level==='official'&&chargingTrustInfo({road:'tdx',liveStateCount:0}).level==='source'));
+  check('Detailed connector status is collapsed by default and auto-opens only for faults',await page.evaluate(()=>chargingStatusMarkup({road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:3,availableConnectors:1,occupiedConnectors:2,faultedConnectors:0,statusUpdatedAt:new Date().toISOString()}).startsWith('<details class="charging-live-detail">')&&chargingStatusMarkup({road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:3,availableConnectors:1,occupiedConnectors:1,faultedConnectors:1,statusUpdatedAt:new Date().toISOString()}).startsWith('<details class="charging-live-detail" open>')));
+  check('Primary charging card actions put navigation and operator official link first',(()=>{const js=fs.readFileSync(path.join(root,'assets/app.js'),'utf8');const nav=js.indexOf('charging-go-primary');const official=js.indexOf('charging-official-primary',nav);const map=js.indexOf('charging-map-choice',nav);return nav>=0&&official>nav&&map>official;})());
+  check('Charging live freshness is human-readable',await page.evaluate(()=>{
+    const now=Date.parse('2026-10-01T08:50:00+08:00');
+    return chargingLiveAgeLabel('2026-10-01T08:47:00+08:00',now)==='3 分鐘前更新'&&chargingLiveAgeLabel('2026-10-01T06:50:00+08:00',now)==='2 小時前更新';
+  }));
   check('Charging cards surface compact rate information when TDX provides it',await page.locator('#chargingList .charging-rate').count()>0);
+  check('Priority charging cards label price-source semantics',await page.evaluate(()=>
+    chargingRateSourceLabel({operator:'旭電馳科研',road:'tdx',chargingRate:'計度/固定/9元每度'}).includes('本站費率')&&
+    chargingRateSourceLabel({operator:'源點科技股份有限公司'}).includes('業者官方方案')&&
+    chargingRateSourceLabel({operator:'特爾電力股份有限公司'}).includes('依現場')&&
+    chargingRateSourceLabel({operator:'台灣特斯拉汽車有限公司'}).includes('Tesla App')
+  ));
   check('Priority station rate fallback uses verified operator rules',await page.evaluate(()=>
     chargingDecisionRateLabel({operator:'旭電馳科研'})==='會員 6.9／8.5／13.5・非會員 14 元/度'&&
     chargingDecisionRateLabel({operator:'源點科技股份有限公司'}).includes('指定站 6.5')&&
     chargingDecisionRateLabel({operator:'特爾電力股份有限公司'}).includes('依現場')&&
     chargingDecisionRateLabel({operator:'台灣特斯拉汽車有限公司'}).includes('動態費率')
+  ));
+  check('Primary charging quick filter can require top networks, live availability, and 100 kW+',await page.evaluate(()=>
+    chargingQuickMatch({operator:'旭電馳科研',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:180})===false
+      ? false
+      : (state.chargingQuick='priorityfast',chargingQuickMatch({operator:'旭電馳科研',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:180})===true&&chargingQuickMatch({operator:'華城電能科技股份有限公司',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:180})===false)
+  ));
+  await page.evaluate(()=>{state.chargingQuick='all';renderCharging();});
+  check('Primary charging quick filter is visible',await page.locator('[data-charge-quick="priorityfast"]').isVisible());
+  await page.locator('#chargingPriorityFast').click();
+  check('First-layer priority fast action applies trusted fast mode',await page.evaluate(()=>state.chargingQuick==='priorityfast'&&state.chargingMajor==='all'&&state.chargingOperator==='all'&&state.chargingPower===0&&state.chargingConnector==='all'&&state.road==='all'));
+  await page.locator('#chargingPriorityFast').click();
+  check('Primary charging fast confidence sort prefers fresher data, then more availability, then power',await page.evaluate(()=>{
+    const base={operator:'旭電馳科研',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,maxPowerKw:180};
+    const old={...base,name:'舊站',availableConnectors:4,statusUpdatedAt:'2026-10-01T12:00:00+08:00'};
+    const fresh={...base,name:'新站',availableConnectors:1,statusUpdatedAt:'2026-10-01T12:10:00+08:00'};
+    const equalFreshA={...base,name:'A',availableConnectors:1,maxPowerKw:180,statusUpdatedAt:'2026-10-01T12:10:00+08:00'};
+    const equalFreshB={...base,name:'B',availableConnectors:3,maxPowerKw:120,statusUpdatedAt:'2026-10-01T12:10:00+08:00'};
+    return chargingPriorityFastSort(fresh,old)<0&&chargingPriorityFastSort(equalFreshB,equalFreshA)<0;
+  }));
+  check('Primary charging fast result explains why a station qualified',await page.evaluate(()=>{
+    const x={operator:'旭電馳科研',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:180,statusUpdatedAt:new Date().toISOString()};
+    const label=chargingPriorityFastReason(x);
+    return label.includes('主力空槍快充')&&label.includes('空槍 2')&&label.includes('180 kW');
+  }));
+  check('Primary charging fast empty state offers safe relaxed alternatives',(()=>{const js=fs.readFileSync(path.join(root,'assets/app.js'),'utf8');return js.includes('目前沒有同時符合的主力空槍快充')&&js.includes('data-charge-relax="available"')&&js.includes('data-charge-relax="fast"')&&js.includes('未知槍況、逾時資料與未知功率不會混進主力快充結果');})());
+  check('Primary charging fast eligibility rejects unknown, stale, slow, and non-priority data',await page.evaluate(()=>
+    chargingPriorityFastEligible({operator:'旭電馳科研',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:180})===true&&
+    chargingPriorityFastEligible({operator:'旭電馳科研',road:'tdx',liveStale:false,liveStateCount:0,availableConnectors:0,maxPowerKw:180})===false&&
+    chargingPriorityFastEligible({operator:'旭電馳科研',road:'tdx',liveStale:true,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:180})===false&&
+    chargingPriorityFastEligible({operator:'旭電馳科研',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:80})===false&&
+    chargingPriorityFastEligible({operator:'華城電能科技股份有限公司',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:180})===false
   ));
   check('Priority station power labels never confuse site total with connector maximum',await page.evaluate(()=>
     chargingDecisionPowerLabel({operator:'旭電馳科研',maxPowerKw:360})==='最高功率 360 kW'&&
@@ -243,6 +314,7 @@ let browser;
     return Boolean(p?.stationMap&&p?.chargeGuide&&p?.rateGuide&&p?.chargeHint?.includes('iParking'));
   }));
   check('Major operator detail prefers station-specific official source URL',await page.evaluate(()=>chargingDetailMarkup({officialSupplemental:true,officialSource:'EVALUE 官方充電站',officialSourceURL:'https://example.com/station',operator:'華城電能科技股份有限公司',road:'operator',connectors:[],spaces:0}).includes('https://example.com/station')));
+  check('EVALUE current official time-of-use rates stay power-scoped',await page.evaluate(()=>{const p=CHARGING_OPERATOR_PROFILES.find(x=>x.key==='evalue');return p?.rateShort.includes('120–180 kW')&&p?.rateShort.includes('240 kW+')&&p?.rateHint.includes('6.6')&&p?.rateHint.includes('13.5')&&p?.rateHint.includes('部分站不適用');}));
   check('Network key can classify partner-operated stations into EVALUE',await page.evaluate(()=>chargingOperatorProfile({operator:'聯永物業股份有限公司',networkKey:'evalue'})?.key==='evalue'));
   check('Format-only operator duplicate merges into the TDX row',await page.evaluate(()=>{
     const rows=state.charging.filter(x=>String(x.name).includes('Times')&&String(x.location).includes('測試路88號'));
@@ -255,7 +327,7 @@ let browser;
   check('Primary charging network list is the six requested providers',await page.evaluate(()=>CHARGING_MAJOR_KEYS.join(',')==='evoasis,upower,tail,evalue,icharging,tesla'));
   check('iCharging official plug-and-charge capability matches Dongshan service area',await page.evaluate(()=>chargingCapabilities({operator:'中興電工機械股份有限公司',name:'東山服務區'}).some(x=>x.key==='plug-and-charge')));
   check('iCharging 2026 verified highway expansion matches Hsinying northbound',await page.evaluate(()=>chargingCapabilities({operator:'中興電工機械股份有限公司',name:'新營服務區北向'}).some(x=>x.key==='plug-and-charge')));
-  check('iCharging current official rate hint is present',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='icharging')?.rateHint.includes('9.2–10 元/度')));
+  check('iCharging current official rate hint is present',await page.evaluate(()=>{const p=CHARGING_OPERATOR_PROFILES.find(x=>x.key==='icharging');return p?.rateShort.includes('高速 9.2–10')&&p?.rateShort.includes('市區 8')&&p?.rateHint.includes('公告原價 12 元/度')&&p?.rateHint.includes('每分鐘 7 元');}));
   check('Tesla guidance never claims website list is live availability',await page.evaluate(()=>CHARGING_OPERATOR_PROFILES.find(x=>x.key==='tesla')?.networkHint.includes('不把官方網站清單假裝成即時空槍')));
   check('Tesla missing TDX live state directs users to official app availability',await page.evaluate(()=>chargingStatusMarkup({road:'tdx',operator:'台灣特斯拉汽車有限公司',liveStateCount:0,availableConnectors:0,liveStatusKnown:false,liveStale:false}).includes('Tesla App 可查看官方可用充電座')));
   check('Tesla stale TDX state does not show false zero availability',await page.evaluate(()=>chargingStatusMarkup({road:'tdx',operator:'台灣特斯拉汽車有限公司',liveStateCount:6,availableConnectors:0,liveStatusKnown:true,liveStale:true}).includes('Tesla App 可查看官方可用充電座')));
@@ -529,8 +601,24 @@ let browser;
   check('Plate Center watchlist stores candidate locally',await page.locator('.plate-watch-card').filter({hasText:'CES-8888'}).isVisible());
   check('Plate Center budget is visible',await page.locator('.plate-watch-card').filter({hasText:'CES-8888'}).textContent().then(x=>x.includes('20,000')&&x.includes('12,000')));
   check('Plate Center candidate dashboard is visible',await page.locator('#plateWatchDashboard').isVisible()&&await page.locator('#plateWatchLiveCount').isVisible());
+  check('Plate Center primary target panel is visible',await page.locator('#platePrimaryTarget').isVisible());
   check('Plate Center exposes candidate backup and restore controls',await page.locator('#plateWatchBackup').isVisible()&&await page.locator('#plateWatchRestore').isVisible());
-  check('Plate Center candidate backup keeps private state local and implements restore logic',await page.evaluate(()=>JSON.parse(localStorage.getItem('cola-go-plate-watch-v1')||'[]').some(x=>x.plate==='CES-8888'))&&fs.readFileSync(path.join(root,'assets/plate.js'),'utf8').includes('function watchBackupPayload()')&&fs.readFileSync(path.join(root,'assets/plate.js'),'utf8').includes('function restoreWatchPayload(raw)'));
+  check('Plate Center exposes readable auction summary and top-level official history controls',await page.locator('#plateWatchCopySummary').isVisible()&&await page.locator('#plateHistoryOfficial').isVisible()&&(()=>{const src=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');return src.includes('function watchSummaryText(')&&src.includes('async function openPlateHistoryFor(')&&src.includes('freshness.label')&&src.includes('目前出價／出價次數：請以官方頁即時資訊為準');})());
+  await page.locator('.plate-watch-card').filter({hasText:'CES-8888'}).locator('[data-plate-action="primary"]').click();
+  check('Plate Center can pin a primary target locally',await page.locator('#platePrimaryTarget').textContent().then(x=>x.includes('CES-8888')&&x.includes('主攻'))&&await page.evaluate(()=>localStorage.getItem('cola-go-plate-primary-v1')==='CES-8888'));
+  check('Plate Center primary target surfaces budget state and manual-price timestamp',await page.locator('#platePrimaryTarget').textContent().then(x=>x.includes('手動價更新')&&x.includes('預算')));
+  check('Plate Center primary target exposes neutral decision-readiness state',(()=>{const src=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');return src.includes('function watchDecisionReadiness(')&&src.includes('可進官方確認')&&src.includes('先設定最高預算')&&src.includes('目前手動價已超預算')&&src.includes('等待官方公告');})()&&fs.readFileSync(path.join(root,'assets/plate.css'),'utf8').includes('.plate-readiness'));
+  check('Plate Center primary target explains official auction timeline and extension uncertainty',(()=>{const src=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');return src.includes('function platePrimaryTimeline(')&&src.includes('官方起標')&&src.includes('原公告決標')&&src.includes('最終決標時間與結果請以官方頁為準');})()&&fs.readFileSync(path.join(root,'assets/plate.css'),'utf8').includes('.plate-primary-timeline'));
+  check('Plate Center primary target exposes direct official actions',await page.locator('#platePrimaryTarget [data-plate-primary-action="official"]').isVisible()&&await page.locator('#platePrimaryTarget [data-plate-primary-action="history"]').isVisible()&&await page.locator('#platePrimaryTarget [data-plate-primary-action="summary"]').isVisible()&&await page.locator('#platePrimaryTarget [data-plate-primary-action="budget"]').isVisible()&&await page.locator('#platePrimaryTarget [data-plate-primary-action="price"]').isVisible());
+  check('Plate Center candidate and primary edits share one implementation',(()=>{const src=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');return src.includes('function editWatchBudget(')&&src.includes('function editWatchPrice(')&&src.includes('if(action==="budget"&&row){editWatchBudget(row);return}')&&src.includes('if(action==="price"&&row){editWatchPrice(row);return}');})());
+  check('Plate Center stale-price actions can become visually prominent',(()=>{const js=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');const css=fs.readFileSync(path.join(root,'assets/plate.css'),'utf8');return js.includes('plate-price-refresh-needed')&&js.includes('立即更新手動價')&&css.includes('.plate-price-refresh-needed');})());
+  check('Plate Center flags stale manual prices before final-stage decisions',await page.evaluate(()=>{
+    const now=Date.parse('2026-10-01T13:00:00+08:00');
+    const fresh=watchPriceFreshness({current:12000,priceUpdatedAt:'2026-10-01T12:58:00+08:00'},now);
+    const stale=watchPriceFreshness({current:12000,priceUpdatedAt:'2026-10-01T12:40:00+08:00'},now);
+    return fresh.level==='fresh'&&stale.level==='stale'&&stale.label.includes('20 分鐘');
+  })&&fs.readFileSync(path.join(root,'assets/plate.css'),'utf8').includes('.plate-price-warning'));
+  check('Plate Center candidate backup keeps private state local and implements restore logic',await page.evaluate(()=>JSON.parse(localStorage.getItem('cola-go-plate-watch-v1')||'[]').some(x=>x.plate==='CES-8888'))&&(()=>{const src=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');return src.includes('function watchBackupPayload()')&&src.includes('function restoreWatchPayload(raw)')&&src.includes('primaryPlate:loadPrimaryPlate()')&&src.includes('schema:2');})());
   check('Plate Center candidate filters and sort controls are visible',await page.locator('[data-plate-watch-filter]').count()===5&&await page.locator('[data-plate-watch-filter="final"]').isVisible()&&await page.locator('#plateWatchSort').isVisible()&&await page.locator('#plateWatchCopyList').isVisible());
   check('Plate Center final-stage logic and 3-minute extension reminder are present',(()=>{const src=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');return src.includes('function auctionFinalStage(')&&src.includes('function watchFinalStage(')&&src.includes('function deadlineReminder(')&&src.includes('3 分鐘（延長可能區）')&&src.includes('立即正式競標')&&src.includes('最多 10 次')&&!src.includes('[[15,"15 分鐘"],[5,"5 分鐘"],[3,"3 分鐘（延長可能區）"],[1,"1 分鐘"]].forEach');})());
   check('Plate Center final-stage styling keeps urgent bid action prominent',fs.readFileSync(path.join(root,'assets/plate.css'),'utf8').includes('.plate-bid-now')&&fs.readFileSync(path.join(root,'assets/plate.css'),'utf8').includes('.plate-final-stage'));
@@ -541,7 +629,8 @@ let browser;
   await page.locator('[data-plate-watch-filter="nomatch"]').click();
   check('Plate Center candidate filter visibly updates selection',await page.locator('[data-plate-watch-filter="nomatch"]').evaluate(el=>el.classList.contains('active')));
   await page.locator('[data-plate-watch-filter="all"]').click();
-  check('Plate Center candidate actions include copy and official history',await page.locator('#plateWatchList [data-plate-action="copy"]').count()>0&&await page.locator('#plateWatchList [data-plate-action="history"]').count()>0);
+  check('Plate Center candidate actions include copy and official history',await page.locator('#plateWatchList [data-plate-action="copy"]').count()>0&&await page.locator('#plateWatchList [data-plate-action="history"]').count()>0&&(()=>{const src=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');return src.includes('async function openPlateHistoryFor(')&&src.includes('已複製，可貼到官方歷史查詢');})());
+  check('Plate Center official bidding copies the candidate before handoff',(()=>{const src=fs.readFileSync(path.join(root,'assets/plate.js'),'utf8');return src.includes('async function openOfficialBidFor(')&&src.includes('已複製，正在開啟官方競標')&&src.includes('await openOfficialBidFor(row.plate)')&&src.includes('openOfficialBidFor(row?.plate||loadPrimaryPlate())')&&src.includes('openOfficialBidFor(value)');})());
   await page.locator('#plateWatchList [data-plate-action="history"]').first().click();
   check('Plate Center official history action opens MVDIS history',await page.evaluate(()=>window.__opened.at(-1)?.includes('/m3-emv-plate/bid/queryBid')));
   check('Plate Center exposes official announcement panel',await page.locator('#plateAnnouncementList').isVisible());

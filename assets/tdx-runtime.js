@@ -180,7 +180,7 @@
       const status=button.querySelector("[data-major-status]");
       if(!status)return;
       if(key==="all")status.textContent="站數載入中";
-      else if(key==="icharging")status.textContent="0 站 · 待新增導入中";
+      else if(key==="icharging")status.textContent="TDX 站數載入中 · 官方地圖可用";
       else if(key==="tesla")status.textContent="站數載入中 · TDX 即時＋Tesla 官方";
       else status.textContent="官方站點已導入 · 站數載入中";
     });
@@ -195,8 +195,8 @@
     grid.innerHTML=CHARGING_MAJOR_KEYS.map(key=>{
       const profile=CHARGING_OPERATOR_PROFILES.find(x=>x.key===key);
       if(!profile)return "";
-      const source=key==="icharging"?"待新增導入中":key==="tesla"?"TDX 即時＋Tesla 官方":"官方站點已導入";
-      const badge=key==="icharging"?'<em class="official">待新增導入中</em>':key==="tesla"?'<em class="official">優先整合</em>':'';
+      const source=key==="icharging"?"官方地圖可用・站點快取待導入":key==="tesla"?"TDX 即時＋Tesla 官方":"官方站點已導入";
+      const badge=key==="icharging"?'<em class="official">官方地圖可用</em>':key==="tesla"?'<em class="official">優先整合</em>':'';
       return '<button type="button" data-coverage-major="'+key+'">'+
         '<span class="charging-coverage-brand"><b>'+profile.brand+'</b><small>'+source+'</small></span>'+
         '<span class="charging-coverage-stats"><strong>—</strong><small>站</small><em>資料載入中</em>'+badge+'</span>'+
@@ -262,7 +262,7 @@
       const row=rows.find(item=>item.profile.key===key);
       if(!row)return;
       if(status)status.textContent=row.pendingOfficial
-        ?row.merged+" 站 · 待新增導入中"
+        ?row.merged+" 站 · 官方地圖可用"
         :row.merged+" 站 · "+row.live+" 即時";
       button.dataset.sourceMode=row.pendingOfficial?"pending":row.supplement?"official-cache":(row.officialGuideOnly?"official-guide":"tdx");
       button.classList.toggle("has-live",row.live>0);
@@ -276,7 +276,7 @@
         '<span class="charging-coverage-stats">'+
           '<strong>'+row.merged+'</strong><small>站</small>'+
           '<em>'+row.live+' 即時</em>'+
-          (row.pendingOfficial?'<em class="official">待新增導入中</em>':row.teslaPriority?'<em class="official">優先整合</em>':row.supplement?'<em class="official">'+row.supplement+' 官方補</em>':'')+
+          (row.pendingOfficial?'<em class="official">官方地圖可用</em>':row.teslaPriority?'<em class="official">優先整合</em>':row.supplement?'<em class="official">'+row.supplement+' 官方補</em>':'')+
         '</span>'+
       '</button>'
     ).join("");

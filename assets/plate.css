@@ -76,6 +76,12 @@
 .plate-watch-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .plate-watch-actions button{min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card);font-size:11px;font-weight:650}
 .plate-watch-actions .danger{color:#ff8795}
+.plate-watch-final-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px;padding:10px;border:1px solid #5b432c;border-radius:12px;background:#20170f}
+.plate-watch-final-actions button{min-width:0;min-height:58px;display:grid;grid-template-columns:22px minmax(0,1fr);grid-template-rows:auto auto;gap:1px 8px;align-items:center;padding:9px 10px;border:1px solid #66502f;border-radius:11px;background:#16120d;text-align:left}
+.plate-watch-final-actions button>span{grid-row:1/3;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#332713;color:#ffd36b;font-size:10px;font-weight:900}.plate-watch-final-actions button>b{font-size:12px}.plate-watch-final-actions button>small{color:var(--muted);font-size:9px;line-height:1.35}
+.plate-watch-final-actions .plate-watch-final-price.plate-price-refresh-needed{border-color:#8a632f;background:#2b1d0d;color:#ffd17a}.plate-watch-final-actions .plate-watch-final-official{border-color:#ff6578;background:#ff3650;color:#fff;font-weight:850}.plate-watch-final-actions .plate-watch-final-official>span{background:#ffffff26;color:#fff}.plate-watch-final-actions .plate-watch-final-official>small{color:#ffe5e9}
+.plate-watch-more{margin-top:9px}.plate-watch-more summary{min-height:38px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:9px;background:#11171a;color:var(--muted);font-size:10px;font-weight:750;cursor:pointer;list-style:none}.plate-watch-more summary::-webkit-details-marker{display:none}.plate-watch-more[open] summary{color:var(--ink);border-color:#46525a}.plate-watch-more .plate-watch-actions{margin-top:7px}
+@media(max-width:380px){.plate-watch-final-actions{grid-template-columns:1fr}}
 .plate-guide{margin:16px 0;border:1px solid var(--line);border-radius:16px;background:var(--card);overflow:hidden}
 .plate-guide summary{display:grid;grid-template-columns:minmax(0,1fr) 18px;gap:10px;align-items:center;min-height:68px;padding:14px 16px;cursor:pointer;list-style:none}
 .plate-guide summary::-webkit-details-marker{display:none}
@@ -123,4 +129,43 @@
 .plate-final-stage.extension,.plate-final-stage.critical{border-color:#6a3038;background:#281217;color:#ff8f9c}
 .plate-final-stage.extension small,.plate-final-stage.critical small{color:#dcb0b6}
 .plate-watch-actions .plate-bid-now{background:#ff3650;border-color:#ff6578;color:#fff;font-weight:850}
+.plate-watch-actions .plate-price-refresh-needed,.plate-primary-actions .plate-price-refresh-needed{border-color:#73512d;background:#2b1d0d;color:#ffd17a;font-weight:850}
+.plate-watch-card.is-final-stage .plate-price-refresh-needed,.plate-primary-target .plate-price-refresh-needed{box-shadow:inset 0 0 0 1px #ffb95a22}
+.plate-price-warning{margin-top:9px;padding:9px 10px;border:1px solid #5a4630;border-radius:10px;background:#21190f;color:#e9c884;font-size:10px;line-height:1.55;font-weight:700}
+.plate-price-warning.stale{border-color:#6a3038;background:#281217;color:#ff9aa5}
+.plate-price-warning.missing{border-color:#4b4146;background:#171416;color:#c6bfc3}
+.plate-primary-final-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px;padding:10px;border:1px solid #5b432c;border-radius:12px;background:#20170f}
+.plate-primary-final-copy{grid-column:1/-1}.plate-primary-final-copy b{display:block;color:#ffd36b;font-size:12px}.plate-primary-final-copy small{display:block;margin-top:3px;color:#d8c6a4;font-size:10px;line-height:1.5}
+.plate-primary-final-actions button{min-width:0;min-height:58px;display:grid;grid-template-columns:22px minmax(0,1fr);grid-template-rows:auto auto;gap:1px 8px;align-items:center;padding:9px 10px;border:1px solid #66502f;border-radius:11px;background:#16120d;text-align:left}
+.plate-primary-final-actions button>span{grid-row:1/3;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#332713;color:#ffd36b;font-size:10px;font-weight:900}.plate-primary-final-actions button>b{font-size:12px}.plate-primary-final-actions button>small{color:var(--muted);font-size:9px;line-height:1.35}
+.plate-primary-final-actions .plate-price-refresh-needed{border-color:#8a632f;background:#2b1d0d;color:#ffd17a}.plate-primary-final-actions .plate-final-official{border-color:#ff6578;background:#ff3650;color:#fff;font-weight:850}.plate-primary-final-actions .plate-final-official>span{background:#ffffff26;color:#fff}.plate-primary-final-actions .plate-final-official>small{color:#ffe5e9}
+@media(max-width:380px){.plate-primary-final-actions{grid-template-columns:1fr}.plate-primary-final-copy{grid-column:auto}}
 @media(max-width:430px){.plate-watch-panel .plate-announcement-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.plate-final-stage{grid-template-columns:1fr}.plate-final-stage span{justify-self:start}}
+
+.plate-final-dock{position:fixed;z-index:35;left:50%;bottom:calc(var(--nav) + env(safe-area-inset-bottom,0px) + 8px);transform:translateX(-50%);width:min(calc(var(--shell) - 20px),calc(100% - 20px));display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr) minmax(0,.9fr);gap:6px;padding:7px;border:1px solid #6a4b2e;border-radius:14px;background:#120f0dec;box-shadow:0 12px 34px #000c;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.plate-final-dock button{min-width:0;min-height:52px;padding:7px 8px;border:1px solid #554330;border-radius:10px;background:#1b1510;text-align:left}.plate-final-dock button small{display:block;color:#cbbba4;font-size:8px;line-height:1.2}.plate-final-dock button b{display:block;margin-top:2px;font-size:11px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.plate-final-dock button span{display:block;margin-top:1px;color:var(--muted);font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plate-final-dock-main{color:#ffd36b}.plate-final-dock-price.plate-price-refresh-needed{border-color:#8a632f;background:#2b1d0d;color:#ffd17a}.plate-final-dock-official{border-color:#ff6578!important;background:#ff3650!important;color:#fff}.plate-final-dock-official small{color:#ffe5e9!important}.plate-final-dock.extension,.plate-final-dock.critical{border-color:#873745;background:#1b0f13ee}
+@media(max-width:699px){[data-view="plate"].has-final-dock{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}}
+@media(min-width:700px){.plate-final-dock{display:none!important}}@media(max-width:380px){.plate-final-dock{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,.85fr);gap:4px;padding:5px}.plate-final-dock button{padding:6px}.plate-final-dock button b{font-size:10px}}
+
+/* Plate Center V11: primary target */
+.plate-primary-target{margin-bottom:12px;padding:14px;border:1px solid #3d354c;border-radius:14px;background:linear-gradient(135deg,#171322,#0c1012 68%)}
+.plate-primary-empty{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.plate-primary-empty b{display:block;margin-top:3px;font-size:14px}.plate-primary-empty small{display:block;margin-top:4px;color:var(--muted);font-size:10px;line-height:1.55}
+.plate-primary-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.plate-primary-badges{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}.plate-primary-badges .plate-budget-state{margin:0}
+.plate-primary-number{margin-top:4px;font-size:25px;font-weight:900;letter-spacing:.04em}
+.plate-primary-head small{display:block;margin-top:3px;color:var(--muted);font-size:10px}
+.plate-primary-badge,.plate-primary-chip{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#2a1c3a;color:#cf9cff;font-size:9px;font-weight:850}
+.plate-primary-badge{padding:6px 9px}.plate-primary-chip{margin-left:7px;padding:3px 6px;vertical-align:middle;letter-spacing:0}
+.plate-readiness{margin-top:11px;padding:10px 11px;border:1px solid #3b4650;border-radius:11px;background:#14191d}.plate-readiness b{display:block;font-size:12px}.plate-readiness small{display:block;margin-top:3px;color:var(--muted);font-size:10px;line-height:1.55}.plate-readiness.ready{border-color:#2f6449;background:#10251a;color:#78e7aa}.plate-readiness.caution{border-color:#665128;background:#241c0e;color:#ffd36b}.plate-readiness.blocked{border-color:#71313b;background:#291218;color:#ff93a0}.plate-readiness.waiting{color:#cad2d6}
+.plate-primary-timeline{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px}.plate-primary-timeline>div{padding:9px 10px;border:1px solid #303a40;border-radius:10px;background:#11171a}.plate-primary-timeline small{display:block;color:var(--muted);font-size:9px;line-height:1.45}.plate-primary-timeline b{display:block;margin-top:2px;font-size:11px}.plate-primary-timeline-state{grid-column:1/-1}.plate-primary-timeline-state b{font-size:12px}.plate-primary-timeline.extension,.plate-primary-timeline.critical{border-radius:11px}.plate-primary-timeline.extension .plate-primary-timeline-state,.plate-primary-timeline.critical .plate-primary-timeline-state{border-color:#6a3038;background:#281217;color:#ff9aa5}.plate-primary-timeline.ended .plate-primary-timeline-state{border-color:#4d4247;background:#181517}
+@media(max-width:380px){.plate-primary-timeline{grid-template-columns:1fr}.plate-primary-timeline-state{grid-column:1}}
+.plate-primary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:11px}
+.plate-primary-grid>div{padding:9px 10px;border-radius:10px;background:#171a20}
+.plate-primary-grid small{display:block;color:var(--muted);font-size:9px}.plate-primary-grid b{display:block;margin-top:2px;font-size:12px}
+.plate-primary-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.plate-primary-actions button{min-height:40px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card);font-size:11px;font-weight:700}
+.plate-primary-actions .official{color:#ff8795;border-color:#5c2c36}.plate-primary-actions .plate-bid-now{background:#ff3650;border-color:#ff6578;color:#fff}
+.plate-watch-card.is-primary-target{border-color:#624d79;box-shadow:inset 0 0 0 1px #33253f}
+@media(max-width:380px){.plate-primary-grid{grid-template-columns:1fr}.plate-primary-actions{display:grid;grid-template-columns:1fr 1fr}.plate-primary-actions button{width:100%}}

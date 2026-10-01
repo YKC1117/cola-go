@@ -206,15 +206,15 @@ function parseChargingPower(value){
 const LEGACY_TDX_CONNECTOR_TYPES={"1":"CCS1","2":"CCS2","3":"CHAdeMO","4":"Tesla TPC","5":"J1772","6":"Type2","254":"其他","255":"其他","J1772(Type1)":"J1772","Mennekes(Type2)":"Type2"};
 const CHARGING_OPERATOR_PROFILES=[
   {key:"ev2",brand:"電小二 EV2",ids:["58430020"],names:["程豐資通股份有限公司"],aliases:["電小二","EV2","程豐"],official:"https://www.ev2.com.tw/",ios:"https://apps.apple.com/tw/app/%E9%9B%BB%E5%B0%8F%E4%BA%8C-%E9%9B%BB%E5%8B%95%E8%BB%8A%E5%85%85%E9%9B%BB%E7%AB%99/id6677032732",android:"https://play.google.com/store/apps/details?id=tw.delta.android"},
-  {key:"evoasis",brand:"EVOASIS",names:["源點科技股份有限公司"],aliases:["OASIS","源點科技"],official:"https://www.evoasis.com.tw/",stationMap:"https://www.evoasis.com.tw/charging-station",chargeGuide:"https://www.evoasis.com.tw/chargingapp",rateGuide:"https://www.evoasis.com.tw/search",chargeHint:"EVOASIS App・掃碼／隨插即充",rateShort:"指定站：離峰 6.5｜假日 8.4｜尖峰 14.9 元/度",rateHint:"星晴電價指定站：離峰 6.5、假日 8.4、尖峰 14.9 元/度；站點與時段適用範圍以 EVOASIS App 當下顯示為準",networkHint:"官方 DC 站點已導入；即時空槍只採可安全判讀的 TDX 槍況"},
-  {key:"upower",brand:"U-POWER",ids:["83235398"],names:["旭電馳科研","旭電馳科研股份有限公司"],aliases:["U POWER","UPOWER","旭電馳","旭電馳科研"],official:"https://www.u-power.com.tw/",stationMap:"https://www.u-power.com.tw/",chargeGuide:"https://www.u-power.com.tw/service/",rateGuide:"https://www.u-power.com.tw/service/",chargeHint:"U-POWER App・掃碼／AutoCharge",rateShort:"會員：離峰 6.9｜假日 8.5｜尖峰 13.5 元/度",rateHint:"2026 會員時段費率：離峰 6.9、假日 8.5、尖峰 13.5 元/度；非會員全天 14 元/度；整筆依起充時間費率計價，特例站點以 App 為準",networkHint:"官方站點已導入；即時空槍只採可安全判讀的 TDX 槍況"},
-  {key:"evalue",brand:"EVALUE 華城電機",names:["華城電能科技股份有限公司","華城電機股份有限公司"],aliases:["E-Value","華城電能","華城電機"],official:"https://www.evalue.com.tw/",stationMap:"https://www.evalue.com.tw/find",chargeGuide:"https://www.evalue.com.tw/app",rateGuide:"https://www.evalue.com.tw/recommended/3/84",chargeHint:"EVALUE App・即時狀態／預約充電",rateShort:"時間電價依功率級距，最低 6.6 元/度",rateHint:"2026/6/1 起指定站：120–180kW 離峰 6.6、假日 8.3、尖峰 13.5 元/度；240kW 以上離峰 8、假日 9、尖峰 13.5 元/度；部分站不適用，以 App 為準"},
-  {key:"icharging",brand:"iCharging 中興電工",names:["中興電工機械股份有限公司"],aliases:["iCharging","中興電工"],official:"https://www.icharging.com.tw/tw",stationMap:"https://www.icharging.com.tw/tw/map/index.aspx",chargeGuide:"https://www.icharging.com.tw/tw/about/%E5%B8%B8%E8%A6%8B%E5%95%8F%E9%A1%8C",rateGuide:"https://www.icharging.com.tw/tw/about/%E8%B2%BB%E7%8E%87%E8%AA%AA%E6%98%8E",chargeHint:"iParking App・依站點支援",rateHint:"公告原價 12 元/度；iParking 高速 9.2–10 元/度、市區 8 元/度，部分市區站採每分鐘 7 元，實際依站點公告",networkHint:"官方網站可依區域、槍種搜尋；主要提供 CCS1、CCS2"},
+  {key:"evoasis",brand:"EVOASIS",names:["源點科技股份有限公司"],aliases:["OASIS","源點科技"],official:"https://www.evoasis.com.tw/",stationMap:"https://www.evoasis.com.tw/charging-station",chargeGuide:"https://www.evoasis.com.tw/chargingapp",rateGuide:"https://www.evoasis.com.tw/search",chargeHint:"EVOASIS App・掃碼／隨插即充",rateCheckedAt:"2026-10-01",rateShort:"指定站：星晴 6.5｜假日 8.4｜尖峰最高 14.9 元/度",rateHint:"EVOASIS 星晴方案僅限指定站。非夏月一般指定站：平日 21:00～隔日 14:59 為 6.5 元/度、15:00～20:59 尖峰 14.9 元/度、假日 8.4 元/度；部分公有停車場方案不同，例如臺南市公有停車場尖峰 12.7 元/度。跨時段會依各時段分段計費，實際以 EVOASIS App／站點公告為準",networkHint:"官方 DC 站點已導入；即時空槍只採可安全判讀的 TDX 槍況"},
+  {key:"upower",brand:"U-POWER",ids:["83235398"],names:["旭電馳科研","旭電馳科研股份有限公司"],aliases:["U POWER","UPOWER","旭電馳","旭電馳科研"],official:"https://www.u-power.com.tw/",stationMap:"https://www.u-power.com.tw/",chargeGuide:"https://www.u-power.com.tw/service/",rateGuide:"https://www.u-power.com.tw/service/",chargeHint:"U-POWER App・掃碼／AutoCharge",rateCheckedAt:"2026-10-01",rateShort:"夏月會員：離峰 6.9｜假日 8.5｜尖峰 13.5 元/度",rateHint:"2026 夏月 5/16–10/15；平日 16:00–22:00 為尖峰。會員離峰 6.9、假日 8.5、尖峰 13.5 元/度；非會員全天 14 元/度；整筆依起充時間費率計價，特例站點以 App 為準",networkHint:"官方站點已導入；即時空槍只採可安全判讀的 TDX 槍況"},
+  {key:"evalue",brand:"EVALUE 華城電機",names:["華城電能科技股份有限公司","華城電機股份有限公司"],aliases:["E-Value","華城電能","華城電機"],official:"https://www.evalue.com.tw/",stationMap:"https://www.evalue.com.tw/find",chargeGuide:"https://www.evalue.com.tw/app",rateGuide:"https://www.evalue.com.tw/recommended/3/84",chargeHint:"EVALUE App・即時狀態／預約充電",rateCheckedAt:"2026-10-01",rateShort:"120–180 kW 6.6／8.3／13.5・240 kW+ 8／9／13.5 元/度",rateHint:"2026/6/1 起指定站：120–180kW 離峰 6.6、假日 8.3、尖峰 13.5 元/度；240kW 以上離峰 8、假日 9、尖峰 13.5 元/度；部分站不適用，以 App 為準"},
+  {key:"icharging",brand:"iCharging 中興電工",names:["中興電工機械股份有限公司"],aliases:["iCharging","中興電工"],official:"https://www.icharging.com.tw/tw",stationMap:"https://www.icharging.com.tw/tw/map/index.aspx",chargeGuide:"https://www.icharging.com.tw/tw/about/%E5%B8%B8%E8%A6%8B%E5%95%8F%E9%A1%8C",rateGuide:"https://www.icharging.com.tw/tw/about/%E8%B2%BB%E7%8E%87%E8%AA%AA%E6%98%8E",chargeHint:"iParking App・依站點支援",rateCheckedAt:"2026-10-01",rateShort:"iParking：高速 9.2–10｜市區 8 元/度",rateHint:"iCharging 公告原價 12 元/度；iParking 會員高速公路服務區 9.2–10 元/度、市區站點 8 元/度；部分市區站採每分鐘 7 元，實際依官方站點與合作夥伴公告",networkHint:"官方網站可依區域、槍種搜尋；主要提供 CCS1、CCS2"},
   {key:"starcharger",brand:"星舟快充",names:["星舟快充"],aliases:["StarCharger","星舟"],official:"https://starcharger.com.tw/"},
-  {key:"tail",brand:"TAIL 特爾電力",names:["特爾電力股份有限公司"],aliases:["TAIL","特爾"],official:"https://www.evtail.com.tw/",stationMap:"https://www.evtail.com.tw/locations",chargeGuide:"https://www.evtail.com.tw/",rateGuide:"https://www.evtail.com.tw/",chargeHint:"TAIL App・掃碼充電",rateShort:"尖峰／離峰浮動・依現場與 App",rateHint:"TAIL 官方說明費率依用電量、離峰與尖峰浮動；目前未公開全網統一數字，詳細費率以現場與 App 當下標示為準",networkHint:"官方站點已導入；部分站點功率與席次仍需由 TDX 或官方補齊"},
+  {key:"tail",brand:"TAIL 特爾電力",names:["特爾電力股份有限公司"],aliases:["TAIL","特爾"],official:"https://www.evtail.com.tw/",stationMap:"https://www.evtail.com.tw/locations",chargeGuide:"https://www.evtail.com.tw/",rateGuide:"https://www.evtail.com.tw/",chargeHint:"TAIL App・掃碼充電",rateCheckedAt:"2026-10-01",rateShort:"尖峰／離峰浮動・依現場與 App",rateHint:"TAIL 官方說明費率依用電量、離峰與尖峰浮動；目前未公開全網統一數字，詳細費率以現場與 App 當下標示為準",networkHint:"官方站點已導入；部分站點功率與席次仍需由 TDX 或官方補齊"},
   {key:"acon",brand:"Acon-eco",names:["連展電能科技股份有限公司"],aliases:["Acon","連展電能"],official:"https://www.acon-eco.com/"},
   {key:"noodoe",brand:"Noodoe",names:["拓廣科技","拓廣科技股份有限公司"],aliases:["拓廣","Noodoe EV"],official:"https://www.noodoe.com.tw/"},
-  {key:"tesla",brand:"Tesla 超級充電",names:["台灣特斯拉汽車有限公司"],aliases:["特斯拉","Tesla","Tesla Supercharger"],official:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",stationMap:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",chargeGuide:"https://www.tesla.com/zh_tw/support/charging/supercharging",rateGuide:"https://www.tesla.com/zh_tw/support/charging/supercharging",chargeHint:"Tesla App・插槍自動充電",rateShort:"動態費率・部分站分尖峰／離峰",rateHint:"Tesla 各站價格可能不同並採動態定價；部分站有尖峰／非尖峰費率，實際價格以車機或 Tesla App 站點頁當下顯示為準",networkHint:"Tesla App 可查看官方可用充電座、最高功率與站點價格；COLA GO 的即時空槍只顯示可安全判讀的 TDX 資料，不把官方網站清單假裝成即時空槍"}
+  {key:"tesla",brand:"Tesla 超級充電",names:["台灣特斯拉汽車有限公司"],aliases:["特斯拉","Tesla","Tesla Supercharger"],official:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",stationMap:"https://www.tesla.com/zh_TW/findus/list/superchargers/Taiwan",chargeGuide:"https://www.tesla.com/zh_tw/support/charging/supercharging",rateGuide:"https://www.tesla.com/zh_tw/support/charging/supercharging",chargeHint:"Tesla App・插槍自動充電",rateCheckedAt:"2026-10-01",rateShort:"動態費率・部分站分尖峰／離峰",rateHint:"Tesla 各站價格可能不同並採動態定價；部分站有尖峰／非尖峰費率，實際價格以車機或 Tesla App 站點頁當下顯示為準",networkHint:"Tesla App 可查看官方可用充電座、最高功率與站點價格；COLA GO 的即時空槍只顯示可安全判讀的 TDX 資料，不把官方網站清單假裝成即時空槍"}
 ];
 const CHARGING_MAJOR_KEYS=["evoasis","upower","tail","evalue","icharging","tesla"];
 const CHARGING_PRIORITY_KEYS=["evoasis","upower","tail","tesla"];
@@ -222,7 +222,7 @@ const CHARGING_OFFICIAL_CACHE_KEYS=["evoasis","upower","tail","evalue"];
 function chargingIntegrationLabel(key){
   if(CHARGING_OFFICIAL_CACHE_KEYS.includes(key))return "官方站點已導入";
   if(key==="tesla")return "優先整合・TDX 即時＋Tesla 官方";
-  if(key==="icharging")return "待新增導入中";
+  if(key==="icharging")return "官方地圖可用・站點快取待導入";
   return "TDX／官方資料";
 }
 const ICHARGING_PLUG_AND_CHARGE=[
@@ -370,7 +370,9 @@ function chargingPriorityStats(key){
   const liveRows=rows.filter(x=>x.road==="tdx"&&!x.liveStale&&chargingLiveCounts(x).total>0);
   const available=liveRows.reduce((sum,x)=>sum+chargingLiveCounts(x).available,0);
   const maxKw=Math.max(0,...rows.map(chargingPowerKw).filter(v=>Number.isFinite(v)&&v>0));
-  return {rows,liveRows,available,maxKw};
+  const updatedTimes=liveRows.map(x=>Date.parse(x.statusUpdatedAt||"")).filter(Number.isFinite);
+  const latestUpdatedAt=updatedTimes.length?new Date(Math.max(...updatedTimes)).toISOString():"";
+  return {rows,liveRows,available,maxKw,latestUpdatedAt};
 }
 function renderChargingPriorityPanel(){
   ensureChargingPriorityPanel();
@@ -383,9 +385,10 @@ function renderChargingPriorityPanel(){
     const power=stats.maxKw?stats.maxKw+" kW":"依站點資料";
     const live=stats.liveRows.length?stats.liveRows.length+" 站有即時":"即時覆蓋待補";
     const open=stats.liveRows.length?stats.available+" 空槍":"-- 空槍";
+    const freshness=stats.latestUpdatedAt?chargingLiveAgeLabel(stats.latestUpdatedAt):"即時更新待補";
     return '<button type="button" data-charge-priority="'+esc(key)+'">'+
       '<span class="charging-coverage-brand"><b>'+esc(profile.brand)+'</b><small>'+esc(chargingIntegrationLabel(key))+'</small></span>'+
-      '<span class="charging-coverage-stats"><strong>'+esc(open)+'</strong><small>'+esc(live)+'</small><em>最高功率 '+esc(power)+'</em></span>'+
+      '<span class="charging-coverage-stats"><strong>'+esc(open)+'</strong><small>'+esc(live)+'</small><em>最高功率 '+esc(power)+'</em><em class="charging-priority-freshness">'+esc(freshness)+'</em></span>'+
       '<small class="charging-network-legend">'+esc(profile.rateShort||"費率依官方")+'</small>'+
     '</button>';
   }).join("");
@@ -417,12 +420,96 @@ function chargingDistanceKm(x){
   const c=Math.sin(a/2)**2+Math.cos(toRad(state.chargingOrigin.lat))*Math.cos(toRad(lat))*Math.sin(b/2)**2;
   return 6371*2*Math.atan2(Math.sqrt(c),Math.sqrt(1-c));
 }
+function chargingPriorityFastEligible(x){
+  const key=chargingOperatorProfile(x)?.key||"";
+  if(!CHARGING_PRIORITY_KEYS.includes(key))return false;
+  if(x?.road!=="tdx"||x?.liveStale)return false;
+  const counts=chargingLiveCounts(x);
+  if(counts.available<=0||counts.total<=0)return false;
+  return chargingPowerKw(x)>=100;
+}
+function chargingSnapshotStationKey(x){
+  const direct=String(x?.stationId||x?.ChargingStationID||x?.id||"").trim();
+  if(direct)return "id:"+direct;
+  const lat=Number(x?.lat),lon=Number(x?.lon);
+  const geo=Number.isFinite(lat)&&Number.isFinite(lon)?lat.toFixed(5)+","+lon.toFixed(5):"";
+  return ["fallback",chargingOperatorProfile(x)?.key||x?.operator||"",x?.city||"",x?.name||"",geo,x?.direction||""].join("|").toLowerCase();
+}
+function chargingSnapshot(rows){
+  const stations=new Map();
+  (rows||[]).forEach(row=>{
+    const key=chargingSnapshotStationKey(row);
+    const available=Math.max(0,chargingLiveCounts(row).available||0);
+    const previous=stations.get(key);
+    if(!previous||available>previous.available)stations.set(key,{row,available});
+  });
+  return {
+    stations:stations.size,
+    available:[...stations.values()].reduce((sum,item)=>sum+item.available,0)
+  };
+}
+function chargingAvailableSnapshot(){
+  return chargingSnapshot((state.charging||[]).filter(x=>
+    (state.chargingCity==="all"||x.city===state.chargingCity)&&
+    x?.road==="tdx"&&!x?.liveStale&&chargingLiveCounts(x).total>0&&chargingLiveCounts(x).available>0
+  ));
+}
+function chargingPriorityFastSnapshot(){
+  return chargingSnapshot((state.charging||[]).filter(x=>
+    (state.chargingCity==="all"||x.city===state.chargingCity)&&chargingPriorityFastEligible(x)
+  ));
+}
+function renderChargingFirstLayerStatus(){
+  const availableStatus=$("#chargingAvailableOnly")?.querySelector("[data-available-status]");
+  const priorityStatus=$("#chargingPriorityFast")?.querySelector("[data-priority-fast-status]");
+  if(!(state.charging||[]).length){
+    if(availableStatus)availableStatus.textContent="資料整理中";
+    if(priorityStatus)priorityStatus.textContent="資料整理中";
+    return;
+  }
+  const available=chargingAvailableSnapshot();
+  const priority=chargingPriorityFastSnapshot();
+  if(availableStatus)availableStatus.textContent=available.stations?available.stations+" 站 · "+available.available+" 空槍":"目前無可確認空槍";
+  if(priorityStatus)priorityStatus.textContent=priority.stations?priority.stations+" 站 · "+priority.available+" 空槍":"目前無符合";
+}
+function chargingPriorityFastReason(x){
+  if(!chargingPriorityFastEligible(x))return "";
+  const counts=chargingLiveCounts(x);
+  const kw=chargingPowerKw(x);
+  const freshness=chargingLiveAgeLabel(x?.statusUpdatedAt);
+  return "主力空槍快充｜空槍 "+counts.available+"・"+Math.round(kw)+" kW・"+freshness;
+}
+function chargingDecisionRateCompact(x){
+  const station=chargingRateSummary(x?.chargingRate);
+  if(station)return station;
+  const profile=chargingOperatorProfile(x);
+  if(profile?.key==="tesla")return "動態費率";
+  if(profile?.rateShort)return "業者方案";
+  return "依站點／App";
+}
+function chargingDecisionStripMarkup(x){
+  const tdx=x?.road==="tdx",counts=chargingLiveCounts(x),live=tdx&&!x.liveStale&&counts.total>0;
+  const availability=live?(counts.available>0?"空槍 "+counts.available+"/"+counts.total:"目前無空槍"):(x?.liveStale?"槍況已逾時":x?.officialSupplemental?"即時未驗證":"空槍未確認");
+  const availabilityClass=live?(counts.available>0?" is-open":" is-full"):" is-muted";
+  const kw=chargingPowerKw(x);
+  const power=kw>0?Math.round(kw)+" kW":"功率未提供";
+  const rate=chargingDecisionRateCompact(x);
+  const distance=chargingDistanceKm(x);
+  const distanceText=distance==null?"":(distance<10?distance.toFixed(1):Math.round(distance))+" km";
+  return '<div class="charging-decision-strip'+(distanceText?' has-distance':'')+'">'+
+    '<span class="charging-decision-chip'+availabilityClass+'"><small>即時</small><b>'+esc(availability)+'</b></span>'+
+    '<span class="charging-decision-chip'+(kw>=100?' is-fast':'')+'"><small>功率</small><b>'+esc(power)+'</b></span>'+
+    '<span class="charging-decision-chip is-rate"><small>費率</small><b>'+esc(rate)+'</b></span>'+
+    (distanceText?'<span class="charging-decision-chip is-distance"><small>距離</small><b>'+esc(distanceText)+'</b></span>':"")+
+  '</div>';
+}
 function chargingQuickMatch(x){
   if(state.chargingQuick==="all")return true;
   if(state.chargingQuick==="available"){
     return x.road==="tdx"&&!x.liveStale&&chargingLiveCounts(x).available>0;
   }
   if(state.chargingQuick==="fast")return chargingPowerKw(x)>=100;
+  if(state.chargingQuick==="priorityfast")return chargingPriorityFastEligible(x);
   if(state.chargingQuick==="ccs2")return chargingConnectors(x).includes("CCS2");
   if(state.chargingQuick==="tesla"){
     const text=[x.name,x.operator,x.note,chargingOperatorLabel(x)].join(" ").toLowerCase();
@@ -430,6 +517,17 @@ function chargingQuickMatch(x){
   }
   if(state.chargingQuick==="ev2")return chargingOperatorProfile(x)?.key==="ev2";
   return true;
+}
+function chargingPriorityFastSort(a,b){
+  const ta=Date.parse(a?.statusUpdatedAt||"");
+  const tb=Date.parse(b?.statusUpdatedAt||"");
+  const aTime=Number.isFinite(ta)?ta:0,bTime=Number.isFinite(tb)?tb:0;
+  if(aTime!==bTime)return bTime-aTime;
+  const aAvailable=chargingLiveCounts(a).available,bAvailable=chargingLiveCounts(b).available;
+  if(aAvailable!==bAvailable)return bAvailable-aAvailable;
+  const aPower=chargingPowerKw(a),bPower=chargingPowerKw(b);
+  if(aPower!==bPower)return bPower-aPower;
+  return String(a?.name||"").localeCompare(String(b?.name||""),"zh-Hant");
 }
 function chargingSortRank(x){
   if(x?.officialSupplemental)return 3;
@@ -449,46 +547,67 @@ function loadChargingFavorites(){
     state.chargingFavorites=Array.isArray(rows)?rows:[];
   }catch{state.chargingFavorites=[];}
 }
+function chargingLiveAgeLabel(value,now=Date.now()){
+  if(!value)return "更新時間未提供";
+  const ts=Date.parse(value);
+  if(!Number.isFinite(ts))return "更新時間未提供";
+  const diff=Math.max(0,now-ts);
+  const minute=60000,hour=3600000;
+  if(diff<minute)return "剛剛更新";
+  if(diff<60*minute)return Math.max(1,Math.floor(diff/minute))+" 分鐘前更新";
+  if(diff<24*hour)return Math.floor(diff/hour)+" 小時前更新";
+  return formatTime(value);
+}
+function chargingTrustInfo(x){
+  const profile=chargingOperatorProfile(x);
+  if(x?.officialSupplemental)return {level:"official",label:"業者官方站點",detail:"即時空槍未由 TDX 驗證"};
+  if(x?.road!=="tdx")return {level:"source",label:"站點資料",detail:"即時槍況未提供"};
+  const updated=chargingLiveAgeLabel(x?.statusUpdatedAt);
+  if(x?.liveStale)return {level:"stale",label:"TDX 槍況逾時",detail:updated};
+  const counts=chargingLiveCounts(x);
+  if(counts.total>0)return {level:"live",label:"TDX 即時驗證",detail:updated};
+  return {level:"source",label:"TDX 官方站點",detail:profile?"即時槍況尚未提供":"槍況尚未提供"};
+}
+function chargingTrustMarkup(x){
+  const info=chargingTrustInfo(x);
+  return '<div class="charging-trust '+esc(info.level)+'"><span><i></i>'+esc(info.label)+'</span><small>'+esc(info.detail)+'</small></div>';
+}
 function chargingStatusMarkup(x){
   const tdx=x.road==="tdx";
   const profile=chargingOperatorProfile(x);
-  const unknown=(title,detail,kind="is-unknown")=>'<div class="charging-status-block '+kind+'"><div class="charging-availability-row '+kind+'"><div class="charging-availability-main"><strong>--</strong><span>空槍</span></div><div class="charging-availability-copy"><b>'+esc(title)+'</b><small>'+esc(detail)+'</small></div></div></div>';
+  const note=(title,detail,kind="is-unknown")=>'<div class="charging-status-note '+kind+'"><b>'+esc(title)+'</b><small>'+esc(detail)+'</small></div>';
   if(x?.officialSupplemental){
     const brand=profile?.brand||"業者";
-    return unknown("業者官方站點",brand+" 官方已列站 · 即時空槍尚未由 TDX 驗證");
+    return note("即時槍況尚未驗證",brand+" 官方已列站；需要時可直接開業者官方資訊確認。","is-official");
   }
-  if(!tdx)return unknown("即時狀態未知","此筆未提供即時空槍");
-  const updated=x.statusUpdatedAt?formatTime(x.statusUpdatedAt):"更新時間未提供";
+  if(!tdx)return note("即時槍況未提供","此筆站點目前沒有可安全判讀的即時空槍資料。");
+  const updated=chargingLiveAgeLabel(x.statusUpdatedAt);
   if(x.liveStale){
     const detail=profile?.key==="tesla"
-      ?"TDX 狀態已逾時 · Tesla App 可查看官方可用充電座"
-      :"不列入「有空槍」 · "+updated;
-    return unknown("狀態已逾時",detail,"is-stale");
+      ?"TDX 狀態已逾時；Tesla App 可查看官方可用充電座。"
+      :"不列入「有空槍」篩選 · "+updated;
+    return note("即時槍況已逾時",detail,"is-stale");
   }
   const counts=chargingLiveCounts(x);
   if(!counts.total){
     const detail=profile?.key==="tesla"
-      ?"TDX 尚未提供即時空槍 · Tesla App 可查看官方可用充電座"
+      ?"TDX 尚未提供即時空槍；Tesla App 可查看官方可用充電座。"
       :profile
-        ? "TDX 尚未收到 "+profile.brand+" 即時槍況 · 可由業者官方確認"
-        : "TDX 目前沒有可安全判讀的即時槍況 · "+updated;
-    return unknown("未提供 TDX 即時槍況",detail);
+        ? "TDX 尚未收到 "+profile.brand+" 可安全判讀的即時槍況。"
+        : "TDX 目前沒有可安全判讀的即時槍況。";
+    return note("即時槍況未提供",detail);
   }
-
-  const open=counts.available>0;
   const badges=[
+    '<span class="available">可用 '+counts.available+'</span>',
     counts.occupied?'<span class="occupied">使用中 '+counts.occupied+'</span>':"",
     counts.fault?'<span class="fault">故障 '+counts.fault+'</span>':"",
     counts.unavailable?'<span class="unknown">其他不可用 '+counts.unavailable+'</span>':"",
     counts.unknown?'<span class="unknown">未知 '+counts.unknown+'</span>':""
   ].join("");
-  return '<div class="charging-status-block">'+
-    '<div class="charging-availability-row '+(open?'is-open':'is-full')+'">'+
-      '<div class="charging-availability-main"><strong>'+counts.available+'</strong><span>空槍</span></div>'+
-      '<div class="charging-availability-copy"><b>'+(open?'現在可用':'目前無空槍')+'</b><small>總計 '+counts.total+' 槍 · '+esc(updated)+'</small></div>'+
-    '</div>'+
-    (badges?'<div class="charging-live-badges">'+badges+'</div>':"")+
-  '</div>';
+  return '<details class="charging-live-detail"'+(counts.fault>0?' open':"")+'>'+
+    '<summary><span><b>槍況詳情</b><small>總計 '+counts.total+' 槍 · '+esc(updated)+'</small></span><em>'+(counts.fault>0?'有故障資訊':'查看')+'</em></summary>'+
+    '<div class="charging-live-badges">'+badges+'</div>'+
+  '</details>';
 }
 function chargingDisplayText(value){
   return String(value??"")
@@ -502,12 +621,8 @@ function chargingDisplayText(value){
 function chargingDecisionRateLabel(x){
   const station=chargingRateSummary(x?.chargingRate);
   if(station)return "站點費率 "+station;
-  const key=chargingOperatorProfile(x)?.key||"";
-  if(key==="upower")return "會員 6.9／8.5／13.5・非會員 14 元/度";
-  if(key==="evoasis")return "指定站 6.5／8.4／14.9 元/度";
-  if(key==="tail")return "尖峰／離峰浮動・依現場";
-  if(key==="tesla")return "動態費率・App／車機";
-  return "";
+  const profile=chargingOperatorProfile(x);
+  return profile?.rateShort||"";
 }
 function chargingDecisionPowerLabel(x){
   const kw=chargingPowerKw(x);
@@ -542,11 +657,31 @@ function chargingRateSummary(value){
   if(/費用詳情|依.*app|依.*公告|浮動/i.test(text))return "依官方";
   return "";
 }
+function chargingRateSourceLabel(x){
+  const stationRate=chargingRateSummary(x?.chargingRate);
+  if(stationRate){
+    if(x?.officialSupplemental)return "本站費率・業者官方站點";
+    if(x?.road==="tdx")return "本站費率・TDX／站點資料";
+    return "本站費率・站點資料";
+  }
+  const key=chargingOperatorProfile(x)?.key||"";
+  if(key==="upower"||key==="evoasis"||key==="evalue")return "業者官方方案・實際依站點／App";
+  if(key==="icharging")return "官方費率／會員方案・實際依站點／App";
+  if(key==="tail")return "業者官方規則・實際依現場／App";
+  if(key==="tesla")return "動態費率・Tesla App／車機確認";
+  return "";
+}
+function chargingRateCheckedLabel(x){
+  const value=chargingOperatorProfile(x)?.rateCheckedAt||"";
+  if(!value)return "";
+  const d=new Date(value+"T00:00:00");
+  if(Number.isNaN(d.getTime()))return "";
+  return "官方費率核對 "+new Intl.DateTimeFormat("zh-TW",{year:"numeric",month:"numeric",day:"numeric"}).format(d);
+}
 function chargingPriorityOfficialUrl(x){
   const profile=chargingOperatorProfile(x);
-  if(!profile||!CHARGING_PRIORITY_KEYS.includes(profile.key))return "";
-  if(profile.key==="tesla")return profile.stationMap||profile.official||"";
-  return profile.rateGuide||profile.stationMap||profile.official||"";
+  if(!profile||!CHARGING_MAJOR_KEYS.includes(profile.key))return "";
+  return profile.stationMap||profile.official||profile.rateGuide||"";
 }
 function chargingPriorityOfficialLabel(x){
   const key=chargingOperatorProfile(x)?.key||"";
@@ -554,6 +689,8 @@ function chargingPriorityOfficialLabel(x){
   if(key==="evoasis")return "EVOASIS 官方";
   if(key==="upower")return "U-POWER 官方";
   if(key==="tail")return "TAIL 官方";
+  if(key==="evalue")return "EVALUE 官方";
+  if(key==="icharging")return "iCharging 官方";
   return "官方資訊";
 }
 function chargingDetailMarkup(x){
@@ -569,6 +706,8 @@ function chargingDetailMarkup(x){
     ["狀態更新",x.statusUpdatedAt?formatTime(x.statusUpdatedAt):""],
     [profile?.chargeHint?"官方充電方式":"",profile?.chargeHint||""],
     [profile?.rateHint?"官方費率提示":"",profile?.rateHint||""],
+    [chargingRateSourceLabel(x)?"費率來源":"",chargingRateSourceLabel(x)],
+    [chargingRateCheckedLabel(x)?"費率核對":"",chargingRateCheckedLabel(x)],
     [profile?.networkHint?"官方服務提示":"",profile?.networkHint||""],
     [chargingCapabilities(x).length?"官方支援功能":"",chargingCapabilities(x).map(c=>c.label).join("、")]
   ].filter(row=>row[0]&&row[1]);
@@ -588,10 +727,39 @@ function chargingDetailMarkup(x){
     (links?'<div class="charging-operator-links">'+links+'</div>':"")+
     '</details>';
 }
+function syncChargingOperatorOptions(){
+  const select=$("#chargingOperator");
+  if(!select)return;
+  const byOperator=new Map();
+  (state.charging||[]).forEach(row=>{
+    const value=String(row?.operator||"").trim();
+    if(!value||value==="TDX")return;
+    if(!byOperator.has(value))byOperator.set(value,row);
+  });
+  const rows=[...byOperator.entries()].map(([value,row])=>({
+    value,
+    label:chargingOperatorLabel(row),
+    major:chargingMajorRank(row)
+  })).sort((a,b)=>a.major-b.major||a.label.localeCompare(b.label,"zh-Hant")||a.value.localeCompare(b.value,"zh-Hant"));
+  const signature=rows.map(row=>row.value+"|"+row.label).join("\n");
+  if(select.dataset.operatorSignature!==signature){
+    select.innerHTML='<option value="all">全部業者</option>'+rows.map(row=>
+      '<option value="'+esc(row.value)+'">'+esc(row.label)+(row.label!==row.value?'｜'+esc(row.value):'')+'</option>'
+    ).join("");
+    select.dataset.operatorSignature=signature;
+  }
+  if(state.chargingOperator!=="all"&&rows.some(row=>row.value===state.chargingOperator))select.value=state.chargingOperator;
+  else{
+    state.chargingOperator="all";
+    select.value="all";
+  }
+}
 function renderCharging(){
   const root=$("#chargingList");
   if(!root)return;
+  syncChargingOperatorOptions();
   renderChargingPriorityPanel();
+  renderChargingFirstLayerStatus();
 
   const q=($("#chargingSearch")?.value||"").trim().toLowerCase();
   const candidateRows=state.charging
@@ -610,6 +778,10 @@ function renderCharging(){
     : candidateRows;
 
   rows.sort((a,b)=>{
+    if(state.chargingSort!=="nearby"&&state.chargingQuick==="priorityfast"){
+      const trusted=chargingPriorityFastSort(a,b);
+      if(trusted)return trusted;
+    }
     if(state.chargingSort==="nearby"){
       const da=chargingDistanceKm(a),db=chargingDistanceKm(b);
       if(da!=null||db!=null){
@@ -641,6 +813,7 @@ function renderCharging(){
     const label=$("#chargingAvailableOnly").querySelector("b");
     if(label)label.textContent=state.chargingAvailableOnly?"只顯示有空槍":"只看有空槍";
   }
+  if($("#chargingPriorityFast"))$("#chargingPriorityFast").setAttribute("aria-pressed",String(state.chargingQuick==="priorityfast"));
   if($("#chargingNearby")){
     $("#chargingNearby").setAttribute("aria-pressed",String(state.chargingSort==="nearby"));
     const label=$("#chargingNearby").querySelector("b");
@@ -656,6 +829,7 @@ function renderCharging(){
     const cityText=$("#chargingCity")?.selectedOptions?.[0]?.textContent;
     if(state.chargingCity!=="all"&&cityText)context.push(cityText);
     if(state.chargingQuick==="fast")context.push("100 kW+");
+    if(state.chargingQuick==="priorityfast")context.push("主力空槍快充");
     if(state.chargingQuick==="ccs2")context.push("CCS2");
     if(state.chargingQuick==="tesla")context.push("Tesla");
     if(state.chargingQuick==="ev2")context.push("電小二");
@@ -663,9 +837,19 @@ function renderCharging(){
       const majorProfile=CHARGING_OPERATOR_PROFILES.find(x=>x.key===state.chargingMajor);
       if(majorProfile)context.push(majorProfile.brand);
     }
+    if(state.chargingFavoritesOnly)context.push("只看收藏");
+    if(state.road!=="all")context.push("國 "+state.road);
+    if(state.chargingDirection!=="all")context.push({south:"南下",north:"北上",shared:"雙向共用"}[state.chargingDirection]||state.chargingDirection);
+    if(state.chargingConnector!=="all")context.push(state.chargingConnector);
+    if(Number(state.chargingPower)>0)context.push(state.chargingPower+" kW+");
+    if(state.chargingOperator!=="all")context.push(state.chargingOperator);
+    if(q)context.push("搜尋「"+q+"」");
     $("#chargingResultSummary").textContent=resultCount===0&&state.chargingAvailableOnly
       ?"目前沒有可確認空槍"+(state.chargingSort==="nearby"?" · 可改看附近站點":"")
       :resultCount+" 站符合"+suffix+(context.length?" · "+context.join(" · "):"");
+    const clear=$("#chargingResultClear");
+    if(clear)clear.hidden=context.length===0;
+    $("#chargingResultBar")?.classList.toggle("has-filter",context.length>0);
   }
   if($("#chargingFindNow"))$("#chargingFindNow").setAttribute("aria-pressed",String(state.chargingSort==="nearby"&&state.chargingAvailableOnly));
 
@@ -692,17 +876,21 @@ function renderCharging(){
     const majorNetwork=CHARGING_MAJOR_KEYS.includes(profile?.key||"");
     const priorityNetwork=CHARGING_PRIORITY_KEYS.includes(profile?.key||"");
     const powerDecision=priorityNetwork?chargingDecisionPowerLabel(x):chargingPowerLabel(x);
-    const rateDecision=priorityNetwork?chargingDecisionRateLabel(x):chargingRateSummary(x.chargingRate);
+    const rateDecision=majorNetwork?chargingDecisionRateLabel(x):chargingRateSummary(x.chargingRate);
+    const rateSource=majorNetwork?chargingRateSourceLabel(x):"";
+    const rateChecked=majorNetwork?chargingRateCheckedLabel(x):"";
+    const priorityFastReason=state.chargingQuick==="priorityfast"?chargingPriorityFastReason(x):"";
     return '<article class="list-item charging-item '+(availableNow?'is-available ':'')+(majorNetwork?'is-major-network':'')+(priorityNetwork?' is-priority-network':'')+'">'+
       '<div class="list-head">'+
         '<div><div class="charging-title-line"><h3>'+esc(x.name)+'</h3></div><div class="meta">'+esc(meta)+'</div></div>'+
         '<span class="route-tag">'+esc(routeTag)+'</span>'+
       '</div>'+
+      chargingTrustMarkup(x)+
+      chargingDecisionStripMarkup(x)+
       chargingStatusMarkup(x)+
+      (priorityFastReason?'<div class="charging-match-reason">'+esc(priorityFastReason)+'</div>':"")+
       '<div class="specs charging-facts">'+
-        (distance!=null?'<span class="charging-distance">'+esc(distance<10?distance.toFixed(1):Math.round(distance))+' km</span>':"")+
         (supplemental&&Number(x.spaces)<=0?'<span>席次未提供</span>':'<span>'+esc(x.spaces)+(supplemental?' 席':(tdx?' 充電點':' 車位'))+'</span>')+
-        '<span class="charging-power">'+esc(powerDecision)+'</span>'+
         (rateDecision?'<span class="charging-rate">'+esc(rateDecision)+'</span>':"")+
         chargingConnectors(x).map(c=>'<span class="charging-connector">'+esc(c)+'</span>').join("")+
         chargingCapabilities(x).map(c=>'<span class="charging-capability">'+esc(c.label)+'</span>').join("")+
@@ -711,9 +899,9 @@ function renderCharging(){
       chargingDetailMarkup(x)+
       '<div class="item-actions charging-nav-actions">'+
         '<button class="go charging-go-primary" data-charge-go="'+destination+'">直接導航</button>'+
+        (chargingPriorityOfficialUrl(x)?'<button class="charging-official-primary" data-charge-official-url="'+esc(chargingPriorityOfficialUrl(x))+'">'+esc(chargingPriorityOfficialLabel(x))+'</button>':"")+
         '<button class="charging-map-choice" data-charge-nav-toggle="'+esc(key)+'">選地圖</button>'+
         '<button class="favorite-action '+(favorite?'active':'')+'" data-charge-favorite="'+esc(key)+'" aria-pressed="'+favorite+'">'+(favorite?'已收藏':'收藏')+'</button>'+
-        (chargingPriorityOfficialUrl(x)?'<button data-charge-official-url="'+esc(chargingPriorityOfficialUrl(x))+'">'+esc(chargingPriorityOfficialLabel(x))+'</button>':"")+
         (!tdx&&["1","3","5"].includes(String(x.road))?'<button data-camera-road="'+esc(x.road)+'">CCTV</button>':"")+
       '</div>'+
       '<div class="charging-nav-menu" data-charge-nav-menu="'+esc(key)+'" hidden>'+
@@ -721,9 +909,11 @@ function renderCharging(){
         '<button data-charge-apple="'+destination+'">Apple 地圖</button>'+
       '</div>'+
     '</article>';
-  }).join(""):(state.chargingAvailableOnly
-    ? '<div class="empty charging-empty"><b>目前沒有可確認的即時空槍</b><p>'+(unverifiedNote?esc(unverifiedNote)+" ":"")+'可能真的滿位，也可能業者尚未把即時槍況回傳 TDX。COLA GO 不會把未知狀態誤標成「現在可用」。</p><button class="charging-empty-primary" data-charge-show-nearby>改看附近充電站</button><small>保留距離排序，只取消「只看空槍」</small></div>'
-    : '<div class="empty charging-empty"><b>沒有符合的充電站</b><p>可以清除篩選，或改用搜尋站名、地址、業者品牌。</p><button class="charging-empty-secondary" data-charge-clear-filters>清除充電篩選</button></div>');
+  }).join(""):(state.chargingQuick==="priorityfast"
+    ? '<div class="empty charging-empty charging-priority-fast-empty"><b>目前沒有同時符合的主力空槍快充</b><p>條件是 EVOASIS／U-POWER／TAIL／Tesla，且 TDX 可確認有空槍、資料未逾時、單槍功率至少 100 kW。可以先放寬其中一個條件。</p><div class="charging-empty-actions"><button class="charging-empty-primary" data-charge-relax="available">改看所有空槍</button><button class="charging-empty-secondary" data-charge-relax="fast">改看 100 kW+</button></div><small>未知槍況、逾時資料與未知功率不會混進主力快充結果。</small></div>'
+    : state.chargingAvailableOnly
+      ? '<div class="empty charging-empty"><b>目前沒有可確認的即時空槍</b><p>'+(unverifiedNote?esc(unverifiedNote)+" ":"")+'可能真的滿位，也可能業者尚未把即時槍況回傳 TDX。COLA GO 不會把未知狀態誤標成「現在可用」。</p><button class="charging-empty-primary" data-charge-show-nearby>改看附近充電站</button><small>保留距離排序，只取消「只看空槍」</small></div>'
+      : '<div class="empty charging-empty"><b>沒有符合的充電站</b><p>可以清除篩選，或改用搜尋站名、地址、業者品牌。</p><button class="charging-empty-secondary" data-charge-clear-filters>清除充電篩選</button></div>');
 
   $$("[data-charge-favorite]",root).forEach(b=>b.onclick=()=>{
     const key=b.dataset.chargeFavorite;
@@ -755,6 +945,13 @@ function renderCharging(){
     renderCharging();
     toast("已改看附近充電站");
   });
+  $("[data-charge-relax]",root).forEach(button=>button.addEventListener("click",()=>{
+    const next=button.dataset.chargeRelax==="available"?"available":"fast";
+    state.chargingQuick=next;
+    state.chargingAvailableOnly=false;
+    renderCharging();
+    toast(next==="available"?"已改看所有可確認空槍":"已改看 100 kW+ 充電站");
+  }));
   $("[data-charge-clear-filters]",root)?.addEventListener("click",()=>$("#resetChargingFilters")?.click());
 }
 
@@ -1779,10 +1976,35 @@ function bindChargingTools(){
     renderCharging();
   });
 
+  $("#chargingPriorityFast")?.addEventListener("click",()=>{
+    const active=state.chargingQuick==="priorityfast";
+    state.chargingQuick=active?"all":"priorityfast";
+    state.chargingMajor="all";
+    state.chargingOperator="all";
+    state.chargingAvailableOnly=false;
+    state.chargingFavoritesOnly=false;
+    state.chargingSort="smart";
+    state.chargingOrigin=null;
+    state.road="all";
+    state.chargingDirection="all";
+    state.chargingConnector="all";
+    state.chargingPower=0;
+    if($("#chargingOperator"))$("#chargingOperator").value="all";
+    if($("#chargingDirection"))$("#chargingDirection").value="all";
+    if($("#chargingConnector"))$("#chargingConnector").value="all";
+    if($("#chargingPower"))$("#chargingPower").value="0";
+    if($("#chargingSearch"))$("#chargingSearch").value="";
+    $("#roadFilter button").forEach((b,i)=>b.classList.toggle("active",i===0));
+    renderCharging();
+    toast(active?"已取消主力空槍快充":"已套用主力空槍快充");
+  });
+
   $("#chargingFavoritesOnly")?.addEventListener("click",()=>{
     state.chargingFavoritesOnly=!state.chargingFavoritesOnly;
     renderCharging();
   });
+
+  $("#chargingResultClear")?.addEventListener("click",()=>$("#resetChargingFilters")?.click());
 
   $("#resetChargingFilters")?.addEventListener("click",()=>{
     state.road="all";
