@@ -22,6 +22,8 @@ const state={
   chargingAvailableOnly:false,
   chargingSort:"smart",
   chargingOrigin:null,
+  chargingCompareKwh:50,
+  chargingCompareSort:"nearby",
   chargingFavoritesOnly:false,
   chargingFavorites:[],
   highway:"1",
@@ -35,6 +37,8 @@ const state={
   cctv:{status:"idle",items:[],source:"",error:""},
   cctvRoad:"all",
   cctvDirection:"all",
+  cctvOrigin:null,
+  cctvNearby:false,
   cctvLoading:false,
   cctvLastAttempt:0,
   trafficFallbackStatus:"idle",
@@ -479,11 +483,80 @@ function chargingPriorityFastReason(x){
   const freshness=chargingLiveAgeLabel(x?.statusUpdatedAt);
   return "主力空槍快充｜空槍 "+counts.available+"・"+Math.round(kw)+" kW・"+freshness;
 }
+function chargingTaipeiClock(value=new Date()){
+  const parts=Object.fromEntries(new Intl.DateTimeFormat("en-US",{
+    timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit",weekday:"short",
+    hour:"2-digit",minute:"2-digit",hourCycle:"h23"
+  }).formatToParts(value).filter(p=>p.type!=="literal").map(p=>[p.type,p.value]));
+  const hour=Number(parts.hour)||0,minute=Number(parts.minute)||0;
+  return {year:Number(parts.year)||0,month:Number(parts.month)||0,day:Number(parts.day)||0,weekday:parts.weekday||"",hour,minute,minutes:hour*60+minute};
+}
+function chargingDateBetween(clock,sm,sd,em,ed){
+  const value=clock.month*100+clock.day,start=sm*100+sd,end=em*100+ed;
+  return value>=start&&value<=end;
+}
+const EVOASIS_TAINAN_PUBLIC_RATE_STATIONS=["萬年三街","平通路永華六街","南聖公園","郡平路口","北成路38巷","龍山里臨時收費停車場","台南市立圖書館廣場","臺南市立圖書館廣場"];
+const EVOASIS_TAIPEI_PUBLIC_RATE_STATIONS=["新生高架民生錦州","建國南路高架橋下I區","建國南路高架橋下A區"];
+function chargingNameHasAny(x,names){
+  const value=String(x?.name||"").replace(/臺/g,"台").replace(/\s+/g,"");
+  return names.some(name=>value.includes(String(name).replace(/臺/g,"台").replace(/\s+/g,"")));
+}
+function chargingCurrentRateInfo(x,at=new Date()){
+  const station=chargingRateSummary(x?.chargingRate);
+  if(station)return {label:station,detail:"本站資料提供的費率",level:"station",current:true};
+  const key=chargingOperatorProfile(x)?.key||"";
+  const clock=chargingTaipeiClock(at),weekend=clock.weekday==="Sat"||clock.weekday==="Sun";
+  if(key==="upower"){
+    const summer=chargingDateBetween(clock,5,16,10,15);
+    if(!summer)return {label:"非夏月依官方",detail:"U-POWER 非夏月時段費率請以 App／官網當下公告為準",level:"dynamic",current:false};
+    let rate,period;
+    if(clock.weekday==="Sat"){
+      if(clock.minutes<360){rate=6.9;period="週末首日 06:00 前離峰";}
+      else{rate=8.5;period="週末假日";}
+    }else if(clock.weekday==="Sun"){rate=8.5;period="週末假日";}
+    else if(clock.minutes>=960&&clock.minutes<1320){rate=13.5;period="夏月平日尖峰";}
+    else{rate=6.9;period="夏月平日離峰";}
+    return {label:"會員 "+rate+" 元/度",detail:"U-POWER "+period+"・依起充時間計價・國定假日／特例站以官方為準",level:"timed",current:true,value:rate};
+  }
+  if(key==="evalue"){
+    const kw=chargingPowerKw(x);
+    const tier=kw>=240?"ultra":(kw>=120&&kw<=180?"fast":"");
+    if(!tier)return {label:"依 App 功率級距",detail:"EVALUE 時間電價需先確認此站充電樁功率是否屬 120–180 kW 或 240 kW 以上",level:"dynamic",current:false};
+    let rate,period;
+    if(weekend){rate=tier==="ultra"?9:8.3;period="週末假日";}
+    else if(clock.minutes>=960&&clock.minutes<1320){rate=13.5;period="平日尖峰";}
+    else{rate=tier==="ultra"?8:6.6;period="平日離峰";}
+    return {label:rate+" 元/度",detail:"EVALUE "+(tier==="ultra"?"240 kW+":"120–180 kW")+"・"+period+"・僅限時間電價適用站樁",level:"timed",current:true,value:rate};
+  }
+  if(key==="evoasis"){
+    const summer=chargingDateBetween(clock,6,1,9,30);
+    const tainan=chargingNameHasAny(x,EVOASIS_TAINAN_PUBLIC_RATE_STATIONS);
+    const taipei=chargingNameHasAny(x,EVOASIS_TAIPEI_PUBLIC_RATE_STATIONS);
+    const special=tainan||taipei;
+    const peakRate=tainan?12.7:taipei?13.2:14.9;
+    let rate,period;
+    if(clock.weekday==="Sat"){
+      if(clock.minutes<420){rate=6.5;period="週六 07:00 前星晴";}
+      else{rate=8.4;period="週末假日";}
+    }else if(clock.weekday==="Sun"){rate=8.4;period="週末假日";}
+    else{
+      const peakStart=summer?960:900,peakEnd=summer?1320:1260;
+      if(clock.minutes>=peakStart&&clock.minutes<peakEnd){rate=peakRate;period=(summer?"夏月":"非夏月")+"平日尖峰";}
+      else{rate=6.5;period=(summer?"夏月":"非夏月")+"星晴";}
+    }
+    return {label:(special?"公有站 ":"指定站 ")+rate+" 元/度",detail:"EVOASIS "+period+"・僅適用活動指定站，國定假日／其他特例以 App 為準",level:"timed",current:true,value:rate};
+  }
+  if(key==="tesla")return {label:"Tesla App 即時價",detail:"各站採動態費率，請以 Tesla App／車機當下價格為準",level:"dynamic",current:false};
+  if(key==="tail")return {label:"TAIL App 即時價",detail:"費率依站點與尖離峰浮動，請以現場／TAIL App 當下標示為準",level:"dynamic",current:false};
+  if(key==="icharging")return {label:"依站點 8–10 元",detail:"iParking 會員市區／高速方案不同，部分站採計時制；以站點公告為準",level:"dynamic",current:false};
+  return null;
+}
 function chargingDecisionRateCompact(x){
+  const current=chargingCurrentRateInfo(x);
+  if(current)return current.label;
   const station=chargingRateSummary(x?.chargingRate);
   if(station)return station;
   const profile=chargingOperatorProfile(x);
-  if(profile?.key==="tesla")return "動態費率";
   if(profile?.rateShort)return "業者方案";
   return "依站點／App";
 }
@@ -493,13 +566,13 @@ function chargingDecisionStripMarkup(x){
   const availabilityClass=live?(counts.available>0?" is-open":" is-full"):" is-muted";
   const kw=chargingPowerKw(x);
   const power=kw>0?Math.round(kw)+" kW":"功率未提供";
-  const rate=chargingDecisionRateCompact(x);
+  const rateInfo=chargingCurrentRateInfo(x),rate=rateInfo?.label||chargingDecisionRateCompact(x);
   const distance=chargingDistanceKm(x);
   const distanceText=distance==null?"":(distance<10?distance.toFixed(1):Math.round(distance))+" km";
   return '<div class="charging-decision-strip'+(distanceText?' has-distance':'')+'">'+
     '<span class="charging-decision-chip'+availabilityClass+'"><small>即時</small><b>'+esc(availability)+'</b></span>'+
     '<span class="charging-decision-chip'+(kw>=100?' is-fast':'')+'"><small>功率</small><b>'+esc(power)+'</b></span>'+
-    '<span class="charging-decision-chip is-rate"><small>費率</small><b>'+esc(rate)+'</b></span>'+
+    '<span class="charging-decision-chip is-rate'+(rateInfo?.current?' is-current':'')+'"><small>'+(rateInfo?.current?'目前費率':'費率')+'</small><b>'+esc(rate)+'</b></span>'+
     (distanceText?'<span class="charging-decision-chip is-distance"><small>距離</small><b>'+esc(distanceText)+'</b></span>':"")+
   '</div>';
 }
@@ -727,6 +800,170 @@ function chargingDetailMarkup(x){
     (links?'<div class="charging-operator-links">'+links+'</div>':"")+
     '</details>';
 }
+function ensureChargingComparePanel(){
+  if($("#chargingComparePanel"))return;
+  const source=$(".charging-source");
+  if(!source)return;
+  source.insertAdjacentHTML("beforebegin",
+    '<section class="charging-compare" id="chargingComparePanel">'+
+      '<div class="charging-compare-head"><div><span class="mini-label">NEARBY COMPARE</span><b>附近站比較</b><small>空槍・距離・功率・目前費率一次看</small></div><span id="chargingCompareState">等待定位</span></div>'+
+      '<div class="charging-compare-kwh" id="chargingCompareKwh" aria-label="預計充電量">'+
+        '<span>預計充電量</span>'+
+        [20,40,50,60].map(kwh=>'<button type="button" data-charge-kwh="'+kwh+'" aria-pressed="'+(kwh===50)+'">'+kwh+' kWh</button>').join("")+
+      '</div>'+
+      '<div class="charging-compare-sort" id="chargingCompareSort" aria-label="比較排序">'+
+        [['nearby','距離'],['available','空槍'],['power','功率'],['price','已知費率']].map(item=>'<button type="button" data-charge-compare-sort="'+item[0]+'" aria-pressed="'+(item[0]==='nearby')+'">'+item[1]+'</button>').join("")+
+      '</div>'+
+      '<div class="charging-compare-summary" id="chargingCompareSummary" hidden></div>'+
+      '<div class="charging-compare-grid" id="chargingCompareGrid"></div>'+
+    '</section>'
+  );
+}
+function chargingCompareRows(rows){
+  if(!state.chargingOrigin)return [];
+  const confirmed=(rows||[]).filter(x=>{
+    const d=chargingDistanceKm(x),counts=chargingLiveCounts(x);
+    return d!=null&&x?.road==="tdx"&&!x?.liveStale&&counts.total>0;
+  }).sort((a,b)=>chargingDistanceKm(a)-chargingDistanceKm(b)).slice(0,12);
+  const sort=state.chargingCompareSort||"nearby";
+  confirmed.sort((a,b)=>{
+    const ca=chargingLiveCounts(a),cb=chargingLiveCounts(b);
+    const da=chargingDistanceKm(a),db=chargingDistanceKm(b);
+    if(sort==="available"){
+      if(cb.available!==ca.available)return cb.available-ca.available;
+      const ra=ca.total>0?ca.available/ca.total:0,rb=cb.total>0?cb.available/cb.total:0;
+      if(rb!==ra)return rb-ra;
+    }else if(sort==="power"){
+      const pa=chargingPowerKw(a),pb=chargingPowerKw(b);
+      if(pb!==pa)return pb-pa;
+    }else if(sort==="price"){
+      const ra=chargingCurrentRateInfo(a),rb=chargingCurrentRateInfo(b);
+      const va=ra?.current&&Number.isFinite(Number(ra.value))?Number(ra.value):Infinity;
+      const vb=rb?.current&&Number.isFinite(Number(rb.value))?Number(rb.value):Infinity;
+      if(va!==vb)return va-vb;
+    }
+    if((ca.available>0)!==(cb.available>0))return Number(cb.available>0)-Number(ca.available>0);
+    return (da??Infinity)-(db??Infinity);
+  });
+  return confirmed.slice(0,3);
+}
+function chargingCompareHighlights(compare){
+  const result=new Map((compare||[]).map(row=>[chargingKey(row),[]]));
+  if(!(compare||[]).length)return result;
+  const distances=compare.map(chargingDistanceKm).filter(v=>v!=null);
+  const available=compare.map(x=>chargingLiveCounts(x).available);
+  const ratios=compare.map(x=>{const c=chargingLiveCounts(x);return c.total>0?c.available/c.total:0;});
+  const powers=compare.map(chargingPowerKw);
+  const knownRates=compare.map(x=>({row:x,rate:chargingCurrentRateInfo(x)})).filter(x=>x.rate?.current&&Number.isFinite(Number(x.rate.value)));
+  const updateTimes=compare.map(x=>Date.parse(x?.statusUpdatedAt||"")).filter(Number.isFinite);
+  const minDistance=distances.length?Math.min(...distances):null;
+  const maxAvailable=Math.max(...available);
+  const maxRatio=Math.max(...ratios);
+  const maxPower=Math.max(...powers);
+  const minRate=knownRates.length?Math.min(...knownRates.map(x=>Number(x.rate.value))):null;
+  const newestUpdate=updateTimes.length?Math.max(...updateTimes):null;
+  compare.forEach(row=>{
+    const tags=result.get(chargingKey(row));
+    const distance=chargingDistanceKm(row),count=chargingLiveCounts(row),power=chargingPowerKw(row),rate=chargingCurrentRateInfo(row);
+    if(minDistance!=null&&distance!=null&&Math.abs(distance-minDistance)<0.01)tags.push("最近");
+    if(count.available===maxAvailable&&maxAvailable>0)tags.push("空槍最多");
+    if(count.total>0&&count.available/count.total===maxRatio&&maxRatio>0)tags.push("空槍率最高");
+    if(power===maxPower&&maxPower>0)tags.push("功率最高");
+    const updatedAt=Date.parse(row?.statusUpdatedAt||"");
+    if(newestUpdate!=null&&Number.isFinite(updatedAt)&&updatedAt===newestUpdate)tags.push("資料最新");
+    if(minRate!=null&&rate?.current&&Number(rate.value)===minRate)tags.push("此 3 站已知費率最低");
+  });
+  return result;
+}
+function chargingCompareSummary(compare,kwh){
+  const known=(compare||[]).map(row=>({row,rate:chargingCurrentRateInfo(row)}))
+    .filter(item=>item.rate?.current&&Number.isFinite(Number(item.rate.value)));
+  if(!known.length)return {text:"這 3 站目前沒有可安全換算的固定時段價",known:0};
+  if(known.length===1)return {text:"其中 1 站目前費率可估；其他站仍需看 App／站點當下價格",known:1};
+  const values=known.map(item=>Number(item.rate.value)),min=Math.min(...values),max=Math.max(...values);
+  const diff=Math.round((max-min)*kwh);
+  if(Math.abs(max-min)<0.001)return {text:known.length+" 站可估價 · 目前可判讀費率相同",known:known.length};
+  return {text:known.length+" 站可估價 · "+min+"–"+max+" 元/度 · 充 "+kwh+" kWh 費用差約 "+money(diff)+" 元",known:known.length};
+}
+function renderChargingCompare(rows){
+  ensureChargingComparePanel();
+  const panel=$("#chargingComparePanel"),grid=$("#chargingCompareGrid"),stateEl=$("#chargingCompareState");
+  if(!panel||!grid||!stateEl)return;
+  if(!state.chargingOrigin){
+    stateEl.textContent="尚未定位";
+    grid.innerHTML='<button class="charging-compare-locate" data-charge-compare-locate type="button"><b>取得位置開始比較</b><small>直接比較附近 3 站，不需要另外輸入地址</small></button>';
+    $("[data-charge-compare-locate]",grid)?.addEventListener("click",()=>$("#chargingFindNow")?.click());
+    return;
+  }
+  const compare=chargingCompareRows(rows);
+  const kwhRoot=$("#chargingCompareKwh"),sortRoot=$("#chargingCompareSort"),summaryEl=$("#chargingCompareSummary"),kwh=Number(state.chargingCompareKwh)||50;
+  if(kwhRoot){
+    $$("[data-charge-kwh]",kwhRoot).forEach(button=>{
+      const active=Number(button.dataset.chargeKwh)===kwh;
+      button.setAttribute("aria-pressed",String(active));
+      button.onclick=()=>{
+        state.chargingCompareKwh=Number(button.dataset.chargeKwh)||50;
+        renderChargingCompare(rows);
+      };
+    });
+  }
+  if(sortRoot){
+    $$("[data-charge-compare-sort]",sortRoot).forEach(button=>{
+      const active=button.dataset.chargeCompareSort===(state.chargingCompareSort||"nearby");
+      button.setAttribute("aria-pressed",String(active));
+      button.onclick=()=>{
+        state.chargingCompareSort=button.dataset.chargeCompareSort||"nearby";
+        renderChargingCompare(rows);
+      };
+    });
+  }
+  stateEl.textContent=compare.length?"附近 "+compare.length+" 站":"附近暫無可比較即時站";
+  if(!compare.length){
+    if(summaryEl){summaryEl.hidden=true;summaryEl.textContent="";}
+    grid.innerHTML='<div class="charging-compare-empty"><b>附近沒有可確認的即時槍況</b><small>可以先放寬篩選，或查看下方所有站點。</small></div>';
+    return;
+  }
+  if(summaryEl){
+    const summary=chargingCompareSummary(compare,kwh);
+    summaryEl.hidden=false;
+    const sortLabel={nearby:"距離",available:"空槍",power:"功率",price:"已知費率"}[state.chargingCompareSort||"nearby"]||"距離";
+    summaryEl.innerHTML='<b>'+esc(summary.text)+'</b><small>附近候選池最多 12 站，目前依「'+esc(sortLabel)+'」選出 3 站；會員資格、指定站與特殊費率仍以業者官方為準。</small>';
+  }
+  const highlights=chargingCompareHighlights(compare);
+  grid.innerHTML=compare.map(x=>{
+    const counts=chargingLiveCounts(x),distance=chargingDistanceKm(x),kw=chargingPowerKw(x),rate=chargingCurrentRateInfo(x),fresh=chargingLiveAgeLabel(x.statusUpdatedAt),trust=chargingTrustInfo(x);
+    const lat=Number(x.lat),lon=Number(x.lon),hasCoords=Number.isFinite(lat)&&Number.isFinite(lon);
+    const destination=encodeURIComponent(hasCoords?(lat+","+lon):(x.name+" "+x.location)),key=chargingKey(x);
+    const estimate=rate?.current&&Number.isFinite(Number(rate.value))?Math.round(Number(rate.value)*kwh):null;
+    const objective=highlights.get(key)||[];
+    return '<article class="charging-compare-card '+(counts.available>0?'has-open':'is-full')+'">'+
+      '<div class="charging-compare-title"><div><b>'+esc(x.name)+'</b><small>'+esc(chargingOperatorLabel(x))+'</small></div><strong>'+esc(distance<10?distance.toFixed(1):Math.round(distance))+' km</strong></div>'+
+      (objective.length?'<div class="charging-compare-objective">'+objective.map(tag=>'<em>'+esc(tag)+'</em>').join("")+'</div>':"")+
+      '<div class="charging-compare-badges"><span class="'+esc(trust.level)+'">'+esc(trust.label)+'</span>'+(kw>=100?'<span class="fast">'+esc(Math.round(kw)+" kW 快充")+'</span>':"")+(counts.available>0?'<span class="open">'+counts.available+' 空槍</span>':'<span class="full">目前無空槍</span>')+'</div>'+
+      '<div class="charging-compare-metrics">'+
+        '<span class="'+(counts.available>0?'open':'full')+'"><small>空槍</small><b>'+counts.available+'/'+counts.total+' · '+Math.round((counts.total>0?counts.available/counts.total:0)*100)+'%</b></span>'+
+        '<span><small>功率</small><b>'+(kw>0?esc(Math.round(kw)+" kW"):"未提供")+'</b></span>'+
+        '<span class="rate"><small>'+(rate?.current?'目前費率':'費率')+'</small><b>'+esc(rate?.label||"依站點／App")+'</b></span>'+
+      '</div>'+
+      (estimate!=null?'<div class="charging-compare-estimate"><span>充 '+kwh+' kWh 約</span><b>'+money(estimate)+' 元</b><small>僅依目前可判讀電價估算，不含停車費或其他費用</small></div>':"")+
+      '<div class="charging-compare-foot"><small>'+esc(fresh)+(rate?.detail?' · '+esc(rate.detail):"")+'</small><div class="charging-compare-actions">'+
+        '<button data-charge-compare-detail="'+esc(key)+'" type="button">看站點</button>'+
+        (chargingPriorityOfficialUrl(x)?'<button data-charge-compare-official="'+esc(chargingPriorityOfficialUrl(x))+'" type="button">官方</button>':"")+
+        '<button class="go" data-charge-compare-go="'+destination+'" type="button">導航</button></div></div>'+
+    '</article>';
+  }).join("");
+  $$("[data-charge-compare-detail]",grid).forEach(b=>b.onclick=()=>{
+    const target=$('[data-charging-key="'+CSS.escape(b.dataset.chargeCompareDetail)+'"]');
+    target?.scrollIntoView({behavior:"smooth",block:"center"});
+    target?.classList.add("charging-focus");
+    setTimeout(()=>target?.classList.remove("charging-focus"),1800);
+  });
+  $$("[data-charge-compare-official]",grid).forEach(b=>b.onclick=()=>window.open(b.dataset.chargeCompareOfficial,"_blank","noopener"));
+  $$("[data-charge-compare-go]",grid).forEach(b=>b.onclick=()=>{
+    const apple=/iPhone|iPad|iPod|Macintosh/i.test(navigator.userAgent||"");
+    window.open(apple?"https://maps.apple.com/?daddr="+b.dataset.chargeCompareGo+"&dirflg=d":"https://www.google.com/maps/dir/?api=1&destination="+b.dataset.chargeCompareGo+"&travelmode=driving","_blank","noopener");
+  });
+}
 function syncChargingOperatorOptions(){
   const select=$("#chargingOperator");
   if(!select)return;
@@ -802,6 +1039,8 @@ function renderCharging(){
     if(power)return power;
     return String(a.name||"").localeCompare(String(b.name||""),"zh-Hant");
   });
+
+  renderChargingCompare(rows);
 
   const resultCount=rows.length;
   const shown=rows.slice(0,120);
@@ -880,7 +1119,7 @@ function renderCharging(){
     const rateSource=majorNetwork?chargingRateSourceLabel(x):"";
     const rateChecked=majorNetwork?chargingRateCheckedLabel(x):"";
     const priorityFastReason=state.chargingQuick==="priorityfast"?chargingPriorityFastReason(x):"";
-    return '<article class="list-item charging-item '+(availableNow?'is-available ':'')+(majorNetwork?'is-major-network':'')+(priorityNetwork?' is-priority-network':'')+'">'+
+    return '<article class="list-item charging-item '+(availableNow?'is-available ':'')+(majorNetwork?'is-major-network':'')+(priorityNetwork?' is-priority-network':'')+'" data-charging-key="'+esc(key)+'">'+
       '<div class="list-head">'+
         '<div><div class="charging-title-line"><h3>'+esc(x.name)+'</h3></div><div class="meta">'+esc(meta)+'</div></div>'+
         '<span class="route-tag">'+esc(routeTag)+'</span>'+
@@ -1395,6 +1634,53 @@ function cctvMileLabel(value){
   const number=cctvMileNumber(value);
   return Number.isFinite(number)?Number(number.toFixed(3))+"K":"里程未提供";
 }
+function cctvCameraLandmark(x){
+  const id=String(x?.id||"").trim();
+  const match=id.match(/^CCTV-[^-]+-[^-]+-[^-]+-[A-Z]+-(.+)$/i);
+  if(!match)return "";
+  return match[1].replace(/-/g," · ").trim();
+}
+function cctvGroupLandmarks(group){
+  const names=[...new Set((group?.items||[]).map(cctvCameraLandmark).filter(Boolean))];
+  return names.slice(0,3);
+}
+function cctvLandmarkPriority(name){
+  const value=String(name||"");
+  if(/交流道/.test(value))return 0;
+  if(/系統/.test(value))return 1;
+  if(/服務區/.test(value))return 2;
+  if(/隧道/.test(value))return 3;
+  if(/地磅站|休息站/.test(value))return 4;
+  return 5;
+}
+function cctvQuickLandmarkRows(rows){
+  const map=new Map();
+  (rows||[]).forEach(row=>{
+    const name=cctvCameraLandmark(row);
+    if(!name)return;
+    if(!map.has(name))map.set(name,{name,row,mile:cctvMileNumber(row.mile)});
+  });
+  return [...map.values()].sort((a,b)=>cctvLandmarkPriority(a.name)-cctvLandmarkPriority(b.name)||(a.mile-b.mile)||a.name.localeCompare(b.name,"zh-Hant")).slice(0,18);
+}
+function renderCCTVQuickLandmarks(rows){
+  const root=$("#cctvQuickLandmarks");
+  if(!root)return;
+  if(state.cctvRoad==="all"){
+    root.hidden=true;
+    root.innerHTML="";
+    return;
+  }
+  const scoped=(rows||[]).filter(x=>state.cctvDirection==="all"||cctvDirectionKey(x.direction)===state.cctvDirection);
+  const quick=cctvQuickLandmarkRows(scoped);
+  root.hidden=!quick.length;
+  root.innerHTML=quick.map(item=>'<button type="button" data-cctv-landmark="'+esc(item.name)+'">'+esc(item.name)+'</button>').join("");
+  $$("[data-cctv-landmark]",root).forEach(button=>button.onclick=()=>{
+    const input=$("#cctvSearch");
+    if(input)input.value=button.dataset.cctvLandmark||"";
+    renderCCTV();
+    $("#cctvList")?.scrollIntoView({behavior:"smooth",block:"start"});
+  });
+}
 function cctvRoadLabel(x){return String(x.road||"").trim()||(x.roadNo?"國道 "+x.roadNo+" 號":"道路未提供");}
 function cctvPlaceLabel(x){
   const start=String(x.start||"").trim(),end=String(x.end||"").trim();
@@ -1422,6 +1708,82 @@ function cctvGroupRows(rows){
   result.forEach(g=>g.items.sort((a,b)=>compare(cctvMileNumber(a.mile),cctvMileNumber(b.mile))||String(a.id).localeCompare(String(b.id))));
   return result.sort((a,b)=>(Number(a.roadNo)||99)-(Number(b.roadNo)||99)||compare(cctvMileNumber(a.items[0].mile),cctvMileNumber(b.items[0].mile))||a.place.localeCompare(b.place,"zh-Hant")||a.direction.localeCompare(b.direction,"zh-Hant"));
 }
+function cctvDistanceKm(x){
+  if(!state.cctvOrigin||!cctvHasMap(x))return null;
+  const lat=Number(x.lat),lon=Number(x.lon),toRad=v=>v*Math.PI/180;
+  const a=toRad(lat-state.cctvOrigin.lat),b=toRad(lon-state.cctvOrigin.lon);
+  const c=Math.sin(a/2)**2+Math.cos(toRad(state.cctvOrigin.lat))*Math.cos(toRad(lat))*Math.sin(b/2)**2;
+  return 6371*2*Math.atan2(Math.sqrt(c),Math.sqrt(1-c));
+}
+function cctvNearbyRows(rows){
+  if(!state.cctvOrigin)return [];
+  return (rows||[])
+    .filter(row=>state.cctvDirection==="all"||cctvDirectionKey(row.direction)===state.cctvDirection)
+    .filter(cctvHasMap).map(row=>({row,distance:cctvDistanceKm(row)}))
+    .filter(item=>item.distance!=null)
+    .sort((a,b)=>a.distance-b.distance)
+    .slice(0,6);
+}
+function cctvNearbyScopeSummary(rows){
+  const nearby=cctvNearbyRows(rows);
+  if(!nearby.length)return "附近暫無可定位鏡頭";
+  const roads=[...new Set(nearby.map(item=>cctvRoadLabel(item.row)))].slice(0,3);
+  const directions=[...new Set(nearby.map(item=>cctvDirectionLabel(item.row.direction)))];
+  return "最近 "+nearby.length+" 支 · "+roads.join("／")+(directions.length?" · "+directions.join("／"):"");
+}
+function cctvAdjacentCamera(x,delta){
+  const roadNo=String(x?.roadNo||""),road=cctvRoadLabel(x),direction=cctvDirectionKey(x?.direction);
+  const rows=(state.cctv.items||[]).filter(row=>
+    (String(row?.roadNo||"")===roadNo||(!roadNo&&cctvRoadLabel(row)===road))&&
+    cctvDirectionKey(row?.direction)===direction&&Number.isFinite(cctvMileNumber(row?.mile))
+  ).sort((a,b)=>cctvMileNumber(a.mile)-cctvMileNumber(b.mile)||String(a.id).localeCompare(String(b.id)));
+  const index=rows.findIndex(row=>String(row.id)===String(x?.id));
+  if(index<0)return null;
+  return rows[index+delta]||null;
+}
+function cctvAdjacentActionMarkup(x){
+  const prev=cctvAdjacentCamera(x,-1),next=cctvAdjacentCamera(x,1);
+  const prevStream=prev?safeHttpUrl(prev.stream):"",nextStream=next?safeHttpUrl(next.stream):"";
+  if(!prevStream&&!nextStream)return "";
+  return '<div class="cctv-adjacent-actions">'+
+    (prevStream?'<button data-cctv-stream="'+esc(encodeURIComponent(prevStream))+'" title="'+esc(cctvMileLabel(prev.mile))+'">前一支</button>':"")+
+    (nextStream?'<button data-cctv-stream="'+esc(encodeURIComponent(nextStream))+'" title="'+esc(cctvMileLabel(next.mile))+'">後一支</button>':"")+
+  '</div>';
+}
+function renderCCTVNearby(rows){
+  const nearby=cctvNearbyRows(rows);
+  if(!nearby.length)return '<div class="empty"><b>附近沒有可定位的官方攝影機</b><p>可以改用道路或地名搜尋。</p></div>';
+  return '<div class="cctv-nearby-list">'+nearby.map(({row,distance},index)=>{
+    const stream=safeHttpUrl(row.stream),landmark=cctvCameraLandmark(row),title=landmark||cctvMileLabel(row.mile);
+    return '<article class="cctv-nearby-card">'+
+      '<div class="cctv-nearby-rank">'+(index+1)+'</div>'+
+      '<div class="cctv-nearby-info"><div class="cctv-nearby-route"><i>'+esc(cctvRoadLabel(row))+'</i><i>'+esc(cctvDirectionLabel(row.direction))+'</i></div><b>'+esc(title)+'</b><small>'+esc(cctvMileLabel(row.mile))+' · 攝影機 '+esc(row.id)+'</small><span>'+esc(distance<10?distance.toFixed(1):Math.round(distance))+' km</span></div>'+
+      '<div class="cctv-nearby-actions">'+(stream?'<button class="go" data-cctv-stream="'+esc(encodeURIComponent(stream))+'">看影像</button>':"")+
+      '<button data-cctv-map="'+row.lat+','+row.lon+'">地圖</button>'+cctvAdjacentActionMarkup(row)+'</div>'+
+    '</article>';
+  }).join("")+'</div>';
+}
+function requestCCTVNearby(){
+  if(state.cctvNearby&&state.cctvOrigin){
+    state.cctvNearby=false;
+    $("#cctvNearbyBtn")?.setAttribute("aria-pressed","false");
+    renderCCTV();
+    return;
+  }
+  if(!navigator.geolocation)return toast("此瀏覽器無法取得目前位置");
+  toast("正在尋找附近官方鏡頭");
+  navigator.geolocation.getCurrentPosition(pos=>{
+    state.cctvOrigin={lat:pos.coords.latitude,lon:pos.coords.longitude};
+    state.cctvNearby=true;
+    state.cctvRoad="all";
+    state.cctvDirection="all";
+    const search=$("#cctvSearch"); if(search)search.value="";
+    $$("#cctvRoadFilter button").forEach(b=>b.classList.toggle("active",b.dataset.cctvRoad==="all"));
+    $$("[data-cctv-direction]").forEach(b=>b.classList.toggle("active",b.dataset.cctvDirection==="all"));
+    renderCCTV();
+    toast("已依目前位置排序附近鏡頭");
+  },()=>toast("無法取得位置，請確認定位權限"),{enableHighAccuracy:false,timeout:8000,maximumAge:300000});
+}
 function cctvHasMap(x){
   return typeof x.lat==="number"&&typeof x.lon==="number"&&Number.isFinite(x.lat)&&Number.isFinite(x.lon)&&Math.abs(x.lat)<=90&&Math.abs(x.lon)<=180&&!(x.lat===0&&x.lon===0);
 }
@@ -1430,7 +1792,7 @@ function syncCCTVDirectionFilter(rows){
   if(!filter)return;
   const available=new Set(rows.map(x=>cctvDirectionKey(x.direction)));
   if(state.cctvDirection!=="all"&&!available.has(state.cctvDirection))state.cctvDirection="all";
-  filter.hidden=state.cctvRoad==="all"||state.cctv.status!=="ready";
+  filter.hidden=(state.cctvRoad==="all"&&!state.cctvNearby)||state.cctv.status!=="ready";
   $$("[data-cctv-direction]",filter).forEach(b=>{
     const key=b.dataset.cctvDirection;
     b.hidden=key!=="all"&&!available.has(key);
@@ -1443,7 +1805,8 @@ function renderCCTVRoadOverview(rows){
   const cards=roadNumbers.map(no=>{
     const items=rows.filter(x=>String(x.roadNo)===no);
     const directions=[...new Set(items.map(x=>cctvDirectionLabel(x.direction)))];
-    return '<button class="cctv-road-card" data-cctv-select="'+no+'"><span class="cctv-road-title">國 '+no+'<span aria-hidden="true">→</span></span><b>'+cctvGroupRows(items).length+' 路段 · '+items.length+' 支鏡頭</b><small>'+esc(directions.join(" · ")||"目前無攝影機資料")+'</small></button>';
+    const landmarks=cctvQuickLandmarkRows(items).slice(0,3).map(x=>x.name);
+    return '<button class="cctv-road-card" data-cctv-select="'+no+'"><span class="cctv-road-title">國 '+no+'<span aria-hidden="true">→</span></span><b>'+cctvGroupRows(items).length+' 路段 · '+items.length+' 支鏡頭</b><small>'+(landmarks.length?esc(landmarks.join(" · ")):esc(directions.join(" · ")||"目前無攝影機資料"))+'</small></button>';
   });
   const others=rows.filter(x=>!roadNumbers.includes(String(x.roadNo)));
   if(others.length)cards.push('<button class="cctv-road-card" data-cctv-select="other"><span class="cctv-road-title">其他道路<span aria-hidden="true">→</span></span><b>'+cctvGroupRows(others).length+' 路段 · '+others.length+' 支鏡頭</b><small>依官方道路名稱查看</small></button>');
@@ -1454,17 +1817,21 @@ function renderCCTVGroups(groups){
   return groups.map((g,index)=>{
     const miles=g.items.map(x=>cctvMileNumber(x.mile)).filter(Number.isFinite);
     const range=miles.length?(cctvMileLabel(Math.min(...miles))+(Math.max(...miles)!==Math.min(...miles)?"–"+cctvMileLabel(Math.max(...miles)):"")):"里程未提供";
-    return '<details class="cctv-group"'+(index===0?' open':'')+'><summary><span class="cctv-group-kicker">'+esc(g.direction)+' · '+esc(g.road)+'</span><strong>'+esc(g.place)+'</strong><span class="cctv-group-meta">'+g.items.length+' 支鏡頭 · '+esc(range)+'</span><span class="cctv-group-toggle" aria-hidden="true">⌄</span></summary><div class="cctv-cameras">'+g.items.map(x=>{
-      const stream=safeHttpUrl(x.stream);
-      return '<article class="cctv-camera"><div class="cctv-camera-info"><b>'+esc(cctvMileLabel(x.mile))+'</b><small>攝影機 '+esc(x.id)+'</small></div><div class="cctv-camera-actions">'+
+    const landmarks=cctvGroupLandmarks(g);
+    return '<details class="cctv-group"'+(index===0?' open':'')+'><summary><span class="cctv-group-kicker">'+esc(g.direction)+' · '+esc(g.road)+'</span><strong>'+esc(g.place)+'</strong>'+(landmarks.length?'<span class="cctv-group-landmarks">'+landmarks.map(name=>'<i>'+esc(name)+'</i>').join("")+'</span>':"")+'<span class="cctv-group-meta">'+g.items.length+' 支鏡頭 · '+esc(range)+'</span><span class="cctv-group-toggle" aria-hidden="true">⌄</span></summary><div class="cctv-cameras">'+g.items.map(x=>{
+      const stream=safeHttpUrl(x.stream),landmark=cctvCameraLandmark(x);
+      return '<article class="cctv-camera'+(landmark?' has-landmark':'')+'"><div class="cctv-camera-info"><b>'+esc(landmark||cctvMileLabel(x.mile))+'</b><small>'+(landmark?esc(cctvMileLabel(x.mile))+' · ':"")+'攝影機 '+esc(x.id)+'</small></div><div class="cctv-camera-actions">'+
         (stream?'<button class="go" data-cctv-stream="'+esc(encodeURIComponent(stream))+'">觀看即時影像</button>':'<span class="muted">影像網址未提供</span>')+
-        (cctvHasMap(x)?'<button data-cctv-map="'+x.lat+','+x.lon+'">地圖位置</button>':"")+'</div></article>';
+        (cctvHasMap(x)?'<button data-cctv-map="'+x.lat+','+x.lon+'">地圖位置</button>':"")+
+        cctvAdjacentActionMarkup(x)+'</div></article>';
     }).join("")+'</div></details>';
   }).join("");
 }
 function selectCCTVRoad(road){
+  state.cctvNearby=false;
   state.cctvRoad=String(road||"all");
   state.cctvDirection="all";
+  $("#cctvNearbyBtn")?.setAttribute("aria-pressed","false");
   $$("#cctvRoadFilter button").forEach(b=>{
     const active=b.dataset.cctvRoad===state.cctvRoad;
     b.classList.toggle("active",active);b.setAttribute("aria-pressed",String(active));
@@ -1485,13 +1852,24 @@ function renderCCTV(){
   const all=state.cctv.items||[],q=($("#cctvSearch")?.value||"").trim().toLowerCase();
   const roadRows=all.filter(x=>state.cctvRoad==="all"||(state.cctvRoad==="other"?!["1","2","3","4","5","6"].includes(String(x.roadNo)):String(x.roadNo)===state.cctvRoad));
   syncCCTVDirectionFilter(roadRows);
+  renderCCTVQuickLandmarks(state.cctvNearby?[]:roadRows);
   status.textContent=state.cctv.source+" · "+all.length+" 支";
-  if(state.cctvRoad==="all"&&!q){
+  const nearbyBtn=$("#cctvNearbyBtn"),nearbyActive=Boolean(state.cctvNearby&&state.cctvOrigin);
+  if(nearbyBtn){
+    nearbyBtn.setAttribute("aria-pressed",String(nearbyActive));
+    const title=nearbyBtn.querySelector("b"),hint=nearbyBtn.querySelector("small");
+    if(title)title.textContent=nearbyActive?"返回道路列表":"找附近鏡頭";
+    if(hint)hint.textContent=nearbyActive?"關閉附近模式，回到國道／道路選擇":"裝置內依距離排序，不上傳位置";
+  }
+  if(nearbyActive){
+    root.innerHTML=renderCCTVNearby(all);
+    if(summary)summary.textContent="依目前位置排序 · "+cctvNearbyScopeSummary(all);
+  }else if(state.cctvRoad==="all"&&!q){
     root.innerHTML=renderCCTVRoadOverview(all);
     const count=new Set(all.filter(x=>["1","2","3","4","5","6"].includes(String(x.roadNo))).map(x=>String(x.roadNo))).size;
     if(summary)summary.textContent=count+" 條國道 · "+all.length+" 支鏡頭（含其他道路）";
   }else{
-    const matched=roadRows.filter(x=>(state.cctvDirection==="all"||cctvDirectionKey(x.direction)===state.cctvDirection)&&(!q||[x.road,x.direction,cctvDirectionLabel(x.direction),x.start,x.end,x.mile,cctvMileLabel(x.mile),x.id,x.roadNo?"國 "+x.roadNo:""].join(" ").toLowerCase().includes(q)));
+    const matched=roadRows.filter(x=>(state.cctvDirection==="all"||cctvDirectionKey(x.direction)===state.cctvDirection)&&(!q||[x.road,x.direction,cctvDirectionLabel(x.direction),x.start,x.end,x.mile,cctvMileLabel(x.mile),x.id,cctvCameraLandmark(x),x.roadNo?"國 "+x.roadNo:""].join(" ").toLowerCase().includes(q)));
     const groups=cctvGroupRows(matched);
     root.innerHTML=renderCCTVGroups(groups);
     if(summary)summary.textContent=(state.cctvRoad==="all"?"全部道路":state.cctvRoad==="other"?"其他道路":"國 "+state.cctvRoad)+(state.cctvDirection!=="all"?" · "+CCTV_DIRECTIONS[state.cctvDirection]:"")+" · "+groups.length+" 路段 · "+matched.length+" 支鏡頭";
@@ -2050,7 +2428,12 @@ function bindFilters(){
   });
   $("#parkingNearbyGoogle")?.addEventListener("click",()=>openParkingMap("google","停車場"));
   $("#parkingNearbyApple")?.addEventListener("click",()=>openParkingMap("apple","停車場"));
-  if($("#cctvSearch"))$("#cctvSearch").oninput=renderCCTV;
+  if($("#cctvSearch"))$("#cctvSearch").oninput=()=>{
+    state.cctvNearby=false;
+    $("#cctvNearbyBtn")?.setAttribute("aria-pressed","false");
+    renderCCTV();
+  };
+  $("#cctvNearbyBtn")?.addEventListener("click",requestCCTVNearby);
   $$("#cctvRoadFilter button").forEach(b=>b.onclick=()=>selectCCTVRoad(b.dataset.cctvRoad));
   $$("[data-cctv-direction]").forEach(b=>b.onclick=()=>{
     state.cctvDirection=b.dataset.cctvDirection;

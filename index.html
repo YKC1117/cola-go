@@ -342,7 +342,9 @@ Siri「特斯拉助手」：
 </div>
 <div class="cctv-helper"><b>道路 → 方向 → 路段 → 鏡頭</b><span id="cctvResultSummary" role="status">等待官方清單</span></div>
 <label class="inline-search"><svg><use href="#i-search"></use></svg><input id="cctvSearch" aria-label="搜尋攝影機路段或里程" placeholder="搜尋交流道、服務區、地名或里程，例如：永康、新營、321K" type="search"/></label>
-<p class="notice">依官方起訖路段分組；未提供起訖時以里程分段，不推測所在地。按下「觀看即時影像」才開啟官方串流。</p>
+<div class="cctv-nearby-tools"><button id="cctvNearbyBtn" type="button" aria-pressed="false"><svg><use href="#i-pin"></use></svg><span><b>找附近鏡頭</b><small>裝置內依距離排序，不上傳位置</small></span></button></div>
+<div class="cctv-quick-landmarks" id="cctvQuickLandmarks" hidden aria-label="官方地名快速查找"></div>
+<p class="notice">依官方起訖路段分組；攝影機 ID 有官方地名時會優先顯示交流道、系統、服務區等名稱；未提供名稱才保留里程，不自行推測所在地。</p>
 <div class="cctv-list" id="cctvList"></div>
 <div class="section-head cctv-official-head"><div><span class="mini-label">OFFICIAL</span><h2>官方入口</h2></div></div>
 <div class="link-cards">
