@@ -54,7 +54,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V21";
+const APP_RELEASE="Public Beta V22";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -476,12 +476,17 @@ function ensureChargingPriorityPanel(){
 }
 function chargingPriorityStats(key){
   const rows=(state.charging||[]).filter(x=>chargingOperatorProfile(x)?.key===key);
-  const liveRows=rows.filter(x=>x.road==="tdx"&&!x.liveStale&&chargingLiveCounts(x).total>0);
-  const available=liveRows.reduce((sum,x)=>sum+chargingLiveCounts(x).available,0);
+  const statusRows=rows.filter(x=>{
+    const tier=chargingAvailabilityInfo(x).tier;
+    return tier==="live"||tier==="recent";
+  });
+  const liveRows=statusRows.filter(x=>chargingAvailabilityInfo(x).tier==="live");
+  const recentRows=statusRows.filter(x=>chargingAvailabilityInfo(x).tier==="recent");
+  const available=statusRows.reduce((sum,x)=>sum+chargingLiveCounts(x).available,0);
   const maxKw=Math.max(0,...rows.map(chargingPowerKw).filter(v=>Number.isFinite(v)&&v>0));
-  const updatedTimes=liveRows.map(x=>Date.parse(x.statusUpdatedAt||"")).filter(Number.isFinite);
+  const updatedTimes=statusRows.map(x=>Date.parse(x.statusUpdatedAt||"")).filter(Number.isFinite);
   const latestUpdatedAt=updatedTimes.length?new Date(Math.max(...updatedTimes)).toISOString():"";
-  return {rows,liveRows,available,maxKw,latestUpdatedAt};
+  return {rows,statusRows,liveRows,recentRows,available,maxKw,latestUpdatedAt};
 }
 function renderChargingPriorityPanel(){
   ensureChargingPriorityPanel();
@@ -492,12 +497,16 @@ function renderChargingPriorityPanel(){
     if(!profile)return "";
     const stats=chargingPriorityStats(key);
     const power=stats.maxKw?stats.maxKw+" kW":"依站點資料";
-    const live=stats.liveRows.length?stats.liveRows.length+" 站有即時":"即時覆蓋待補";
-    const open=stats.liveRows.length?stats.available+" 空槍":"-- 空槍";
-    const freshness=stats.latestUpdatedAt?chargingLiveAgeLabel(stats.latestUpdatedAt):"即時更新待補";
+    const coverage=stats.liveRows.length
+      ?stats.liveRows.length+" 站即時"+(stats.recentRows.length?" · "+stats.recentRows.length+" 站最近回報":"")
+      :stats.recentRows.length
+        ?stats.recentRows.length+" 站最近回報"
+        :"槍況覆蓋待補";
+    const open=stats.statusRows.length?stats.available+" 空槍":"-- 空槍";
+    const freshness=stats.latestUpdatedAt?chargingLiveAgeLabel(stats.latestUpdatedAt):"更新時間待補";
     return '<button type="button" data-charge-priority="'+esc(key)+'">'+
       '<span class="charging-coverage-brand"><b>'+esc(profile.brand)+'</b><small>'+esc(chargingIntegrationLabel(key))+'</small></span>'+
-      '<span class="charging-coverage-stats"><strong>'+esc(open)+'</strong><small>'+esc(live)+'</small><em>最高功率 '+esc(power)+'</em><em class="charging-priority-freshness">'+esc(freshness)+'</em></span>'+
+      '<span class="charging-coverage-stats"><strong>'+esc(open)+'</strong><small>'+esc(coverage)+'</small><em>最高功率 '+esc(power)+'</em><em class="charging-priority-freshness">'+esc(freshness)+'</em></span>'+
       '<small class="charging-network-legend">'+esc(profile.rateShort||"費率依官方")+'</small>'+
     '</button>';
   }).join("");
@@ -532,9 +541,8 @@ function chargingDistanceKm(x){
 function chargingPriorityFastEligible(x){
   const key=chargingOperatorProfile(x)?.key||"";
   if(!CHARGING_PRIORITY_KEYS.includes(key))return false;
-  if(x?.road!=="tdx"||x?.liveStale)return false;
-  const counts=chargingLiveCounts(x);
-  if(counts.available<=0||counts.total<=0)return false;
+  const info=chargingAvailabilityInfo(x);
+  if(!["live","recent"].includes(info.tier)||info.counts.available<=0)return false;
   return chargingPowerKw(x)>=100;
 }
 function chargingSnapshotStationKey(x){
@@ -558,10 +566,15 @@ function chargingSnapshot(rows){
   };
 }
 function chargingAvailableSnapshot(){
-  return chargingSnapshot((state.charging||[]).filter(x=>
-    (state.chargingCity==="all"||x.city===state.chargingCity)&&
-    x?.road==="tdx"&&!x?.liveStale&&chargingLiveCounts(x).total>0&&chargingLiveCounts(x).available>0
-  ));
+  const rows=(state.charging||[]).filter(x=>
+    (state.chargingCity==="all"||x.city===state.chargingCity)&&chargingHasAvailableReport(x)
+  );
+  const snapshot=chargingSnapshot(rows);
+  const liveRows=rows.filter(x=>chargingAvailabilityInfo(x).tier==="live");
+  const recentRows=rows.filter(x=>chargingAvailabilityInfo(x).tier==="recent");
+  const live=chargingSnapshot(liveRows);
+  const recent=chargingSnapshot(recentRows);
+  return {...snapshot,liveStations:live.stations,liveAvailable:live.available,recentStations:recent.stations,recentAvailable:recent.available};
 }
 function chargingPriorityFastSnapshot(){
   return chargingSnapshot((state.charging||[]).filter(x=>
@@ -578,7 +591,13 @@ function renderChargingFirstLayerStatus(){
   }
   const available=chargingAvailableSnapshot();
   const priority=chargingPriorityFastSnapshot();
-  if(availableStatus)availableStatus.textContent=available.stations?available.stations+" 站 · "+available.available+" 空槍":"目前無可確認空槍";
+  if(availableStatus){
+    availableStatus.textContent=available.liveStations
+      ?available.stations+" 站 · "+available.available+" 空槍"+(available.recentStations?"（含最近回報）":"")
+      :available.recentStations
+        ?available.recentStations+" 站 · "+available.recentAvailable+" 最近回報"
+        :"目前無可用槍況回報";
+  }
   if(priorityStatus)priorityStatus.textContent=priority.stations?priority.stations+" 站 · "+priority.available+" 空槍":"目前無符合";
 }
 function chargingPriorityFastReason(x){
@@ -666,9 +685,17 @@ function chargingDecisionRateCompact(x){
   return "依站點／App";
 }
 function chargingDecisionStripMarkup(x){
-  const tdx=x?.road==="tdx",counts=chargingLiveCounts(x),live=tdx&&!x.liveStale&&counts.total>0;
-  const availability=live?(counts.available>0?"空槍 "+counts.available+"/"+counts.total:"目前無空槍"):(x?.liveStale?"槍況已逾時":x?.officialSupplemental?"即時未驗證":"空槍未確認");
-  const availabilityClass=live?(counts.available>0?" is-open":" is-full"):" is-muted";
+  const counts=chargingLiveCounts(x),info=chargingAvailabilityInfo(x);
+  const availability=info.tier==="live"
+    ?(counts.available>0?"空槍 "+counts.available+"/"+counts.total:"目前無空槍")
+    :info.tier==="recent"
+      ?(counts.available>0?"最近 "+counts.available+"/"+counts.total:"最近回報已滿")
+      :(info.tier==="stale"?"槍況已逾時":x?.officialSupplemental?"即時未驗證":"空槍未確認");
+  const availabilityClass=info.tier==="live"
+    ?(counts.available>0?" is-open":" is-full")
+    :info.tier==="recent"
+      ?" is-recent"
+      :" is-muted";
   const kw=chargingPowerKw(x);
   const power=kw>0?Math.round(kw)+" kW":"功率未提供";
   const rateInfo=chargingCurrentRateInfo(x),rate=rateInfo?.label||chargingDecisionRateCompact(x);
@@ -684,7 +711,7 @@ function chargingDecisionStripMarkup(x){
 function chargingQuickMatch(x){
   if(state.chargingQuick==="all")return true;
   if(state.chargingQuick==="available"){
-    return x.road==="tdx"&&!x.liveStale&&chargingLiveCounts(x).available>0;
+    return chargingHasAvailableReport(x);
   }
   if(state.chargingQuick==="fast")return chargingPowerKw(x)>=100;
   if(state.chargingQuick==="priorityfast")return chargingPriorityFastEligible(x);
@@ -708,13 +735,16 @@ function chargingPriorityFastSort(a,b){
   return String(a?.name||"").localeCompare(String(b?.name||""),"zh-Hant");
 }
 function chargingSortRank(x){
-  if(x?.officialSupplemental)return 3;
-  if(x.road!=="tdx")return 5;
-  if(x.liveStale)return 4;
-  if(chargingLiveCounts(x).available>0)return 0;
-  if(Number(x.liveStateCount)>0&&chargingLiveCounts(x).unknown===0)return 1;
-  if(Number(x.liveStateCount)>0)return 2;
-  return 3;
+  if(x?.officialSupplemental)return 6;
+  if(x.road!=="tdx")return 7;
+  const info=chargingAvailabilityInfo(x);
+  if(info.tier==="live"&&info.counts.available>0)return 0;
+  if(info.tier==="recent"&&info.counts.available>0)return 1;
+  if(info.tier==="live")return 2;
+  if(info.tier==="recent")return 3;
+  if(info.tier==="stale")return 5;
+  if(Number(x.liveStateCount)>0)return 4;
+  return 6;
 }
 function saveChargingFavorites(){
   try{localStorage.setItem("cola-go-charging-favorites",JSON.stringify(state.chargingFavorites));}catch{}
@@ -736,14 +766,31 @@ function chargingLiveAgeLabel(value,now=Date.now()){
   if(diff<24*hour)return Math.floor(diff/hour)+" 小時前更新";
   return formatTime(value);
 }
+const CHARGING_LIVE_MAX_AGE_MS=45*60*1000;
+const CHARGING_RECENT_MAX_AGE_MS=6*60*60*1000;
+function chargingAvailabilityInfo(x,now=Date.now()){
+  const counts=chargingLiveCounts(x);
+  if(x?.road!=="tdx"||counts.total<=0)return {tier:"unknown",counts,ageMs:Infinity,updatedAt:x?.statusUpdatedAt||""};
+  const ts=Date.parse(x?.statusUpdatedAt||"");
+  if(!Number.isFinite(ts))return {tier:"unknown",counts,ageMs:Infinity,updatedAt:""};
+  const ageMs=Math.max(0,now-ts);
+  if(ageMs<=CHARGING_LIVE_MAX_AGE_MS&&!x?.liveStale)return {tier:"live",counts,ageMs,updatedAt:x.statusUpdatedAt};
+  if(ageMs<=CHARGING_RECENT_MAX_AGE_MS)return {tier:"recent",counts,ageMs,updatedAt:x.statusUpdatedAt};
+  return {tier:"stale",counts,ageMs,updatedAt:x.statusUpdatedAt};
+}
+function chargingHasAvailableReport(x){
+  const info=chargingAvailabilityInfo(x);
+  return (info.tier==="live"||info.tier==="recent")&&info.counts.available>0;
+}
 function chargingTrustInfo(x){
   const profile=chargingOperatorProfile(x);
   if(x?.officialSupplemental)return {level:"official",label:"業者官方站點",detail:"即時空槍未由 TDX 驗證"};
   if(x?.road!=="tdx")return {level:"source",label:"站點資料",detail:"即時槍況未提供"};
   const updated=chargingLiveAgeLabel(x?.statusUpdatedAt);
-  if(x?.liveStale)return {level:"stale",label:"TDX 槍況逾時",detail:updated};
-  const counts=chargingLiveCounts(x);
-  if(counts.total>0)return {level:"live",label:"TDX 即時驗證",detail:updated};
+  const info=chargingAvailabilityInfo(x);
+  if(info.tier==="live")return {level:"live",label:"TDX 即時驗證",detail:updated};
+  if(info.tier==="recent")return {level:"recent",label:"TDX 最近回報",detail:updated+" · 非即時"};
+  if(info.tier==="stale")return {level:"stale",label:"TDX 槍況逾時",detail:updated};
   return {level:"source",label:"TDX 官方站點",detail:profile?"即時槍況尚未提供":"槍況尚未提供"};
 }
 function chargingTrustMarkup(x){
@@ -760,13 +807,21 @@ function chargingStatusMarkup(x){
   }
   if(!tdx)return note("即時槍況未提供","此筆站點目前沒有可安全判讀的即時空槍資料。");
   const updated=chargingLiveAgeLabel(x.statusUpdatedAt);
-  if(x.liveStale){
+  const availabilityInfo=chargingAvailabilityInfo(x);
+  const counts=chargingLiveCounts(x);
+  if(availabilityInfo.tier==="recent"){
+    return note(
+      counts.available>0?"最近回報有空槍":"最近回報已滿",
+      "TDX "+updated+" · 非即時，出發前建議再看業者 App／現場。",
+      "is-recent"
+    );
+  }
+  if(availabilityInfo.tier==="stale"){
     const detail=profile?.key==="tesla"
       ?"TDX 狀態已逾時；Tesla App 可查看官方可用充電座。"
-      :"不列入「有空槍」篩選 · "+updated;
+      :"超過 6 小時，不列入「有空槍」結果 · "+updated;
     return note("即時槍況已逾時",detail,"is-stale");
   }
-  const counts=chargingLiveCounts(x);
   if(!counts.total){
     const detail=profile?.key==="tesla"
       ?"TDX 尚未提供即時空槍；Tesla App 可查看官方可用充電座。"
@@ -927,9 +982,13 @@ function ensureChargingComparePanel(){
 function chargingCompareRows(rows){
   if(!state.chargingOrigin)return [];
   const confirmed=(rows||[]).filter(x=>{
-    const d=chargingDistanceKm(x),counts=chargingLiveCounts(x);
-    return d!=null&&x?.road==="tdx"&&!x?.liveStale&&counts.total>0;
-  }).sort((a,b)=>chargingDistanceKm(a)-chargingDistanceKm(b)).slice(0,12);
+    const d=chargingDistanceKm(x),info=chargingAvailabilityInfo(x);
+    return d!=null&&["live","recent"].includes(info.tier)&&info.counts.total>0;
+  }).sort((a,b)=>{
+    const ta=chargingAvailabilityInfo(a).tier==="live"?0:1;
+    const tb=chargingAvailabilityInfo(b).tier==="live"?0:1;
+    return ta-tb||chargingDistanceKm(a)-chargingDistanceKm(b);
+  }).slice(0,12);
   const sort=state.chargingCompareSort||"nearby";
   confirmed.sort((a,b)=>{
     const ca=chargingLiveCounts(a),cb=chargingLiveCounts(b);
@@ -1041,7 +1100,8 @@ function renderChargingCompare(rows){
     const destination=encodeURIComponent(hasCoords?(lat+","+lon):(x.name+" "+x.location)),key=chargingKey(x);
     const estimate=rate?.current&&Number.isFinite(Number(rate.value))?Math.round(Number(rate.value)*kwh):null;
     const objective=highlights.get(key)||[];
-    return '<article class="charging-compare-card '+(counts.available>0?'has-open':'is-full')+'">'+
+    const availabilityInfo=chargingAvailabilityInfo(x);
+    return '<article class="charging-compare-card '+(counts.available>0?'has-open':'is-full')+(availabilityInfo.tier==="recent"?' is-recent':'')+'">'+
       '<div class="charging-compare-title"><div><b>'+esc(x.name)+'</b><small>'+esc(chargingOperatorLabel(x))+'</small></div><strong>'+esc(distance<10?distance.toFixed(1):Math.round(distance))+' km</strong></div>'+
       (objective.length?'<div class="charging-compare-objective">'+objective.map(tag=>'<em>'+esc(tag)+'</em>').join("")+'</div>':"")+
       '<div class="charging-compare-badges"><span class="'+esc(trust.level)+'">'+esc(trust.label)+'</span>'+(kw>=100?'<span class="fast">'+esc(Math.round(kw)+" kW 快充")+'</span>':"")+(counts.available>0?'<span class="open">'+counts.available+' 空槍</span>':'<span class="full">目前無空槍</span>')+'</div>'+
@@ -1116,7 +1176,7 @@ function renderCharging(){
     .filter(x=>!state.chargingFavoritesOnly||state.chargingFavorites.includes(chargingKey(x)))
     .filter(x=>!q||chargingOperatorSearchText(x).includes(q));
   let rows=state.chargingAvailableOnly
-    ? candidateRows.filter(x=>x.road==="tdx"&&!x.liveStale&&chargingLiveCounts(x).available>0)
+    ? candidateRows.filter(chargingHasAvailableReport)
     : candidateRows;
 
   rows.sort((a,b)=>{
@@ -1188,16 +1248,30 @@ function renderCharging(){
     if(Number(state.chargingPower)>0)context.push(state.chargingPower+" kW+");
     if(state.chargingOperator!=="all")context.push(state.chargingOperator);
     if(q)context.push("搜尋「"+q+"」");
-    $("#chargingResultSummary").textContent=resultCount===0&&state.chargingAvailableOnly
-      ?"目前沒有可確認空槍"+(state.chargingSort==="nearby"?" · 可改看附近站點":"")
-      :resultCount+" 站符合"+suffix+(context.length?" · "+context.join(" · "):"");
+    if(resultCount===0&&state.chargingAvailableOnly){
+      $("#chargingResultSummary").textContent="目前沒有 6 小時內的空槍回報"+(state.chargingSort==="nearby"?" · 可改看附近站點":"");
+    }else if(state.chargingAvailableOnly){
+      const liveCount=rows.filter(x=>chargingAvailabilityInfo(x).tier==="live").length;
+      const recentCount=rows.filter(x=>chargingAvailabilityInfo(x).tier==="recent").length;
+      const availabilityText=liveCount
+        ?resultCount+" 站有空槍"+(recentCount?" · "+recentCount+" 站為最近回報":"")
+        :resultCount+" 站最近回報有空槍 · 非即時";
+      $("#chargingResultSummary").textContent=availabilityText+suffix+(context.length?" · "+context.join(" · "):"");
+    }else{
+      $("#chargingResultSummary").textContent=resultCount+" 站符合"+suffix+(context.length?" · "+context.join(" · "):"");
+    }
     const clear=$("#chargingResultClear");
     if(clear)clear.hidden=context.length===0;
     $("#chargingResultBar")?.classList.toggle("has-filter",context.length>0);
   }
   if($("#chargingFindNow"))$("#chargingFindNow").setAttribute("aria-pressed",String(state.chargingSort==="nearby"&&state.chargingAvailableOnly));
 
-  const unverifiedRows=state.chargingAvailableOnly?candidateRows.filter(x=>x?.officialSupplemental||(x.road==="tdx"&&(x.liveStale||chargingLiveCounts(x).total===0))):[];
+  const unverifiedRows=state.chargingAvailableOnly?candidateRows.filter(x=>{
+    if(x?.officialSupplemental)return true;
+    if(x?.road!=="tdx")return false;
+    const tier=chargingAvailabilityInfo(x).tier;
+    return tier==="stale"||tier==="unknown";
+  }):[];
   const unverifiedBrands=[...new Set(unverifiedRows.map(x=>chargingOperatorProfile(x)?.brand).filter(Boolean))].slice(0,3);
   const unverifiedScope=state.chargingSort==="nearby"?"附近":"目前篩選";
   const unverifiedNote=unverifiedRows.length
@@ -1215,7 +1289,9 @@ function renderCharging(){
     const distance=chargingDistanceKm(x);
     const meta=[tdx||supplemental?x.cityName:x.direction,chargingOperatorLabel(x)].filter(Boolean).join(" · ");
     const routeTag=supplemental?"業者官方":(tdx?"TDX":("國 "+x.road));
-    const availableNow=tdx&&!x.liveStale&&chargingLiveCounts(x).available>0;
+    const availabilityInfo=chargingAvailabilityInfo(x);
+    const availableNow=availabilityInfo.tier==="live"&&chargingLiveCounts(x).available>0;
+    const recentAvailable=availabilityInfo.tier==="recent"&&chargingLiveCounts(x).available>0;
     const profile=chargingOperatorProfile(x);
     const majorNetwork=CHARGING_MAJOR_KEYS.includes(profile?.key||"");
     const priorityNetwork=CHARGING_PRIORITY_KEYS.includes(profile?.key||"");
@@ -1224,7 +1300,7 @@ function renderCharging(){
     const rateSource=majorNetwork?chargingRateSourceLabel(x):"";
     const rateChecked=majorNetwork?chargingRateCheckedLabel(x):"";
     const priorityFastReason=state.chargingQuick==="priorityfast"?chargingPriorityFastReason(x):"";
-    return '<article class="list-item charging-item '+(availableNow?'is-available ':'')+(majorNetwork?'is-major-network':'')+(priorityNetwork?' is-priority-network':'')+'" data-charging-key="'+esc(key)+'">'+
+    return '<article class="list-item charging-item '+(availableNow?'is-available ':'')+(recentAvailable?'is-recent-available ':'')+(majorNetwork?'is-major-network':'')+(priorityNetwork?' is-priority-network':'')+'" data-charging-key="'+esc(key)+'">'+
       '<div class="list-head">'+
         '<div><div class="charging-title-line"><h3>'+esc(x.name)+'</h3></div><div class="meta">'+esc(meta)+'</div></div>'+
         '<span class="route-tag">'+esc(routeTag)+'</span>'+
@@ -1254,9 +1330,9 @@ function renderCharging(){
       '</div>'+
     '</article>';
   }).join(""):(state.chargingQuick==="priorityfast"
-    ? '<div class="empty charging-empty charging-priority-fast-empty"><b>目前沒有同時符合的主力空槍快充</b><p>條件是 EVOASIS／U-POWER／TAIL／Tesla，且 TDX 可確認有空槍、資料未逾時、單槍功率至少 100 kW。可以先放寬其中一個條件。</p><div class="charging-empty-actions"><button class="charging-empty-primary" data-charge-relax="available">改看所有空槍</button><button class="charging-empty-secondary" data-charge-relax="fast">改看 100 kW+</button></div><small>未知槍況、逾時資料與未知功率不會混進主力快充結果。</small></div>'
+    ? '<div class="empty charging-empty charging-priority-fast-empty"><b>目前沒有同時符合的主力空槍快充</b><p>條件是 EVOASIS／U-POWER／TAIL／Tesla，且 TDX 即時或 6 小時內最近回報有空槍、單槍功率至少 100 kW。最近回報會清楚標示非即時。</p><div class="charging-empty-actions"><button class="charging-empty-primary" data-charge-relax="available">改看所有空槍</button><button class="charging-empty-secondary" data-charge-relax="fast">改看 100 kW+</button></div><small>未知槍況、逾時資料與未知功率不會混進主力快充結果。</small></div>'
     : state.chargingAvailableOnly
-      ? '<div class="empty charging-empty"><b>目前沒有可確認的即時空槍</b><p>'+(unverifiedNote?esc(unverifiedNote)+" ":"")+'可能真的滿位，也可能業者尚未把即時槍況回傳 TDX。COLA GO 不會把未知狀態誤標成「現在可用」。</p><button class="charging-empty-primary" data-charge-show-nearby>改看附近充電站</button><small>保留距離排序，只取消「只看空槍」</small></div>'
+      ? '<div class="empty charging-empty"><b>目前沒有 6 小時內的空槍回報</b><p>'+(unverifiedNote?esc(unverifiedNote)+" ":"")+'可能真的滿位，也可能業者尚未回傳新槍況。超過 6 小時的舊狀態不會被 COLA GO 當成可用。</p><button class="charging-empty-primary" data-charge-show-nearby>改看附近充電站</button><small>保留距離排序，只取消「只看空槍」</small></div>'
       : '<div class="empty charging-empty"><b>沒有符合的充電站</b><p>可以清除篩選，或改用搜尋站名、地址、業者品牌。</p><button class="charging-empty-secondary" data-charge-clear-filters>清除充電篩選</button></div>');
 
   $$("[data-charge-favorite]",root).forEach(b=>b.onclick=()=>{
@@ -1289,7 +1365,7 @@ function renderCharging(){
     renderCharging();
     toast("已改看附近充電站");
   });
-  $("[data-charge-relax]",root).forEach(button=>button.addEventListener("click",()=>{
+  $$("[data-charge-relax]",root).forEach(button=>button.addEventListener("click",()=>{
     const next=button.dataset.chargeRelax==="available"?"available":"fast";
     state.chargingQuick=next;
     state.chargingAvailableOnly=false;
@@ -3488,7 +3564,7 @@ function bindChargingTools(){
         $$("#roadFilter button").forEach((b,i)=>b.classList.toggle("active",i===0));
       }
       renderCharging();
-      toast(availableOnly?"已顯示附近可確認的空槍":"已依距離排序充電站");
+      toast(availableOnly?"已顯示附近空槍／最近回報":"已依距離排序充電站");
     },()=>toast("無法取得位置，請確認定位權限"),{
       enableHighAccuracy:false,timeout:8000,maximumAge:300000
     });

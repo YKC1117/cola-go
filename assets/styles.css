@@ -715,3 +715,14 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .favorite-btn{width:40px;height:40px;min-height:40px;margin-top:-4px}
 #chargingResultClear{min-height:36px;padding:7px 10px}
 .cctv-group>summary{min-height:44px}
+
+/* V22 — recent charging availability fallback */
+.charging-trust.recent{border-color:#66532a;background:#1b1710}
+.charging-trust.recent span,.charging-trust.recent small{color:#e0bd68}
+.charging-status-note.is-recent{border-color:#66532a;background:#1b1710}
+.charging-status-note.is-recent b{color:#e7c56f}
+.charging-decision-chip.is-recent{border-color:#66532a;background:#1d1810}
+.charging-decision-chip.is-recent b{color:#e7c56f}
+.charging-item.is-recent-available{border-color:#564a2d}
+.charging-compare-card.is-recent{border-color:#564a2d}
+.charging-compare-card.is-recent .charging-compare-title:after{content:"最近回報";font-size:9px;color:#e0bd68}

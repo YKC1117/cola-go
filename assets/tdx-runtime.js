@@ -359,11 +359,19 @@
 
   async function loadOfficialCharging(){
     try{
-      const data=withFreshness(await officialGet("./data/tdx/charging.json"),true);
+      const data=await officialGet("./data/tdx/charging.json");
       if(!Array.isArray(data?.items)||!data.items.length)return;
       await waitForBaseCharging();
       curatedCharging=(state.charging||[]).filter(x=>x.road!=="tdx"&&!x.officialSupplemental);
-      officialChargingAll=data.items.map(x=>data.stale?{...x,liveStale:true}:x);
+      const now=Date.now();
+      officialChargingAll=data.items.map(x=>{
+        const hasLive=Number(x?.liveStateCount)>0;
+        const stamp=Date.parse(x?.statusUpdatedAt||"");
+        const rowStale=Boolean(x?.liveStale)||(
+          hasLive&&(!Number.isFinite(stamp)||now-stamp>DYNAMIC_MAX_AGE_MS)
+        );
+        return {...x,liveStale:rowStale,liveDatasetStale:Boolean(data.stale)};
+      });
       chargingUpdatedAt=data.liveUpdatedAt||data.updatedAt||null;
       chargingStatus=data.status||"official";
       syncChargingOperatorOptions();
