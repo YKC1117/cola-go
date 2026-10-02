@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "enabled": true,
+  "apiBase": "https://papqrnqbfauwuipjwwdh.supabase.co/functions/v1/cola-go-line",
+  "oaUrl": "https://lin.ee/Tu89Qyk",
+  "oaId": "@638jxfra",
+  "note": "COLA GO LINE plate notifications use a free Supabase Edge Function backend. No LINE credential is stored in this public file."
+}

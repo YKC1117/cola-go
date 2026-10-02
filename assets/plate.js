@@ -8,6 +8,10 @@ const CHANGE_LOG_KEY="cola-go-plate-change-log-v1";
 const CHECKLIST_KEY="cola-go-plate-checklist-v1";
 const OFFICE_CACHE_KEY="cola-go-plate-offices-v1";
 const PRIMARY_PLATE_KEY="cola-go-plate-primary-v1";
+const LINE_NOTIFY_CONFIG_URL="./data/line-notify.json";
+const LINE_NOTIFY_DEVICE_KEY="cola-go-plate-line-device-v1";
+const LINE_NOTIFY_PAIRING_KEY="cola-go-plate-line-pairing-v1";
+const LINE_NOTIFY_DIRTY_KEY="cola-go-plate-line-dirty-v1";
 const ANNOUNCEMENT_URL="./data/plates/announcements.json";
 const OFFICE_URL="./data/plates/offices.json";
 const official={
@@ -30,11 +34,13 @@ let watchFilter="all";
 let watchSort="priority";
 let announcementFetchAt=0;
 let officeFetchAt=0;
+let lineNotifyConfig={status:"idle",enabled:false,apiBase:"",oaUrl:"https://lin.ee/Tu89Qyk"};
+let lineNotifyBusy=false;
 
 function loadRows(){try{const x=JSON.parse(localStorage.getItem(STORE_KEY)||"[]");return Array.isArray(x)?x:[]}catch{return[]}}
-function saveRows(rows){try{localStorage.setItem(STORE_KEY,JSON.stringify(rows))}catch{}}
+function saveRows(rows){try{localStorage.setItem(STORE_KEY,JSON.stringify(rows));markLineNotifyDirty()}catch{}}
 function loadPrimaryPlate(){try{return normalize(localStorage.getItem(PRIMARY_PLATE_KEY)||"")}catch{return""}}
-function savePrimaryPlate(plate){try{plate=normalize(plate);if(plate)localStorage.setItem(PRIMARY_PLATE_KEY,plate);else localStorage.removeItem(PRIMARY_PLATE_KEY)}catch{}}
+function savePrimaryPlate(plate){try{plate=normalize(plate);if(plate)localStorage.setItem(PRIMARY_PLATE_KEY,plate);else localStorage.removeItem(PRIMARY_PLATE_KEY);markLineNotifyDirty()}catch{}}
 function loadAlerts(){try{return JSON.parse(localStorage.getItem(ALERT_KEY)||"{}")||{}}catch{return{}}}
 function saveAlerts(x){try{localStorage.setItem(ALERT_KEY,JSON.stringify(x))}catch{}}
 function loadAnnouncementCache(){try{return JSON.parse(localStorage.getItem(ANNOUNCEMENT_CACHE_KEY)||"null")}catch{return null}}
@@ -43,6 +49,149 @@ function loadOfficeCache(){try{return JSON.parse(localStorage.getItem(OFFICE_CAC
 function saveOfficeCache(x){try{localStorage.setItem(OFFICE_CACHE_KEY,JSON.stringify(x))}catch{}}
 function loadPlateJson(key,fallback){try{const x=JSON.parse(localStorage.getItem(key)||"null");return x??fallback}catch{return fallback}}
 function savePlateJson(key,value){try{localStorage.setItem(key,JSON.stringify(value))}catch{}}
+function markLineNotifyDirty(){try{localStorage.setItem(LINE_NOTIFY_DIRTY_KEY,"1")}catch{};renderLineNotifySetup()}
+function clearLineNotifyDirty(){try{localStorage.removeItem(LINE_NOTIFY_DIRTY_KEY)}catch{}}
+function isLineNotifyDirty(){try{return localStorage.getItem(LINE_NOTIFY_DIRTY_KEY)==="1"}catch{return false}}
+function loadLineNotifyDevice(){return loadPlateJson(LINE_NOTIFY_DEVICE_KEY,null)}
+function saveLineNotifyDevice(value){if(value)savePlateJson(LINE_NOTIFY_DEVICE_KEY,value);else try{localStorage.removeItem(LINE_NOTIFY_DEVICE_KEY)}catch{}}
+function loadLineNotifyPairing(){return loadPlateJson(LINE_NOTIFY_PAIRING_KEY,null)}
+function saveLineNotifyPairing(value){if(value)savePlateJson(LINE_NOTIFY_PAIRING_KEY,value);else try{localStorage.removeItem(LINE_NOTIFY_PAIRING_KEY)}catch{}}
+function lineNotifyProfile(){
+  const plates=[...new Set(loadRows().map(row=>normalize(row.plate)).filter(Boolean))];
+  const primaryPlate=loadPrimaryPlate();
+  return {
+    schema:1,
+    plates,
+    primaryPlate:primaryPlate&&plates.includes(primaryPlate)?primaryPlate:"",
+    events:["announcement","auction_start","auction_end","deadline_change"],
+    locale:"zh-TW"
+  };
+}
+function lineNotifyApiBase(){
+  if(!lineNotifyConfig.enabled)return "";
+  const raw=String(lineNotifyConfig.apiBase||"").trim();
+  if(!raw)return "";
+  try{
+    const url=new URL(raw,location.href);
+    if(url.protocol!=="https:"&&url.origin!==location.origin)return "";
+    return url.href.replace(/\/+$/,"");
+  }catch{return ""}
+}
+function safeLinePairingUrl(value){
+  try{
+    const url=new URL(String(value||""));
+    return url.protocol==="https:"&&["line.me","www.line.me","lin.ee"].includes(url.hostname)?url.href:"";
+  }catch{return ""}
+}
+async function loadLineNotifyConfig(){
+  try{
+    const response=await fetch(LINE_NOTIFY_CONFIG_URL+"?v="+Date.now(),{cache:"no-store"});
+    if(!response.ok)throw new Error("HTTP "+response.status);
+    const data=await response.json();
+    lineNotifyConfig={
+      status:"ready",
+      enabled:data?.enabled===true,
+      apiBase:String(data?.apiBase||""),
+      oaUrl:String(data?.oaUrl||"https://lin.ee/Tu89Qyk")
+    };
+  }catch{
+    lineNotifyConfig={status:"error",enabled:false,apiBase:"",oaUrl:"https://lin.ee/Tu89Qyk"};
+  }
+  renderLineNotifySetup();
+  updateNotificationCenter();
+}
+async function lineNotifyRequest(path,{method="GET",body=null,token=""}={}){
+  const base=lineNotifyApiBase();
+  if(!base)throw new Error("LINE_NOTIFY_BACKEND_DISABLED");
+  const headers={Accept:"application/json"};
+  if(body!==null)headers["Content-Type"]="application/json";
+  if(token)headers.Authorization="Bearer "+token;
+  const response=await fetch(base+path,{method,headers,body:body===null?undefined:JSON.stringify(body),cache:"no-store"});
+  let data={};
+  try{data=await response.json()}catch{}
+  if(!response.ok)throw new Error(String(data?.error||("HTTP "+response.status)));
+  return data;
+}
+function renderLineNotifySetup(){
+  const root=$p("#plateLineNotifyPanel");
+  if(!root)return;
+  const profile=lineNotifyProfile(),device=loadLineNotifyDevice(),pairing=loadLineNotifyPairing(),backend=Boolean(lineNotifyApiBase()),dirty=isLineNotifyDirty();
+  const status=$p("#plateLineStatus"),summary=$p("#plateLineSummary"),note=$p("#plateLineNote");
+  const bind=$p("#plateLineBind"),check=$p("#plateLineCheck"),sync=$p("#plateLineSync"),disconnect=$p("#plateLineDisconnect");
+  if(status){
+    status.className="plate-line-state"+(device?.token?" ready":backend?" available":"");
+    status.textContent=device?.token?(dirty?"已綁定・候選待同步":"已綁定"):backend?(pairing?.id?"等待 LINE 確認":"可綁定"):"安全後端尚未啟用";
+  }
+  if(summary)summary.textContent=(profile.primaryPlate?"主攻 "+profile.primaryPlate+" · ":"")+profile.plates.length+" 個候選";
+  if(note){
+    if(device?.token)note.textContent=(device.displayName?device.displayName+" · ":"")+"LINE 只同步候選號碼、主攻號碼與提醒事件；最高預算、手動價格、監理帳密與付款資料都留在這台裝置。";
+    else if(backend&&pairing?.id)note.textContent="已建立一次性配對。到 COLA GO LINE 送出配對訊息後，再回來按「檢查綁定」。網站不會背景輪詢。";
+    else if(backend)note.textContent="先加入至少一個候選車牌，再由你主動開始 LINE 配對。";
+    else note.textContent="網站端配對與同步流程已就緒；目前未設定安全通知後端，所以不會假裝已能背景推送。";
+  }
+  if(bind){bind.disabled=lineNotifyBusy||!backend||!profile.plates.length;bind.textContent=lineNotifyBusy?"處理中…":device?.token?"重新綁定 LINE":"綁定 LINE 通知"}
+  if(check)check.disabled=lineNotifyBusy||!backend||!pairing?.id;
+  if(sync)sync.disabled=lineNotifyBusy||!backend||!device?.token||!dirty;
+  if(disconnect)disconnect.disabled=lineNotifyBusy||!backend||!device?.token;
+}
+async function startLineNotifyPairing(){
+  const profile=lineNotifyProfile();
+  if(!profile.plates.length){window.toast?toast("先加入至少一個候選車牌"):alert("先加入至少一個候選車牌");return}
+  if(!lineNotifyApiBase()){window.toast?toast("LINE 安全通知後端尚未啟用"):alert("LINE 安全通知後端尚未啟用");return}
+  lineNotifyBusy=true;renderLineNotifySetup();
+  try{
+    const data=await lineNotifyRequest("/v1/plate-line/pairings",{method:"POST",body:{profile,returnUrl:location.origin+location.pathname+"#plate"}});
+    const pairingId=String(data?.pairingId||""),lineUrl=safeLinePairingUrl(data?.lineUrl);
+    if(!pairingId||!lineUrl)throw new Error("PAIRING_RESPONSE_INVALID");
+    saveLineNotifyPairing({id:pairingId,expiresAt:String(data?.expiresAt||"")});
+    location.href=lineUrl;
+  }catch(error){
+    if(window.toast)toast("LINE 配對目前無法建立");
+  }finally{lineNotifyBusy=false;renderLineNotifySetup()}
+}
+async function checkLineNotifyPairing(){
+  const pairing=loadLineNotifyPairing();
+  if(!pairing?.id||!lineNotifyApiBase())return;
+  lineNotifyBusy=true;renderLineNotifySetup();
+  try{
+    const data=await lineNotifyRequest("/v1/plate-line/pairings/"+encodeURIComponent(pairing.id));
+    if(data?.status!=="linked"||!data?.deviceToken){if(window.toast)toast("LINE 尚未完成配對");return}
+    saveLineNotifyDevice({token:String(data.deviceToken),displayName:String(data.displayName||""),linkedAt:new Date().toISOString()});
+    saveLineNotifyPairing(null);
+    clearLineNotifyDirty();
+    if(window.toast)toast("LINE 競標通知已綁定");
+  }catch{
+    if(window.toast)toast("目前無法確認 LINE 綁定狀態");
+  }finally{lineNotifyBusy=false;renderLineNotifySetup();updateNotificationCenter()}
+}
+async function syncLineNotifySubscription(){
+  const device=loadLineNotifyDevice();
+  if(!device?.token||!lineNotifyApiBase())return;
+  lineNotifyBusy=true;renderLineNotifySetup();
+  try{
+    await lineNotifyRequest("/v1/plate-line/subscription",{method:"PUT",token:device.token,body:{profile:lineNotifyProfile()}});
+    clearLineNotifyDirty();
+    if(window.toast)toast("LINE 候選通知已同步");
+  }catch{
+    if(window.toast)toast("LINE 候選同步失敗，請稍後再試");
+  }finally{lineNotifyBusy=false;renderLineNotifySetup()}
+}
+async function disconnectLineNotify(){
+  const device=loadLineNotifyDevice();
+  if(!device?.token)return;
+  lineNotifyBusy=true;renderLineNotifySetup();
+  try{await lineNotifyRequest("/v1/plate-line/subscription",{method:"DELETE",token:device.token})}catch{}
+  saveLineNotifyDevice(null);saveLineNotifyPairing(null);clearLineNotifyDirty();
+  lineNotifyBusy=false;renderLineNotifySetup();updateNotificationCenter();
+  if(window.toast)toast("已解除這台裝置的 LINE 競標通知");
+}
+function bindLineNotifyControls(){
+  $p("#plateLineBind")?.addEventListener("click",startLineNotifyPairing);
+  $p("#plateLineCheck")?.addEventListener("click",checkLineNotifyPairing);
+  $p("#plateLineSync")?.addEventListener("click",syncLineNotifySubscription);
+  $p("#plateLineDisconnect")?.addEventListener("click",disconnectLineNotify);
+  $p("#plateLineOpenOA")?.addEventListener("click",()=>window.open(lineNotifyConfig.oaUrl||"https://lin.ee/Tu89Qyk","_blank","noopener"));
+}
 async function notify(title,body,tag="cola-go-plate"){
   if(!("Notification" in window)||Notification.permission!=="granted")return false;
   const options={body,icon:"./assets/logo.svg",tag,data:{url:"./#plate"}};
@@ -954,7 +1103,20 @@ function ensurePlateNotificationCenter(){
       '<div><small>背景 Web Push</small><b id="plateNotifyPush">檢查中</b></div>'+
       '<div><small>LINE 個人化</small><b id="plateNotifyLine">尚未綁定</b></div>'+
     '</div>'+
-    '<div class="plate-detail-note" id="plateNotifyDetail">正在檢查這台裝置的通知能力。</div>'
+    '<div class="plate-detail-note" id="plateNotifyDetail">正在檢查這台裝置的通知能力。</div>'+
+    '<div class="plate-line-notify" id="plateLineNotifyPanel">'+
+      '<div class="plate-line-head"><div><small>LINE PERSONAL ALERT</small><b>LINE 個人化競標通知</b></div><span class="plate-line-state" id="plateLineStatus">檢查中</span></div>'+
+      '<div class="plate-line-summary" id="plateLineSummary">0 個候選</div>'+
+      '<p id="plateLineNote">正在檢查安全通知後端。</p>'+
+      '<div class="plate-line-actions">'+
+        '<button class="primary" id="plateLineBind" type="button">綁定 LINE 通知</button>'+
+        '<button id="plateLineCheck" type="button">檢查綁定</button>'+
+        '<button id="plateLineSync" type="button">同步候選</button>'+
+        '<button id="plateLineOpenOA" type="button">開啟官方 LINE</button>'+
+        '<button class="danger" id="plateLineDisconnect" type="button">解除綁定</button>'+
+      '</div>'+
+      '<small class="plate-line-privacy">只同步候選車牌、主攻號碼與提醒事件；預算、手動價格、監理站帳密與付款資料不會傳到 LINE 通知後端。</small>'+
+    '</div>'
   );
 }
 async function platePushCapability(){
@@ -985,7 +1147,8 @@ async function updateNotificationCenter(){
     else if(capability.subscription)push.textContent="已建立訂閱";
     else push.textContent="前端就緒・後端待啟用";
   }
-  if(line)line.textContent="OA 可加入・個人化未綁定";
+  if(line){const device=loadLineNotifyDevice();line.textContent=device?.token?(isLineNotifyDirty()?"已綁定・待同步":"已綁定"):lineNotifyApiBase()?"可安全綁定":"後端待啟用"}
+  renderLineNotifySetup();
   if(detail){
     if(ios&&!standalone)detail.textContent="iPhone／iPad 的背景 Web Push 需先把 COLA GO 加到主畫面，再從主畫面開啟並由你主動允許通知。現在仍可使用頁面內候選追蹤。";
     else if(hasNotification&&Notification.permission==="denied")detail.textContent="通知權限已被封鎖。請到系統或瀏覽器的網站通知設定重新允許；COLA GO 不會反覆跳出要求。";
@@ -1088,7 +1251,7 @@ function bind(){
   renderChecklist();
   renderAnnouncementChanges();
   renderOfficeDirectory();
-  renderWatchList();updateNotifyText();updateNotificationCenter();loadAnnouncements();loadOffices();
+  renderWatchList();updateNotifyText();updateNotificationCenter();void loadLineNotifyConfig();loadAnnouncements();loadOffices();bindLineNotifyControls();
 
   const search=$p("#plateSearchBtn");
   if(search)search.onclick=()=>{
