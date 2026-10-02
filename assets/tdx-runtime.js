@@ -499,8 +499,31 @@
   ensureChargingCityFilter();
   primeChargingMajorStatus();
   primeChargingCoverageGrid();
-  Promise.resolve().then(loadOfficialCharging);
-  Promise.resolve().then(loadOperatorCharging);
+
+  // V25: keep the home screen light. The all-Taiwan charging dataset is
+  // loaded only when Charging is actually opened. Operator supplements wait
+  // until the official TDX pass finishes so mobile network/CPU are not raced.
+  let chargingOfficialLoadStarted=false;
+  function startChargingOfficialLoads(){
+    if(chargingOfficialLoadStarted)return;
+    chargingOfficialLoadStarted=true;
+    Promise.resolve()
+      .then(loadOfficialCharging)
+      .finally(()=>{
+        const startOperators=()=>loadOperatorCharging();
+        if("requestIdleCallback" in window)requestIdleCallback(startOperators,{timeout:1800});
+        else setTimeout(startOperators,700);
+      });
+  }
+  function maybeStartChargingOfficialLoads(){
+    if((location.hash||"#home")==="#charging")startChargingOfficialLoads();
+  }
+  document.addEventListener("click",event=>{
+    if(event.target.closest('[data-go="charging"]'))startChargingOfficialLoads();
+  },{passive:true});
+  addEventListener("hashchange",maybeStartChargingOfficialLoads);
+  maybeStartChargingOfficialLoads();
+
   Promise.resolve().then(loadOfficialCCTV);
   Promise.resolve().then(loadOfficialTraffic);
 })();

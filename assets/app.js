@@ -55,7 +55,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V24";
+const APP_RELEASE="Public Beta V25";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -1263,7 +1263,7 @@ function renderCharging(){
     if(state.chargingOperator!=="all")context.push(state.chargingOperator);
     if(q)context.push("搜尋「"+q+"」");
     if(nearbyAvailableMode&&!chargingLiveDatasetReady()){
-      $("#chargingResultSummary").textContent="定位完成 · 正在載入官方即時槍況…";
+      $("#chargingResultSummary").textContent="定位完成 · 先顯示附近站點 · 官方槍況背景更新中";
     }else if(nearbyAvailableMode){
       const confirmed=rows.filter(x=>{const info=chargingAvailabilityInfo(x);return info.tier==="live"&&info.counts.available>0;}).length;
       const recent=rows.filter(x=>{const info=chargingAvailabilityInfo(x);return info.tier==="recent"&&info.counts.available>0;}).length;
@@ -1278,7 +1278,7 @@ function renderCharging(){
       if(stale)parts.push("槍況逾時 "+stale+" 站");
       $("#chargingResultSummary").textContent=(parts.length?parts.join(" · "):"附近暫無充電站")+suffix+(context.length?" · "+context.join(" · "):"");
     }else if(resultCount===0&&state.chargingAvailableOnly&&!chargingLiveDatasetReady()){
-      $("#chargingResultSummary").textContent="正在載入官方即時槍況…";
+      $("#chargingResultSummary").textContent="先顯示可用站點 · 官方槍況背景更新中";
     }else if(resultCount===0&&state.chargingAvailableOnly){
       $("#chargingResultSummary").textContent="目前沒有 6 小時內的空槍回報"+(state.chargingSort==="nearby"?" · 可改看附近站點":"");
     }else if(state.chargingAvailableOnly){
