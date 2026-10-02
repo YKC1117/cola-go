@@ -1,0 +1,62 @@
+name: Build Tesla audio test shortcut
+
+on:
+  push:
+    branches:
+      - "test/tesla-audio-friendly-20261002"
+    paths:
+      - "carkit-sign/build_tesla_audio_test.py"
+      - ".github/workflows/carkit-tesla-audio-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build helper
+        run: |
+          python3 carkit-sign/build_tesla_audio_test.py
+          plutil -convert binary1 "carkit-sign/generated/特斯拉上車助手.wflow"
+
+      - name: Sign helper for anyone
+        run: |
+          mkdir -p test-output
+          shortcuts sign --mode anyone             --input "carkit-sign/generated/特斯拉上車助手.wflow"             --output "test-output/特斯拉上車助手.shortcut"
+          cp "downloads/tesla-driver.shortcut" "test-output/特斯拉助手.shortcut"
+          printf 'Signed helper magic: '
+          head -c 4 "test-output/特斯拉上車助手.shortcut"
+          printf '\n'
+          test "$(head -c 4 "test-output/特斯拉上車助手.shortcut")" = "AEA1"
+          shasum -a 256 "test-output/特斯拉上車助手.shortcut" "test-output/特斯拉助手.shortcut"
+
+      - name: Add test notes
+        run: |
+          cat > "test-output/車友測試說明.txt" <<'EOF'
+          CarKit TW｜Tesla 車友音訊測試版
+
+          1. 安裝「特斯拉助手.shortcut」：原 v1.6 完整功能，不更動車控核心。
+          2. 安裝「特斯拉上車助手.shortcut」：只做神盾／極行／先不用選單。
+          3. iPhone 捷徑 App → 自動化 → 新增 → Bluetooth → 選自己的 Tesla。
+          4. 選擇立即執行，動作設定為「執行捷徑」→「特斯拉上車助手」。
+          5. 如果要全自動神盾或極行，不必跑助手：Bluetooth 自動化裡直接加入「開啟 App」→ 神盾或極行。
+          6. 音訊安全原則：不要加入調整音量、設定播放目的地、播放聲音、播放／暫停媒體等動作。
+
+          請測：
+          A. Tesla 播音樂時觸發神盾／極行
+          B. 通話中遇到警示
+          C. 警示結束後音樂是否正常
+          D. 掛電話後音樂是否正常恢復
+          E. 是否發生音量被改變、音訊來源被切換
+          EOF
+
+      - name: Upload test pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tesla-Audio-Test
+          path: test-output/
+          if-no-files-found: error
