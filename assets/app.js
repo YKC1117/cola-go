@@ -20,6 +20,7 @@ const state={
   chargingQuick:"all",
   chargingMajor:"all",
   chargingAvailableOnly:false,
+  chargingNearbyAvailableMode:false,
   chargingSort:"smart",
   chargingOrigin:null,
   chargingCompareKwh:50,
@@ -1178,7 +1179,7 @@ function renderCharging(){
     .filter(chargingQuickMatch)
     .filter(x=>!state.chargingFavoritesOnly||state.chargingFavorites.includes(chargingKey(x)))
     .filter(x=>!q||chargingOperatorSearchText(x).includes(q));
-  const nearbyAvailableMode=state.chargingSort==="nearby"&&state.chargingAvailableOnly&&Boolean(state.chargingOrigin);
+  const nearbyAvailableMode=state.chargingNearbyAvailableMode&&state.chargingSort==="nearby"&&Boolean(state.chargingOrigin);
   const nearbyRadiusKm=25;
   let rows=nearbyAvailableMode
     ? candidateRows.filter(x=>{
@@ -1186,6 +1187,7 @@ function renderCharging(){
         return distance!=null&&distance<=nearbyRadiusKm;
       })
     : (state.chargingAvailableOnly?candidateRows.filter(chargingHasAvailableReport):candidateRows);
+  if(nearbyAvailableMode&&!chargingLiveDatasetReady())rows=[];
 
   rows.sort((a,b)=>{
     if(state.chargingSort!=="nearby"&&state.chargingQuick==="priorityfast"){
@@ -1227,7 +1229,7 @@ function renderCharging(){
   if($("#chargingAvailableOnly")){
     $("#chargingAvailableOnly").setAttribute("aria-pressed",String(state.chargingAvailableOnly));
     const label=$("#chargingAvailableOnly").querySelector("b");
-    if(label)label.textContent=nearbyAvailableMode?"附近空槍結果":(state.chargingAvailableOnly?"只顯示有空槍":"只看有空槍");
+    if(label)label.textContent=state.chargingAvailableOnly?"只顯示有空槍":"只看有空槍";
   }
   if($("#chargingPriorityFast"))$("#chargingPriorityFast").setAttribute("aria-pressed",String(state.chargingQuick==="priorityfast"));
   if($("#chargingNearby")){
@@ -1260,16 +1262,23 @@ function renderCharging(){
     if(Number(state.chargingPower)>0)context.push(state.chargingPower+" kW+");
     if(state.chargingOperator!=="all")context.push(state.chargingOperator);
     if(q)context.push("搜尋「"+q+"」");
-    if(resultCount===0&&state.chargingAvailableOnly&&!chargingLiveDatasetReady()){
-      $("#chargingResultSummary").textContent="正在載入官方即時槍況…";
+    if(nearbyAvailableMode&&!chargingLiveDatasetReady()){
+      $("#chargingResultSummary").textContent="定位完成 · 正在載入官方即時槍況…";
     }else if(nearbyAvailableMode){
-      const confirmed=rows.filter(x=>chargingAvailabilityInfo(x).tier==="live"&&chargingLiveCounts(x).available>0).length;
-      const recent=rows.filter(x=>chargingAvailabilityInfo(x).tier==="recent"&&chargingLiveCounts(x).available>0).length;
-      const unknown=rows.filter(x=>{
-        const tier=chargingAvailabilityInfo(x).tier;
-        return x?.officialSupplemental||tier==="unknown"||tier==="stale";
-      }).length;
-      $("#chargingResultSummary").textContent="25 km 內 "+resultCount+" 站 · 已確認有空槍 "+confirmed+" 站"+(recent?" · 最近回報 "+recent+" 站":"")+(unknown?" · 空槍未確認 "+unknown+" 站":"")+suffix;
+      const confirmed=rows.filter(x=>{const info=chargingAvailabilityInfo(x);return info.tier==="live"&&info.counts.available>0;}).length;
+      const recent=rows.filter(x=>{const info=chargingAvailabilityInfo(x);return info.tier==="recent"&&info.counts.available>0;}).length;
+      const full=rows.filter(x=>{const info=chargingAvailabilityInfo(x);return (info.tier==="live"||info.tier==="recent")&&info.counts.total>0&&info.counts.available<=0;}).length;
+      const stale=rows.filter(x=>chargingAvailabilityInfo(x).tier==="stale").length;
+      const unknown=rows.filter(x=>chargingAvailabilityInfo(x).tier==="unknown").length;
+      const parts=[];
+      if(confirmed)parts.push("已確認有空槍 "+confirmed+" 站");
+      if(recent)parts.push("最近回報有空槍 "+recent+" 站");
+      if(full)parts.push("目前／最近回報已滿 "+full+" 站");
+      if(unknown)parts.push("空槍未確認 "+unknown+" 站");
+      if(stale)parts.push("槍況逾時 "+stale+" 站");
+      $("#chargingResultSummary").textContent=(parts.length?parts.join(" · "):"附近暫無充電站")+suffix+(context.length?" · "+context.join(" · "):"");
+    }else if(resultCount===0&&state.chargingAvailableOnly&&!chargingLiveDatasetReady()){
+      $("#chargingResultSummary").textContent="正在載入官方即時槍況…";
     }else if(resultCount===0&&state.chargingAvailableOnly){
       $("#chargingResultSummary").textContent="目前沒有 6 小時內的空槍回報"+(state.chargingSort==="nearby"?" · 可改看附近站點":"");
     }else if(state.chargingAvailableOnly){
@@ -1286,7 +1295,7 @@ function renderCharging(){
     if(clear)clear.hidden=context.length===0;
     $("#chargingResultBar")?.classList.toggle("has-filter",context.length>0);
   }
-  if($("#chargingFindNow"))$("#chargingFindNow").setAttribute("aria-pressed",String(state.chargingSort==="nearby"&&state.chargingAvailableOnly));
+  if($("#chargingFindNow"))$("#chargingFindNow").setAttribute("aria-pressed",String(state.chargingNearbyAvailableMode));
 
   const unverifiedRows=state.chargingAvailableOnly?(nearbyAvailableMode?rows:candidateRows).filter(x=>{
     if(x?.officialSupplemental)return true;
@@ -1353,9 +1362,13 @@ function renderCharging(){
     '</article>';
   }).join(""):(state.chargingQuick==="priorityfast"
     ? '<div class="empty charging-empty charging-priority-fast-empty"><b>目前沒有同時符合的主力空槍快充</b><p>條件是 EVOASIS／U-POWER／TAIL／Tesla，且 TDX 即時或 6 小時內最近回報有空槍、單槍功率至少 100 kW。最近回報會清楚標示非即時。</p><div class="charging-empty-actions"><button class="charging-empty-primary" data-charge-relax="available">改看所有空槍</button><button class="charging-empty-secondary" data-charge-relax="fast">改看 100 kW+</button></div><small>未知槍況、逾時資料與未知功率不會混進主力快充結果。</small></div>'
-    : state.chargingAvailableOnly&&!chargingLiveDatasetReady()
-      ? '<div class="empty charging-empty"><b>正在載入官方即時槍況</b><p>定位已完成，TDX 充電狀態載入後會自動依距離顯示空槍，不會把尚未載入誤判成 0。</p><small>通常不需要重新按一次。</small></div>'
-      : state.chargingAvailableOnly
+    : nearbyAvailableMode&&!chargingLiveDatasetReady()
+      ? '<div class="empty charging-empty"><b>正在載入官方即時槍況</b><p>定位已完成，TDX 充電狀態載入後會自動顯示 25 km 內站點，空槍回報排最前面。</p><small>不會把尚未載入誤判成沒有空槍。</small></div>'
+      : nearbyAvailableMode
+        ? '<div class="empty charging-empty"><b>25 km 內暫無充電站</b><p>可以改用附近排序擴大查看，或直接開地圖搜尋。</p></div>'
+      : state.chargingAvailableOnly&&!chargingLiveDatasetReady()
+        ? '<div class="empty charging-empty"><b>正在載入官方即時槍況</b><p>TDX 充電狀態載入後會自動顯示空槍，不會把尚未載入誤判成 0。</p><small>通常不需要重新按一次。</small></div>'
+        : state.chargingAvailableOnly
         ? '<div class="empty charging-empty"><b>目前沒有 6 小時內的空槍回報</b><p>'+(unverifiedNote?esc(unverifiedNote)+" ":"")+'可能真的滿位，也可能業者尚未回傳新槍況。超過 6 小時的舊狀態不會被 COLA GO 當成可用。</p><button class="charging-empty-primary" data-charge-show-nearby>改看附近充電站</button><small>保留距離排序，只取消「只看空槍」</small></div>'
         : '<div class="empty charging-empty"><b>沒有符合的充電站</b><p>可以清除篩選，或改用搜尋站名、地址、業者品牌。</p><button class="charging-empty-secondary" data-charge-clear-filters>清除充電篩選</button></div>');
 
@@ -1384,6 +1397,7 @@ function renderCharging(){
   $$("[data-charge-official-url]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.chargeOfficialUrl,"_blank","noopener"));
   $$("[data-camera-road]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(b.dataset.cameraRoad));
   $("[data-charge-show-nearby]",root)?.addEventListener("click",()=>{
+    state.chargingNearbyAvailableMode=false;
     state.chargingAvailableOnly=false;
     state.chargingSort="nearby";
     renderCharging();
@@ -1392,6 +1406,7 @@ function renderCharging(){
   $$("[data-charge-relax]",root).forEach(button=>button.addEventListener("click",()=>{
     const next=button.dataset.chargeRelax==="available"?"available":"fast";
     state.chargingQuick=next;
+    state.chargingNearbyAvailableMode=false;
     state.chargingAvailableOnly=false;
     renderCharging();
     toast(next==="available"?"已改看所有可確認空槍":"已改看 100 kW+ 充電站");
@@ -3571,14 +3586,15 @@ function bindChargingTools(){
     renderCharging();
   }));
 
-  const requestChargingOrigin=(availableOnly=false)=>{
+  const requestChargingOrigin=(nearbyAvailable=false)=>{
     if(!navigator.geolocation)return toast("此瀏覽器無法取得目前位置");
-    toast(availableOnly?"正在尋找附近可用充電站":"正在取得目前位置");
+    toast(nearbyAvailable?"正在尋找 25 km 內充電站與可用槍況":"正在取得目前位置");
     navigator.geolocation.getCurrentPosition(pos=>{
       state.chargingOrigin={lat:pos.coords.latitude,lon:pos.coords.longitude};
       state.chargingSort="nearby";
-      if(availableOnly){
-        state.chargingAvailableOnly=true;
+      state.chargingNearbyAvailableMode=nearbyAvailable;
+      if(nearbyAvailable){
+        state.chargingAvailableOnly=false;
         state.chargingCity="all";
         state.road="all";
         state.chargingDirection="all";
@@ -3597,7 +3613,7 @@ function bindChargingTools(){
         $$("#roadFilter button").forEach(b=>b.classList.toggle("active",b.dataset.road==="all"));
       }
       renderCharging();
-      toast(availableOnly?"已清除篩選，顯示附近空槍／最近回報":"已依距離排序充電站");
+      toast(nearbyAvailable?"已顯示 25 km 內站點，空槍回報優先":"已依距離排序充電站");
     },()=>toast("無法取得位置，請確認定位權限"),{
       enableHighAccuracy:false,timeout:8000,maximumAge:300000
     });
@@ -3607,15 +3623,18 @@ function bindChargingTools(){
 
   $("#chargingNearby")?.addEventListener("click",()=>{
     if(state.chargingSort==="nearby"){
+      state.chargingNearbyAvailableMode=false;
       state.chargingSort="smart";
       state.chargingOrigin=null;
       renderCharging();
       return;
     }
+    state.chargingNearbyAvailableMode=false;
     requestChargingOrigin(false);
   });
 
   $("#chargingAvailableOnly")?.addEventListener("click",()=>{
+    state.chargingNearbyAvailableMode=false;
     state.chargingAvailableOnly=!state.chargingAvailableOnly;
     renderCharging();
   });
@@ -3626,6 +3645,7 @@ function bindChargingTools(){
     state.chargingMajor="all";
     state.chargingOperator="all";
     state.chargingAvailableOnly=false;
+    state.chargingNearbyAvailableMode=false;
     state.chargingFavoritesOnly=false;
     state.chargingSort="smart";
     state.chargingOrigin=null;
@@ -3660,6 +3680,7 @@ function bindChargingTools(){
     state.chargingQuick="all";
     state.chargingMajor="all";
     state.chargingAvailableOnly=false;
+    state.chargingNearbyAvailableMode=false;
     state.chargingSort="smart";
     state.chargingOrigin=null;
     state.chargingFavoritesOnly=false;

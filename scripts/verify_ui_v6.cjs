@@ -200,7 +200,7 @@ let browser;
     return row&&row.officialSupplemental===true&&chargingOperatorProfile(row)?.key==='tail'&&chargingPowerKw(row)===0&&Number(row.spaces)===0;
   }));
   check('Charging driver-first controls are visible',await page.locator('#chargingFindNow').isVisible()&&await page.locator('#chargingNearby').isVisible()&&await page.locator('#chargingAvailableOnly').isVisible()&&await page.locator('#chargingPriorityFast').isVisible()&&await page.locator('#chargingCity').isVisible()&&await page.locator('#chargingSearch').isVisible());
-  check('Nearby available action is a true 25 km search that retains unverified nearby stations',(()=>{const html=fs.readFileSync(path.join(root,'index.html'),'utf8');const js=fs.readFileSync(path.join(root,'assets/app.js'),'utf8');return html.includes('25 km 內空槍優先')&&js.includes('const nearbyRadiusKm=25')&&js.includes('distance!=null&&distance<=nearbyRadiusKm')&&js.includes('nearbyAvailableMode?rows:candidateRows')&&js.includes('空槍未確認');})());
+  check('Nearby available action is a true 25 km search with a dedicated mixed-status mode',(()=>{const html=fs.readFileSync(path.join(root,'index.html'),'utf8');const js=fs.readFileSync(path.join(root,'assets/app.js'),'utf8');return html.includes('25 km 內空槍優先')&&js.includes('chargingNearbyAvailableMode:false')&&js.includes('const nearbyAvailableMode=state.chargingNearbyAvailableMode')&&js.includes('distance!=null&&distance<=nearbyRadiusKm')&&js.includes('空槍未確認')&&js.includes('槍況逾時');})());
   check('Public Beta V24 and PWA cache release are aligned',(()=>{const js=fs.readFileSync(path.join(root,'assets/app.js'),'utf8');const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');return js.includes('const APP_RELEASE="Public Beta V24"')&&sw.includes('const SW_RELEASE="Public Beta V24"')&&sw.includes('cola-go-ui-v6-43');})());
   check('Charging first-layer action grid is 2x2-ready',(()=>{const html=fs.readFileSync(path.join(root,'index.html'),'utf8');const css=fs.readFileSync(path.join(root,'assets/styles.css'),'utf8');return html.includes('id="chargingPriorityFast"')&&css.includes('grid-template-columns:repeat(2,minmax(0,1fr))');})());
   check('Available and priority-fast first-layer actions show city-scoped live station and availability counts',await page.evaluate(()=>{const original=state.charging,city=state.chargingCity;state.chargingCity='Tainan';state.charging=[{id:'u1',city:'Tainan',operator:'旭電馳科研',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:4,availableConnectors:2,maxPowerKw:180},{id:'e1',city:'Tainan',operator:'源點科技股份有限公司',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:6,availableConnectors:3,maxPowerKw:120},{id:'t1',city:'Tainan',operator:'特爾電力股份有限公司',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:2,availableConnectors:1,maxPowerKw:80},{id:'x1',city:'Taipei',operator:'特爾電力股份有限公司',road:'tdx',liveStale:false,liveStatusKnown:true,liveStateCount:2,availableConnectors:2,maxPowerKw:180}];const available=chargingAvailableSnapshot(),priority=chargingPriorityFastSnapshot();state.charging=original;state.chargingCity=city;return available.stations===3&&available.available===6&&priority.stations===2&&priority.available===5;})&&(()=>{const html=fs.readFileSync(path.join(root,'index.html'),'utf8');return html.includes('data-available-status')&&html.includes('data-priority-fast-status');})());
@@ -508,10 +508,11 @@ let browser;
     state.chargingFavoritesOnly=true;
   });
   await page.locator('#chargingFindNow').click();
-  await page.waitForFunction(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&Boolean(state.chargingOrigin));
+  await page.waitForFunction(()=>state.chargingSort==='nearby'&&state.chargingNearbyAvailableMode===true&&state.chargingAvailableOnly===false&&Boolean(state.chargingOrigin));
   check('One-tap nearby available action clears every conflicting charging filter',await page.evaluate(()=>
     state.chargingSort==='nearby'&&
-    state.chargingAvailableOnly===true&&
+    state.chargingNearbyAvailableMode===true&&
+    state.chargingAvailableOnly===false&&
     state.chargingCity==='all'&&
     state.road==='all'&&
     state.chargingDirection==='all'&&
@@ -523,14 +524,15 @@ let browser;
     state.chargingFavoritesOnly===false&&
     document.querySelector('#chargingSearch')?.value===''
   ));
-  check('One-tap nearby available action combines location, distance sorting, and availability',await page.evaluate(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&state.chargingCity==='all'));
-  const oneTapBad=await page.evaluate(()=>[...document.querySelectorAll('#chargingList .charging-item')].filter(card=>!card.classList.contains('is-available')).length);
-  check('One-tap nearby available never shows a non-available card',oneTapBad===0);
-  if(await page.locator('[data-charge-show-nearby]').count()){
-    await page.locator('[data-charge-show-nearby]').click();
-    check('Empty available state can fall back to nearby stations without losing distance sort',await page.evaluate(()=>state.chargingAvailableOnly===false&&state.chargingSort==='nearby'));
-    await page.locator('#chargingAvailableOnly').click();
-  }
+  check('One-tap nearby available action combines location, 25 km scoping, and availability-first fallback',await page.evaluate(()=>state.chargingSort==='nearby'&&state.chargingNearbyAvailableMode===true&&state.chargingAvailableOnly===false&&state.chargingCity==='all'));
+  check('One-tap nearby results stay inside 25 km when coordinates exist',await page.evaluate(()=>[...document.querySelectorAll('#chargingList .charging-item')].every(card=>{
+    const row=state.charging.find(item=>chargingKey(item)===card.dataset.chargingKey);
+    const distance=row?chargingDistanceKm(row):null;
+    return Number.isFinite(distance)&&distance<=25.01;
+  })));
+  await page.locator('#chargingAvailableOnly').click();
+  check('Explicit available-only stays strict after leaving mixed nearby mode',await page.evaluate(()=>state.chargingNearbyAvailableMode===false&&state.chargingAvailableOnly===true&&state.chargingSort==='nearby')&&await page.evaluate(()=>[...document.querySelectorAll('#chargingList .charging-item')].every(card=>card.classList.contains('is-available')||card.classList.contains('is-recent-available'))));
+  await page.locator('#chargingAvailableOnly').click();
   await page.locator('#resetChargingFilters').click();
   await page.locator('#chargingNearby').click();
   await page.waitForFunction(()=>state.chargingSort==='nearby'&&Boolean(state.chargingOrigin));
