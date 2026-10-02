@@ -709,3 +709,9 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 .parking-card.is-stale-data .parking-space b{color:#d1b981}
 .parking-update.stale{color:#d1b981}
 .source-status .sync-state.stale i{background:#d8b64d}
+
+/* V19 — final mobile touch-target cleanup */
+.charging-city-primary select{min-height:44px}
+.favorite-btn{width:40px;height:40px;min-height:40px;margin-top:-4px}
+#chargingResultClear{min-height:36px;padding:7px 10px}
+.cctv-group>summary{min-height:44px}

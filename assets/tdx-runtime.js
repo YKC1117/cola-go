@@ -405,7 +405,7 @@
       const data=await officialGet("./data/tdx/cctv.json");
       if(!Array.isArray(data?.items)||!data.items.length)return;
       const source=(data.source||"TDX／交通部")+(data.stale?"（最後可用資料）":"");
-      state.cctv={status:"ready",items:data.items,source,error:""};
+      state.cctv={status:"ready",items:data.items,source,updatedAt:data.updatedAt||data.liveUpdatedAt||null,error:""};
       renderCCTV();
     }catch{}
   }
