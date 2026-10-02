@@ -7,6 +7,12 @@ on:
     paths:
       - "carkit-sign/build_tesla_audio_test.py"
       - ".github/workflows/carkit-tesla-audio-test.yml"
+  pull_request:
+    branches:
+      - "main"
+    paths:
+      - "carkit-sign/build_tesla_audio_test.py"
+      - ".github/workflows/carkit-tesla-audio-test.yml"
   workflow_dispatch:
 
 permissions:
