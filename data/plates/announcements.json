@@ -5,1181 +5,11 @@
   "sourceUrl": "https://www.thb.gov.tw/News_Content_thbOpenData.aspx?n=13&s=506",
   "datasetUrl": "https://data.gov.tw/dataset/96623",
   "downloadUrl": "https://www.thb.gov.tw/Common/ThbOpenDataService.ashx?SN=506&format=1",
-  "updatedAt": "2026-09-30T18:45:27+08:00",
+  "updatedAt": "2026-10-02T15:07:39+08:00",
   "sourceUpdatedAt": null,
-  "sourceHash": "ead5a98122684d52f0c4bbc21ba2b13e363270a05309b44db2a3f66a054d0c3c",
-  "count": 626,
+  "sourceHash": "2aaac26c098480448212fee3f6d034700005cb18634223dc2741a64c9a64ba29",
+  "count": 551,
   "items": [
-    {
-      "id": "2cfb2807adcd17",
-      "office": "新竹區監理所",
-      "category": "電動大營客車",
-      "startNumber": "EAR-0001",
-      "endNumber": "EAR-0200",
-      "startAt": "2026-09-28T10:00:00+08:00",
-      "endAt": "2026-09-30T10:00:00+08:00",
-      "transferDeadline": "2026-10-01T10:00:00+08:00"
-    },
-    {
-      "id": "9bb95ac3a8b9fc",
-      "office": "嘉義區監理所",
-      "category": "電動大營客車",
-      "startNumber": "EAR-2001",
-      "endNumber": "EAR-3000",
-      "startAt": "2026-09-29T01:00:00+08:00",
-      "endAt": "2026-10-01T01:00:00+08:00",
-      "transferDeadline": "2026-10-02T01:00:00+08:00"
-    },
-    {
-      "id": "c5f0a30c0c49eb",
-      "office": "東勢監理分站",
-      "category": "微型電動二輪車",
-      "startNumber": "AG05556",
-      "endNumber": "AG10000",
-      "startAt": "2026-09-29T02:00:00+08:00",
-      "endAt": "2026-10-01T02:00:00+08:00",
-      "transferDeadline": "2026-10-02T02:00:00+08:00"
-    },
-    {
-      "id": "577d77f70439b1",
-      "office": "苗栗監理站",
-      "category": "電動大營客車",
-      "startNumber": "EAR-0801",
-      "endNumber": "EAR-1000",
-      "startAt": "2026-09-29T03:00:00+08:00",
-      "endAt": "2026-10-01T03:00:00+08:00",
-      "transferDeadline": "2026-10-02T03:00:00+08:00"
-    },
-    {
-      "id": "316c29ea1ae391",
-      "office": "苓雅監理站",
-      "category": "普通重型機車",
-      "startNumber": "PLN-0001",
-      "endNumber": "PLN-5553",
-      "startAt": "2026-09-29T04:00:00+08:00",
-      "endAt": "2026-10-01T04:00:00+08:00",
-      "transferDeadline": "2026-10-02T04:00:00+08:00"
-    },
-    {
-      "id": "fa422e11006ea1",
-      "office": "臺北區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEV-0001",
-      "endNumber": "CEV-9999",
-      "startAt": "2026-09-29T09:00:00+08:00",
-      "endAt": "2026-10-01T09:00:00+08:00",
-      "transferDeadline": "2026-10-02T09:00:00+08:00"
-    },
-    {
-      "id": "fe59623ea91e6f",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEL-0222",
-      "endNumber": "CEL-0222",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "6e6bf7762693c8",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEL-0322",
-      "endNumber": "CEL-0322",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "14ca0e44cc911c",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEL-0906",
-      "endNumber": "CEL-0906",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "87ca4aa647fb03",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEL-1122",
-      "endNumber": "CEL-1122",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "264a54547587b1",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEL-1155",
-      "endNumber": "CEL-1155",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "e6706a29dd3597",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEL-2233",
-      "endNumber": "CEL-2233",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "ab103bcbb9b49e",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEL-2288",
-      "endNumber": "CEL-2288",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "4602b798eafce5",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEL-3355",
-      "endNumber": "CEL-3355",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "7994352e0af891",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEL-3377",
-      "endNumber": "CEL-3377",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "2bf7b32b4e4c99",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEL-5577",
-      "endNumber": "CEL-5577",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "8d31f1e94ef3f8",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEL-7366",
-      "endNumber": "CEL-7366",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "64ff08e35ff1a8",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CEL-8977",
-      "endNumber": "CEL-8977",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "b674c28fded287",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-0001",
-      "endNumber": "CES-0055",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "92bbd3160894e4",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-0057",
-      "endNumber": "CES-0810",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "e6cdb05cc04348",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-0812",
-      "endNumber": "CES-0899",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "e506046200d1fe",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-0901",
-      "endNumber": "CES-0991",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "5473e0d33188c3",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-0993",
-      "endNumber": "CES-0995",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "e82da031519500",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-0997",
-      "endNumber": "CES-1005",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "842c8bd7e10cf4",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-1008",
-      "endNumber": "CES-1015",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "27e317725a0884",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-1017",
-      "endNumber": "CES-1052",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "92ecf75fee9ac7",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-1055",
-      "endNumber": "CES-1170",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "733c16313ba6b1",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-1172",
-      "endNumber": "CES-1236",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "e767940cc46938",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-1238",
-      "endNumber": "CES-1252",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "38677af1b4b4b0",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-1255",
-      "endNumber": "CES-1655",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "95abfd1660aac3",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-1657",
-      "endNumber": "CES-1679",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "1127830230f057",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-1681",
-      "endNumber": "CES-1773",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "24a4137073a8b7",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-1776",
-      "endNumber": "CES-1812",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "3f32a04203e844",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-1815",
-      "endNumber": "CES-1821",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "e62eff1d20f04a",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-1823",
-      "endNumber": "CES-2070",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "08dd10f7a7d5c2",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-2072",
-      "endNumber": "CES-2169",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "c8ed6bc5a35ea8",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-2171",
-      "endNumber": "CES-2205",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "81d7cdac121b93",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-2207",
-      "endNumber": "CES-2216",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "f5318cb239cf9b",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-2218",
-      "endNumber": "CES-2280",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "c8573a4321787e",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-2282",
-      "endNumber": "CES-2298",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "9c9d3041d37cc5",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-2301",
-      "endNumber": "CES-2317",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "b41228950e2f71",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-2319",
-      "endNumber": "CES-2363",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "87ce2b357f3bb1",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-2366",
-      "endNumber": "CES-2392",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "44957d9b621c81",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-2395",
-      "endNumber": "CES-2676",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "bc934002e4041c",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-2679",
-      "endNumber": "CES-2969",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "283c5651e0ebcc",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-2971",
-      "endNumber": "CES-3001",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "f8943620d87598",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-3003",
-      "endNumber": "CES-3332",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "042557e3d45673",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-3335",
-      "endNumber": "CES-3365",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "00fc3d8582f819",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-3367",
-      "endNumber": "CES-3555",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "644546cd229faa",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-3557",
-      "endNumber": "CES-3585",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "7d19296fb258cb",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-3587",
-      "endNumber": "CES-3600",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "de649ffe69c4d5",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-3603",
-      "endNumber": "CES-3617",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "0b4aa853dd97dc",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-3619",
-      "endNumber": "CES-3857",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "c6b5d950358148",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-3859",
-      "endNumber": "CES-3999",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "1fbb209006cc76",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-5001",
-      "endNumber": "CES-5096",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "14390b8f185acd",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-5098",
-      "endNumber": "CES-5117",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "4bd6aaab3eac05",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-5119",
-      "endNumber": "CES-5199",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "096aac6a01bb84",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-5201",
-      "endNumber": "CES-5270",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "ec3886ac684e4c",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-5272",
-      "endNumber": "CES-5500",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "86aa2999e26ef9",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-5502",
-      "endNumber": "CES-5553",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "36fb2ab5490828",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-5556",
-      "endNumber": "CES-5962",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "320e96ab04b99c",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-5966",
-      "endNumber": "CES-5985",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "d89be1dc336c3b",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-5987",
-      "endNumber": "CES-6067",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "82e4a9d0f1b9db",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-6069",
-      "endNumber": "CES-6196",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "108918db313866",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-6198",
-      "endNumber": "CES-6555",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "5850848eb5c9ff",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-6557",
-      "endNumber": "CES-6569",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "c7ff5f4b820ad4",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-6571",
-      "endNumber": "CES-6616",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "ba5a1179ddc3e3",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-6620",
-      "endNumber": "CES-6651",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "c23121f1420e2d",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-6653",
-      "endNumber": "CES-6696",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "4b0d955a6c02a1",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-6699",
-      "endNumber": "CES-6855",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "e9284a0920b745",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-6901",
-      "endNumber": "CES-6903",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "7f0598cf0062f8",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-6906",
-      "endNumber": "CES-6955",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "69853560b7709c",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-7001",
-      "endNumber": "CES-7079",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "1e99401f742828",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-7081",
-      "endNumber": "CES-7099",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "9d5c72e69e6a6a",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-7101",
-      "endNumber": "CES-7123",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "59b5d90b52f4a3",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-7126",
-      "endNumber": "CES-7362",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "8a49ada8819e34",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-7365",
-      "endNumber": "CES-7592",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "5c109b98a009d4",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-7595",
-      "endNumber": "CES-7670",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "79fc05aa07346b",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-7672",
-      "endNumber": "CES-7798",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "e707369aa883d1",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-7800",
-      "endNumber": "CES-7900",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "c29d7457f0b467",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-7902",
-      "endNumber": "CES-7953",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "dc21b1b3bd334a",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-7956",
-      "endNumber": "CES-8307",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "3ceb77f6b46c5f",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-8309",
-      "endNumber": "CES-8317",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "a88c460dc0e225",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-8319",
-      "endNumber": "CES-8353",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "7da4de4b1cf3e4",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-8356",
-      "endNumber": "CES-8553",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "1df881aebd82bd",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-8556",
-      "endNumber": "CES-8596",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "f1e82928d3b58d",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-8598",
-      "endNumber": "CES-8813",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "67196f2e2c5073",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-8816",
-      "endNumber": "CES-8886",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "a0e67f23e46350",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-8888",
-      "endNumber": "CES-9152",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "2e8d8ca20ce705",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-9156",
-      "endNumber": "CES-9217",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "4d709594eaef98",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-9219",
-      "endNumber": "CES-9227",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "b18b9c71e20e25",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-9229",
-      "endNumber": "CES-9263",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "f50664224414d0",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-9266",
-      "endNumber": "CES-9511",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "758826475c41ed",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-9513",
-      "endNumber": "CES-9753",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "1310cc9f66638e",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-9756",
-      "endNumber": "CES-9768",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "f071f0e86b1580",
-      "office": "臺北市區監理所",
-      "category": "自用小客貨車",
-      "startNumber": "CES-9770",
-      "endNumber": "CES-9999",
-      "startAt": "2026-09-29T10:00:00+08:00",
-      "endAt": "2026-10-01T10:00:00+08:00",
-      "transferDeadline": "2026-10-02T10:00:00+08:00"
-    },
-    {
-      "id": "bb3994241b3275",
-      "office": "宜蘭監理站",
-      "category": "微型電動二輪車",
-      "startNumber": "AJ10001",
-      "endNumber": "AJ20000",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "a2e444839ad3fa",
-      "office": "宜蘭監理站",
-      "category": "營業拖車",
-      "startNumber": "HBC-1122",
-      "endNumber": "HBC-1122",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "07d09f0b210cc7",
-      "office": "宜蘭監理站",
-      "category": "營業拖車",
-      "startNumber": "HBC-1133",
-      "endNumber": "HBC-1133",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "dee9539737e85f",
-      "office": "宜蘭監理站",
-      "category": "營業拖車",
-      "startNumber": "HBC-1155",
-      "endNumber": "HBC-1155",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "56033ffd377d23",
-      "office": "宜蘭監理站",
-      "category": "營業拖車",
-      "startNumber": "HBC-1166",
-      "endNumber": "HBC-1166",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "c1ab8214e35258",
-      "office": "宜蘭監理站",
-      "category": "營業拖車",
-      "startNumber": "HBC-1177",
-      "endNumber": "HBC-1177",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "3061ab8bfda2f4",
-      "office": "宜蘭監理站",
-      "category": "營業拖車",
-      "startNumber": "HBC-1188",
-      "endNumber": "HBC-1188",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "d999eb79433200",
-      "office": "宜蘭監理站",
-      "category": "營業拖車",
-      "startNumber": "HBC-1199",
-      "endNumber": "HBC-1199",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "0c5ec1fc1b45d2",
-      "office": "宜蘭監理站",
-      "category": "營業大貨車",
-      "startNumber": "KLR-1122",
-      "endNumber": "KLR-1122",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "c36be7e226eb4f",
-      "office": "宜蘭監理站",
-      "category": "營業大貨車",
-      "startNumber": "KLR-1133",
-      "endNumber": "KLR-1133",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "4a31d46fa94079",
-      "office": "宜蘭監理站",
-      "category": "營業大貨車",
-      "startNumber": "KLR-1155",
-      "endNumber": "KLR-1155",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "9b88fad1193993",
-      "office": "宜蘭監理站",
-      "category": "營業大貨車",
-      "startNumber": "KLR-1166",
-      "endNumber": "KLR-1166",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "25642e0e96e424",
-      "office": "宜蘭監理站",
-      "category": "營業大貨車",
-      "startNumber": "KLR-1177",
-      "endNumber": "KLR-1177",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "2ec6d2c3a8ba7f",
-      "office": "宜蘭監理站",
-      "category": "營業大貨車",
-      "startNumber": "KLR-1199",
-      "endNumber": "KLR-1199",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "82abce24896874",
-      "office": "宜蘭監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKE-0001",
-      "endNumber": "PKE-2816",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "89e32ba220c6e2",
-      "office": "宜蘭監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKE-2818",
-      "endNumber": "PKE-7299",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "98419b73eba2cf",
-      "office": "宜蘭監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKE-7301",
-      "endNumber": "PKE-7858",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "caa912242068d3",
-      "office": "宜蘭監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKE-7860",
-      "endNumber": "PKE-8180",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "c41be8e4cdb59d",
-      "office": "宜蘭監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKE-8182",
-      "endNumber": "PKE-9083",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "731d076930b646",
-      "office": "宜蘭監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKE-9086",
-      "endNumber": "PKE-9981",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
-    {
-      "id": "06e9ceaf218eea",
-      "office": "宜蘭監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKE-9983",
-      "endNumber": "PKE-9999",
-      "startAt": "2026-09-29T12:00:00+08:00",
-      "endAt": "2026-10-01T12:00:00+08:00",
-      "transferDeadline": "2026-10-02T12:00:00+08:00"
-    },
     {
       "id": "56195f20cd5ef9",
       "office": "臺中市監理站",
@@ -5371,6 +4201,36 @@
       "transferDeadline": "2026-10-15T02:00:00+08:00"
     },
     {
+      "id": "60446dcc38bd72",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-1133",
+      "endNumber": "CDR-1133",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "a1275f55c36532",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-1166",
+      "endNumber": "CDR-1166",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "9c3dcf5e976806",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-1177",
+      "endNumber": "CDR-1177",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
       "id": "b31dda891bc0c8",
       "office": "桃園監理站",
       "category": "自用小客貨車",
@@ -5391,6 +4251,16 @@
       "transferDeadline": "2026-10-15T02:00:00+08:00"
     },
     {
+      "id": "6d0946faeaed06",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-2299",
+      "endNumber": "CDR-2299",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
       "id": "43712e420ef557",
       "office": "桃園監理站",
       "category": "自用小客貨車",
@@ -5406,6 +4276,26 @@
       "category": "自用小客貨車",
       "startNumber": "CDR-2901",
       "endNumber": "CDR-3300",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "e29ad59ce9ded0",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-3355",
+      "endNumber": "CDR-3355",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "0843d8bf1af758",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-3366",
+      "endNumber": "CDR-3366",
       "startAt": "2026-10-12T02:00:00+08:00",
       "endAt": "2026-10-14T02:00:00+08:00",
       "transferDeadline": "2026-10-15T02:00:00+08:00"
@@ -5466,6 +4356,116 @@
       "category": "自用小客貨車",
       "startNumber": "CDR-6756",
       "endNumber": "CDR-6800",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "1b954880ed842c",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-7356",
+      "endNumber": "CDR-7500",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "c3c0ab6faabd4a",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-7856",
+      "endNumber": "CDR-7900",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "66c29bc537b5cd",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-8101",
+      "endNumber": "CDR-8155",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "e42a9568a82267",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-8501",
+      "endNumber": "CDR-8555",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "b1b4efe7bce0b5",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-8656",
+      "endNumber": "CDR-8755",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "88211c41eed927",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-8801",
+      "endNumber": "CDR-8855",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "27161a4c1f6a1d",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-8956",
+      "endNumber": "CDR-9000",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "675a94c0faa724",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-9256",
+      "endNumber": "CDR-9300",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "55e4a95e7aecd9",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-9501",
+      "endNumber": "CDR-9555",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "4f37e0efe44962",
+      "office": "桃園監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CDR-9901",
+      "endNumber": "CDR-9999",
+      "startAt": "2026-10-12T02:00:00+08:00",
+      "endAt": "2026-10-14T02:00:00+08:00",
+      "transferDeadline": "2026-10-15T02:00:00+08:00"
+    },
+    {
+      "id": "198c0c205afc34",
+      "office": "桃園監理站",
+      "category": "營業大貨車",
+      "startNumber": "KLS-1001",
+      "endNumber": "KLS-1200",
       "startAt": "2026-10-12T02:00:00+08:00",
       "endAt": "2026-10-14T02:00:00+08:00",
       "transferDeadline": "2026-10-15T02:00:00+08:00"
@@ -5719,6 +4719,256 @@
       "startAt": "2026-10-12T12:00:00+08:00",
       "endAt": "2026-10-14T12:00:00+08:00",
       "transferDeadline": "2026-10-15T12:00:00+08:00"
+    },
+    {
+      "id": "5b509405e91d53",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-0001",
+      "endNumber": "PJV-0055",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "8aa6c33790f6f5",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-0057",
+      "endNumber": "PJV-0788",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "092ed3773b6b8a",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-0790",
+      "endNumber": "PJV-0829",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "ccaaf091610452",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-0831",
+      "endNumber": "PJV-0915",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "ba758508129e7a",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-0917",
+      "endNumber": "PJV-1221",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "8450f08ef1fdad",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-1223",
+      "endNumber": "PJV-1385",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "99345e9a94b5ea",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-1387",
+      "endNumber": "PJV-2607",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "ed34352b6c68c3",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-2609",
+      "endNumber": "PJV-3605",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "f92395ebecab27",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-3607",
+      "endNumber": "PJV-3752",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "486c6504312e45",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-3755",
+      "endNumber": "PJV-5690",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "5085a39ef0079a",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-5692",
+      "endNumber": "PJV-5999",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "d84a9ede844f0a",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-6001",
+      "endNumber": "PJV-6196",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "d0991670484d94",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-6198",
+      "endNumber": "PJV-6756",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "88e7283ffdb818",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-6759",
+      "endNumber": "PJV-6910",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "cd119750951fc5",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-6912",
+      "endNumber": "PJV-7051",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "a36bb38555a200",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-7053",
+      "endNumber": "PJV-7053",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "19872c436964d4",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-7056",
+      "endNumber": "PJV-7535",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "1b3538e2350892",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-7537",
+      "endNumber": "PJV-7567",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "116fc9ee71d576",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-7569",
+      "endNumber": "PJV-7767",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "48296037e4196d",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-7769",
+      "endNumber": "PJV-7916",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "6fdc3faa42099e",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-7918",
+      "endNumber": "PJV-8212",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "27e7ab34a13d6e",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-8215",
+      "endNumber": "PJV-9070",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "09f9dd97b3e695",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-9072",
+      "endNumber": "PJV-9206",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "ad276fb4c5293d",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-9208",
+      "endNumber": "PJV-9991",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "0220c61654942f",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJV-9993",
+      "endNumber": "PJV-9999",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
     },
     {
       "id": "6009a8b5a8cce4",
