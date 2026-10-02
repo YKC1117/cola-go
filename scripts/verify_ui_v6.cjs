@@ -493,9 +493,35 @@ let browser;
 
   await context.grantPermissions(['geolocation'],{origin:base});
   await context.setGeolocation({latitude:22.993,longitude:120.214});
+  await page.locator('#chargingSearch').fill('NO_MATCH_BEFORE_NEARBY');
+  await page.evaluate(()=>{
+    state.road='3';
+    state.chargingCity='Tainan';
+    state.chargingDirection='south';
+    state.chargingConnector='CCS2';
+    state.chargingPower=100;
+    state.chargingOperator='TEST_OPERATOR';
+    state.chargingQuick='fast';
+    state.chargingMajor='upower';
+    state.chargingFavoritesOnly=true;
+  });
   await page.locator('#chargingFindNow').click();
   await page.waitForFunction(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&Boolean(state.chargingOrigin));
-  check('One-tap nearby available action combines location, distance sorting, and live availability',await page.evaluate(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&state.chargingCity==='all'));
+  check('One-tap nearby available action clears every conflicting charging filter',await page.evaluate(()=>
+    state.chargingSort==='nearby'&&
+    state.chargingAvailableOnly===true&&
+    state.chargingCity==='all'&&
+    state.road==='all'&&
+    state.chargingDirection==='all'&&
+    state.chargingConnector==='all'&&
+    Number(state.chargingPower)===0&&
+    state.chargingOperator==='all'&&
+    state.chargingQuick==='all'&&
+    state.chargingMajor==='all'&&
+    state.chargingFavoritesOnly===false&&
+    document.querySelector('#chargingSearch')?.value===''
+  ));
+  check('One-tap nearby available action combines location, distance sorting, and availability',await page.evaluate(()=>state.chargingSort==='nearby'&&state.chargingAvailableOnly===true&&state.chargingCity==='all'));
   const oneTapBad=await page.evaluate(()=>[...document.querySelectorAll('#chargingList .charging-item')].filter(card=>!card.classList.contains('is-available')).length);
   check('One-tap nearby available never shows a non-available card',oneTapBad===0);
   if(await page.locator('[data-charge-show-nearby]').count()){
@@ -777,6 +803,9 @@ let browser;
   check('V22 TDX adapter uses per-station timestamps instead of globally staling every station',(()=>{const src=fs.readFileSync(path.join(root,'assets/tdx-runtime.js'),'utf8');return src.includes('const data=await officialGet("./data/tdx/charging.json")')&&src.includes('const rowStale=Boolean(x?.liveStale)')&&src.includes('liveDatasetStale:Boolean(data.stale)')&&!src.includes('officialChargingAll=data.items.map(x=>data.stale?{...x,liveStale:true}:x)');})());
   check('V22 charging recent reports are visually distinguished',(()=>{const css=fs.readFileSync(path.join(root,'assets/styles.css'),'utf8');return css.includes('.charging-trust.recent')&&css.includes('.charging-decision-chip.is-recent')&&css.includes('.charging-item.is-recent-available');})());
   check('V22 charging relax actions use querySelectorAll helper',(()=>{const src=fs.readFileSync(path.join(root,'assets/app.js'),'utf8');return src.includes('$$("[data-charge-relax]",root).forEach');})());
+  check('V23 nearby available never inherits previous charging filters',(()=>{const src=fs.readFileSync(path.join(root,'assets/app.js'),'utf8');const a=src.indexOf('const requestChargingOrigin=');const b=src.indexOf('$("#chargingFindNow")',a);const block=src.slice(a,b);return ['chargingConnector="all"','chargingPower=0','chargingOperator="all"','chargingQuick="all"','chargingMajor="all"','chargingFavoritesOnly=false','$("#chargingSearch").value=""'].every(x=>block.includes(x));})());
+  check('V23 nearby available distinguishes loading from a real zero result',(()=>{const src=fs.readFileSync(path.join(root,'assets/app.js'),'utf8');return src.includes('function chargingLiveDatasetReady()')&&src.includes('正在載入官方即時槍況')&&src.includes('不會把尚未載入誤判成 0');})());
+  check('V23 installed PWA release labels are aligned',(()=>{const app=fs.readFileSync(path.join(root,'assets/app.js'),'utf8');const sw=fs.readFileSync(path.join(root,'sw.js'),'utf8');return app.includes('const APP_RELEASE="Public Beta V23"')&&sw.includes('const SW_RELEASE="Public Beta V23"');})());
   const plateWorkerSource=fs.readFileSync(path.join(root,'sw.js'),'utf8');
   check('PWA service worker handles plate push and notification clicks',plateWorkerSource.includes('addEventListener("push"')&&plateWorkerSource.includes('addEventListener("notificationclick"')&&plateWorkerSource.includes('./#plate'));
   await page.evaluate(()=>navigator.serviceWorker.ready);

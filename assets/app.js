@@ -54,7 +54,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V22";
+const APP_RELEASE="Public Beta V23";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -782,6 +782,9 @@ function chargingHasAvailableReport(x){
   const info=chargingAvailabilityInfo(x);
   return (info.tier==="live"||info.tier==="recent")&&info.counts.available>0;
 }
+function chargingLiveDatasetReady(){
+  return (state.charging||[]).some(x=>x?.road==="tdx");
+}
 function chargingTrustInfo(x){
   const profile=chargingOperatorProfile(x);
   if(x?.officialSupplemental)return {level:"official",label:"業者官方站點",detail:"即時空槍未由 TDX 驗證"};
@@ -1248,7 +1251,9 @@ function renderCharging(){
     if(Number(state.chargingPower)>0)context.push(state.chargingPower+" kW+");
     if(state.chargingOperator!=="all")context.push(state.chargingOperator);
     if(q)context.push("搜尋「"+q+"」");
-    if(resultCount===0&&state.chargingAvailableOnly){
+    if(resultCount===0&&state.chargingAvailableOnly&&!chargingLiveDatasetReady()){
+      $("#chargingResultSummary").textContent="正在載入官方即時槍況…";
+    }else if(resultCount===0&&state.chargingAvailableOnly){
       $("#chargingResultSummary").textContent="目前沒有 6 小時內的空槍回報"+(state.chargingSort==="nearby"?" · 可改看附近站點":"");
     }else if(state.chargingAvailableOnly){
       const liveCount=rows.filter(x=>chargingAvailabilityInfo(x).tier==="live").length;
@@ -1331,9 +1336,11 @@ function renderCharging(){
     '</article>';
   }).join(""):(state.chargingQuick==="priorityfast"
     ? '<div class="empty charging-empty charging-priority-fast-empty"><b>目前沒有同時符合的主力空槍快充</b><p>條件是 EVOASIS／U-POWER／TAIL／Tesla，且 TDX 即時或 6 小時內最近回報有空槍、單槍功率至少 100 kW。最近回報會清楚標示非即時。</p><div class="charging-empty-actions"><button class="charging-empty-primary" data-charge-relax="available">改看所有空槍</button><button class="charging-empty-secondary" data-charge-relax="fast">改看 100 kW+</button></div><small>未知槍況、逾時資料與未知功率不會混進主力快充結果。</small></div>'
-    : state.chargingAvailableOnly
-      ? '<div class="empty charging-empty"><b>目前沒有 6 小時內的空槍回報</b><p>'+(unverifiedNote?esc(unverifiedNote)+" ":"")+'可能真的滿位，也可能業者尚未回傳新槍況。超過 6 小時的舊狀態不會被 COLA GO 當成可用。</p><button class="charging-empty-primary" data-charge-show-nearby>改看附近充電站</button><small>保留距離排序，只取消「只看空槍」</small></div>'
-      : '<div class="empty charging-empty"><b>沒有符合的充電站</b><p>可以清除篩選，或改用搜尋站名、地址、業者品牌。</p><button class="charging-empty-secondary" data-charge-clear-filters>清除充電篩選</button></div>');
+    : state.chargingAvailableOnly&&!chargingLiveDatasetReady()
+      ? '<div class="empty charging-empty"><b>正在載入官方即時槍況</b><p>定位已完成，TDX 充電狀態載入後會自動依距離顯示空槍，不會把尚未載入誤判成 0。</p><small>通常不需要重新按一次。</small></div>'
+      : state.chargingAvailableOnly
+        ? '<div class="empty charging-empty"><b>目前沒有 6 小時內的空槍回報</b><p>'+(unverifiedNote?esc(unverifiedNote)+" ":"")+'可能真的滿位，也可能業者尚未回傳新槍況。超過 6 小時的舊狀態不會被 COLA GO 當成可用。</p><button class="charging-empty-primary" data-charge-show-nearby>改看附近充電站</button><small>保留距離排序，只取消「只看空槍」</small></div>'
+        : '<div class="empty charging-empty"><b>沒有符合的充電站</b><p>可以清除篩選，或改用搜尋站名、地址、業者品牌。</p><button class="charging-empty-secondary" data-charge-clear-filters>清除充電篩選</button></div>');
 
   $$("[data-charge-favorite]",root).forEach(b=>b.onclick=()=>{
     const key=b.dataset.chargeFavorite;
@@ -3558,13 +3565,22 @@ function bindChargingTools(){
         state.chargingCity="all";
         state.road="all";
         state.chargingDirection="all";
+        state.chargingConnector="all";
+        state.chargingPower=0;
+        state.chargingOperator="all";
+        state.chargingQuick="all";
+        state.chargingMajor="all";
         state.chargingFavoritesOnly=false;
         if($("#chargingCity"))$("#chargingCity").value="all";
         if($("#chargingDirection"))$("#chargingDirection").value="all";
-        $$("#roadFilter button").forEach((b,i)=>b.classList.toggle("active",i===0));
+        if($("#chargingConnector"))$("#chargingConnector").value="all";
+        if($("#chargingPower"))$("#chargingPower").value="0";
+        if($("#chargingOperator"))$("#chargingOperator").value="all";
+        if($("#chargingSearch"))$("#chargingSearch").value="";
+        $$("#roadFilter button").forEach(b=>b.classList.toggle("active",b.dataset.road==="all"));
       }
       renderCharging();
-      toast(availableOnly?"已顯示附近空槍／最近回報":"已依距離排序充電站");
+      toast(availableOnly?"已清除篩選，顯示附近空槍／最近回報":"已依距離排序充電站");
     },()=>toast("無法取得位置，請確認定位權限"),{
       enableHighAccuracy:false,timeout:8000,maximumAge:300000
     });
