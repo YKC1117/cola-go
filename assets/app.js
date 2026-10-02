@@ -20,6 +20,7 @@ const state={
   chargingQuick:"all",
   chargingMajor:"all",
   chargingAvailableOnly:false,
+  chargingNearbyAvailableMode:false,
   chargingSort:"smart",
   chargingOrigin:null,
   chargingCompareKwh:50,
@@ -1178,9 +1179,16 @@ function renderCharging(){
     .filter(chargingQuickMatch)
     .filter(x=>!state.chargingFavoritesOnly||state.chargingFavorites.includes(chargingKey(x)))
     .filter(x=>!q||chargingOperatorSearchText(x).includes(q));
-  let rows=state.chargingAvailableOnly
-    ? candidateRows.filter(chargingHasAvailableReport)
+  const nearbyRadiusKm=20;
+  const nearbyCandidates=state.chargingNearbyAvailableMode
+    ? candidateRows.filter(x=>{
+        const distance=chargingDistanceKm(x);
+        return distance!=null&&distance<=nearbyRadiusKm;
+      })
     : candidateRows;
+  let rows=state.chargingAvailableOnly
+    ? nearbyCandidates.filter(chargingHasAvailableReport)
+    : nearbyCandidates;
 
   rows.sort((a,b)=>{
     if(state.chargingSort!=="nearby"&&state.chargingQuick==="priorityfast"){
@@ -1188,6 +1196,10 @@ function renderCharging(){
       if(trusted)return trusted;
     }
     if(state.chargingSort==="nearby"){
+      if(state.chargingNearbyAvailableMode){
+        const nearbyRank=chargingSortRank(a)-chargingSortRank(b);
+        if(nearbyRank)return nearbyRank;
+      }
       const da=chargingDistanceKm(a),db=chargingDistanceKm(b);
       if(da!=null||db!=null){
         if(da==null)return 1;
@@ -1231,7 +1243,8 @@ function renderCharging(){
   if($("#chargingResultSummary")){
     const suffix=resultCount>shown.length?" · 先顯示前 "+shown.length+" 站":"";
     const context=[];
-    if(state.chargingSort==="nearby")context.push("附近排序");
+    if(state.chargingNearbyAvailableMode)context.push("20 km 內 · 空槍優先");
+    else if(state.chargingSort==="nearby")context.push("附近排序");
     if(state.chargingAvailableOnly)context.push("只看空槍");
     const cityText=$("#chargingCity")?.selectedOptions?.[0]?.textContent;
     if(state.chargingCity!=="all"&&cityText)context.push(cityText);
@@ -1251,7 +1264,16 @@ function renderCharging(){
     if(Number(state.chargingPower)>0)context.push(state.chargingPower+" kW+");
     if(state.chargingOperator!=="all")context.push(state.chargingOperator);
     if(q)context.push("搜尋「"+q+"」");
-    if(resultCount===0&&state.chargingAvailableOnly&&!chargingLiveDatasetReady()){
+    if(state.chargingNearbyAvailableMode){
+      const confirmed=rows.filter(chargingHasAvailableReport).length;
+      const unknown=rows.filter(x=>chargingAvailabilityInfo(x).tier==="unknown").length;
+      const stale=rows.filter(x=>chargingAvailabilityInfo(x).tier==="stale").length;
+      const full=rows.filter(x=>{
+        const info=chargingAvailabilityInfo(x);
+        return (info.tier==="live"||info.tier==="recent")&&info.counts.total>0&&info.counts.available===0;
+      }).length;
+      $("#chargingResultSummary").textContent="20 km 內 "+resultCount+" 站 · 已確認有空槍 "+confirmed+" · 已滿 "+full+" · 槍況未提供 "+unknown+(stale?" · 逾時 "+stale:"");
+    }else if(resultCount===0&&state.chargingAvailableOnly&&!chargingLiveDatasetReady()){
       $("#chargingResultSummary").textContent="正在載入官方即時槍況…";
     }else if(resultCount===0&&state.chargingAvailableOnly){
       $("#chargingResultSummary").textContent="目前沒有 6 小時內的空槍回報"+(state.chargingSort==="nearby"?" · 可改看附近站點":"");
@@ -1269,7 +1291,7 @@ function renderCharging(){
     if(clear)clear.hidden=context.length===0;
     $("#chargingResultBar")?.classList.toggle("has-filter",context.length>0);
   }
-  if($("#chargingFindNow"))$("#chargingFindNow").setAttribute("aria-pressed",String(state.chargingSort==="nearby"&&state.chargingAvailableOnly));
+  if($("#chargingFindNow"))$("#chargingFindNow").setAttribute("aria-pressed",String(state.chargingNearbyAvailableMode));
 
   const unverifiedRows=state.chargingAvailableOnly?candidateRows.filter(x=>{
     if(x?.officialSupplemental)return true;
@@ -1278,7 +1300,7 @@ function renderCharging(){
     return tier==="stale"||tier==="unknown";
   }):[];
   const unverifiedBrands=[...new Set(unverifiedRows.map(x=>chargingOperatorProfile(x)?.brand).filter(Boolean))].slice(0,3);
-  const unverifiedScope=state.chargingSort==="nearby"?"附近":"目前篩選";
+  const unverifiedScope=state.chargingNearbyAvailableMode?"20 km 內":(state.chargingSort==="nearby"?"附近":"目前篩選");
   const unverifiedNote=unverifiedRows.length
     ? unverifiedScope+"另有 "+unverifiedRows.length+" 站沒有可驗證的即時槍況"+(unverifiedBrands.length?"，包含 "+unverifiedBrands.join("、"):"")+"；其中業者官方已列站不代表不能充。"
     : "";
@@ -3560,8 +3582,9 @@ function bindChargingTools(){
     navigator.geolocation.getCurrentPosition(pos=>{
       state.chargingOrigin={lat:pos.coords.latitude,lon:pos.coords.longitude};
       state.chargingSort="nearby";
+      state.chargingNearbyAvailableMode=availableOnly;
       if(availableOnly){
-        state.chargingAvailableOnly=true;
+        state.chargingAvailableOnly=false;
         state.chargingCity="all";
         state.road="all";
         state.chargingDirection="all";
@@ -3580,7 +3603,7 @@ function bindChargingTools(){
         $$("#roadFilter button").forEach(b=>b.classList.toggle("active",b.dataset.road==="all"));
       }
       renderCharging();
-      toast(availableOnly?"已清除篩選，顯示附近空槍／最近回報":"已依距離排序充電站");
+      toast(availableOnly?"已顯示 20 km 內充電站 · 已確認空槍優先":"已依距離排序充電站");
     },()=>toast("無法取得位置，請確認定位權限"),{
       enableHighAccuracy:false,timeout:8000,maximumAge:300000
     });
@@ -3591,6 +3614,7 @@ function bindChargingTools(){
   $("#chargingNearby")?.addEventListener("click",()=>{
     if(state.chargingSort==="nearby"){
       state.chargingSort="smart";
+      state.chargingNearbyAvailableMode=false;
       state.chargingOrigin=null;
       renderCharging();
       return;
@@ -3599,6 +3623,7 @@ function bindChargingTools(){
   });
 
   $("#chargingAvailableOnly")?.addEventListener("click",()=>{
+    state.chargingNearbyAvailableMode=false;
     state.chargingAvailableOnly=!state.chargingAvailableOnly;
     renderCharging();
   });
@@ -3609,6 +3634,7 @@ function bindChargingTools(){
     state.chargingMajor="all";
     state.chargingOperator="all";
     state.chargingAvailableOnly=false;
+    state.chargingNearbyAvailableMode=false;
     state.chargingFavoritesOnly=false;
     state.chargingSort="smart";
     state.chargingOrigin=null;
@@ -3643,6 +3669,7 @@ function bindChargingTools(){
     state.chargingQuick="all";
     state.chargingMajor="all";
     state.chargingAvailableOnly=false;
+    state.chargingNearbyAvailableMode=false;
     state.chargingSort="smart";
     state.chargingOrigin=null;
     state.chargingFavoritesOnly=false;
