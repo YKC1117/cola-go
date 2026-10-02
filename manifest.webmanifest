@@ -1,15 +1,20 @@
 {
-  "name":"COLA GO｜台灣車友出行工具",
-  "short_name":"COLA GO",
-  "description":"路線、停車、充電、國道路況、CCTV 與車主工具",
-  "start_url":"./#home",
-  "scope":"./",
-  "display":"standalone",
-  "background_color":"#08090b",
-  "theme_color":"#ef1828",
-  "orientation":"any",
-  "lang":"zh-Hant-TW",
-  "icons":[
-    {"src":"./assets/logo.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  "name": "COLA GO｜台灣車友出行工具",
+  "short_name": "COLA GO",
+  "description": "免費、免登入的台灣車友工具：充電、停車、國道路況、CCTV、車牌追蹤與常用工具",
+  "start_url": "./#home",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#08090b",
+  "theme_color": "#ef1828",
+  "orientation": "any",
+  "lang": "zh-Hant-TW",
+  "icons": [
+    {
+      "src": "./assets/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

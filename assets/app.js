@@ -54,17 +54,27 @@ const state={
   installPrompt:null
 };
 
+const APP_RELEASE="Public Beta V20";
+const VIEW_LABELS={
+  home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
+  cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
+  "tesla-db":"Tesla 車系比較",locations:"原廠據點",community:"社群・活動",partners:"合作專區",
+  vin:"VIN 解碼",calculator:"電費計算",delivery:"驗車清單",maintenance:"保養週期",parts:"Tesla 零件",
+  lucky:"車牌數字",warranty:"保固剩餘",connector:"充電接頭"
+};
+
 const $=(q,r=document)=>r.querySelector(q);
 const $$=(q,r=document)=>Array.from(r.querySelectorAll(q));
 const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
 const money=v=>new Intl.NumberFormat("zh-TW",{maximumFractionDigits:0}).format(Math.round(v||0));
 
-function toast(message){
+function toast(message,duration=1800){
   const el=$("#toast");
+  if(!el)return;
   el.textContent=message;
   el.classList.add("show");
   clearTimeout(toast.t);
-  toast.t=setTimeout(()=>el.classList.remove("show"),1800);
+  toast.t=setTimeout(()=>el.classList.remove("show"),duration);
 }
 
 function resetViewDisclosures(view){
@@ -120,6 +130,43 @@ function bindDisclosureBehavior(){
 function bindExternal(root=document){
   $$("[data-url]",root).forEach(el=>{
     el.onclick=()=>window.open(el.dataset.url,"_blank","noopener");
+  });
+}
+function copyTextBestEffort(text){
+  if(navigator.clipboard?.writeText){
+    navigator.clipboard.writeText(text).catch(()=>{});
+    return;
+  }
+  try{
+    const area=document.createElement("textarea");
+    area.value=text;
+    area.setAttribute("readonly","");
+    area.style.position="fixed";
+    area.style.opacity="0";
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand("copy");
+    area.remove();
+  }catch{}
+}
+function feedbackContext(){
+  const view=state.view||location.hash.slice(1)||"home";
+  const label=VIEW_LABELS[view]||view;
+  return [
+    "COLA GO 問題回報",
+    "功能："+label,
+    "頁面："+location.origin+location.pathname+"#"+view,
+    "版本："+APP_RELEASE,
+    "",
+    "問題："
+  ].join("\n");
+}
+function bindFeedback(root=document){
+  $$("[data-feedback]",root).forEach(el=>{
+    el.addEventListener("click",()=>{
+      copyTextBestEffort(feedbackContext());
+      toast("已複製回報格式，貼到 LINE 後補充問題",3000);
+    });
   });
 }
 
@@ -3944,6 +3991,7 @@ function bindInstall(){
 bindNav();
 bindDisclosureBehavior();
 bindExternal();
+bindFeedback();
 bindCopy();
 bindChargingTools();
 bindFilters();
