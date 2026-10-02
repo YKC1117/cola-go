@@ -67,11 +67,19 @@ function toast(message){
   toast.t=setTimeout(()=>el.classList.remove("show"),1800);
 }
 
+function resetViewDisclosures(view){
+  const root=$(".view").find(el=>el.dataset.view===view);
+  if(!root)return;
+  $("details",root).forEach(el=>{
+    if(!el.hasAttribute("data-keep-open"))el.open=false;
+  });
+}
 function show(view,push=true){
-  if(!$$(".view").some(el=>el.dataset.view===view))view="home";
+  if(!$(".view").some(el=>el.dataset.view===view))view="home";
   state.view=view;
-  $$(".view").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
-  $$(".bottom-nav button").forEach(el=>{
+  $(".view").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
+  resetViewDisclosures(view);
+  $(".bottom-nav button").forEach(el=>{
     const active=el.dataset.go===view;
     el.classList.toggle("active",active);
     if(active)el.setAttribute("aria-current","page"); else el.removeAttribute("aria-current");
@@ -95,6 +103,18 @@ function bindNav(){
     };
   });
   addEventListener("hashchange",()=>show(location.hash.slice(1)||"home",false));
+}
+function bindDisclosureBehavior(){
+  document.addEventListener("toggle",event=>{
+    const current=event.target;
+    if(!(current instanceof HTMLDetailsElement)||!current.open||current.hasAttribute("data-allow-multi"))return;
+    const view=current.closest(".view");
+    if(!view)return;
+    $("details",view).forEach(other=>{
+      if(other===current||other.contains(current)||current.contains(other)||other.hasAttribute("data-allow-multi"))return;
+      other.open=false;
+    });
+  },true);
 }
 
 function bindExternal(root=document){
@@ -3894,6 +3914,7 @@ $("#refreshBtn").onclick=()=>{
 };
 
 bindNav();
+bindDisclosureBehavior();
 bindExternal();
 bindCopy();
 bindChargingTools();

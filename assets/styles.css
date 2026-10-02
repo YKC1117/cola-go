@@ -667,3 +667,37 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
 
 /* Public launch trust strip */
 .public-trust{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:18px 0 6px;padding:10px 12px;border-top:1px solid var(--line);color:var(--muted);font-size:9px}.public-trust span{font-weight:800;color:var(--text)}.public-trust a{color:inherit;text-decoration:none}.public-trust a:hover{text-decoration:underline}.public-source-note{max-width:640px;margin:0 auto 12px;padding:0 14px;text-align:center;color:var(--muted);font-size:8px;line-height:1.55}
+
+
+/* V16 — compact, consistent interaction layer */
+:root{--ui-primary-h:48px;--ui-control-h:44px;--ui-chip-h:38px;--ui-compact-h:36px;--ui-nav-row-h:58px}
+.ui-disclosure{margin-top:12px;border:1px solid var(--line);border-radius:12px;background:#0d1215;overflow:hidden}
+.ui-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;padding:10px 12px;cursor:pointer;list-style:none}
+.ui-disclosure>summary::-webkit-details-marker{display:none}
+.ui-disclosure>summary>span{min-width:0}
+.ui-disclosure>summary b{display:block;font-size:13px;font-weight:750;line-height:1.35}
+.ui-disclosure>summary small{display:block;margin-top:2px;color:var(--muted);font-size:10px;line-height:1.35}
+.ui-disclosure>summary::after{content:"＋";flex:none;color:var(--muted);font-size:18px;font-weight:400;line-height:1}
+.ui-disclosure[open]>summary::after{content:"－"}
+.ui-disclosure-body{padding:0 12px 12px}
+.ui-disclosure-body>.info-box:first-child,.ui-disclosure-body>.map-handoff:first-child,.ui-disclosure-body>.shortcut-guide:first-child{margin-top:0}
+.shortcut-card-more{margin-top:12px}
+.shortcut-card-more .shortcut-guide{margin-bottom:0}
+[data-view="shortcuts"]>.ui-disclosure,[data-view="partners"]>.ui-disclosure{margin-top:14px}
+[data-view="charging"]>.ui-disclosure,[data-view="parking"]>.ui-disclosure,[data-view="cctv"]>.ui-disclosure{margin-top:12px}
+.primary,.external-btn,.location-links button,.action-duo button{min-height:var(--ui-primary-h);padding:11px 14px;border-radius:12px;font-size:14px}
+.item-actions button,.model-actions button,.location-actions button,.compare-tray button,.cctv-camera-actions button,.charging-toggle-row button{min-height:var(--ui-control-h);padding:9px 11px;border-radius:10px;font-size:12px}
+.filter-row button,.market-filter button,.route-chips button,.charging-quick-filter button,.cctv-quick-landmarks button,.cctv-corridor-direction button,.cctv-corridor-mode button,.charging-compare-kwh button,.charging-compare-sort button{min-height:var(--ui-chip-h);padding:7px 10px;font-size:11px}
+.cctv-source-tools button,.cctv-active-context button,.cctv-context-traffic-actions button,.cctv-context-traffic.is-empty button,.cctv-saved-head-actions button,.cctv-nearby-actions button,.cctv-trip-slow article>button,.cctv-trip-brief-actions button,.charging-compare-actions button{min-height:var(--ui-compact-h);padding:6px 8px;border-radius:9px;font-size:10px}
+.home-more button,.tool-shortcuts button,.link-cards button{min-height:var(--ui-nav-row-h);padding:12px 0}
+.charging-actions button,.parking-actions button{min-height:52px;padding:10px 12px;border-radius:11px}
+.inline-search{min-height:50px}
+.cctv-corridor-segment-fields select,.charging-filter-grid select{min-height:44px}
+.cctv-corridor-segment-actions button,.cctv-corridor-actions button,.cctv-corridor-secondary button,.cctv-viewer-head>button,.cctv-viewer-actions button,.cctv-adjacent-actions button{min-height:var(--ui-compact-h);padding:6px 8px;font-size:10px}
+.cctv-nearby-tools button{min-height:52px;padding:9px 11px}
+.charging-primary-actions{align-items:stretch}
+.charging-primary-action{min-height:64px}
+@media(max-width:430px){
+  .ui-disclosure>summary{min-height:46px;padding:9px 11px}
+  .ui-disclosure-body{padding:0 10px 10px}
+}

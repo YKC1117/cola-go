@@ -208,3 +208,14 @@
 .plate-exact-card{display:grid;gap:8px;padding:12px;border:1px solid #365544;border-radius:12px;background:#101914}.plate-exact-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.plate-exact-top>div>b{display:block;font-size:24px;letter-spacing:.06em}.plate-exact-top>div>small{display:block;margin-top:2px;color:var(--muted);font-size:9px}.plate-exact-top>span{flex:none;padding:4px 7px;border-radius:999px;font-size:8px;font-weight:850}.plate-exact-top>span.verified{background:#173322;color:#81e7a6}.plate-exact-top>span.range-only{background:#30291a;color:#e7cb8f}
 .plate-exact-proof{font-size:9px;line-height:1.5;color:#93a99a}.plate-exact-official{min-height:42px;border:1px solid #3e7252;border-radius:10px;background:#173622;color:#8ff0b1;font-size:10px;font-weight:850}.plate-exact-excluded{padding:8px 10px;border-radius:9px;background:#24191b;color:#d6a0a7;font-size:9px;line-height:1.5}
 .plate-range-preview{margin-top:9px}.plate-range-preview>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#101518;list-style:none;cursor:pointer}.plate-range-preview>summary::-webkit-details-marker{display:none}.plate-range-preview>summary b{display:block;font-size:10px}.plate-range-preview>summary small{display:block;margin-top:1px;color:var(--muted);font-size:8px}.plate-range-preview>summary>span:last-child{color:var(--muted);font-size:9px}.plate-range-preview-body{display:grid;gap:7px;padding-top:8px}
+
+
+/* V16 — Plate Center uses the same control scale as the rest of COLA GO */
+.plate-search-row input,.plate-search-row button{height:auto;min-height:48px}
+.plate-filter-row button{min-height:38px;padding:7px 10px;font-size:11px}
+.plate-announcement-actions button,.plate-watch-actions button,.plate-primary-actions button,.plate-number-card-actions button{min-height:44px;padding:9px 11px;border-radius:10px;font-size:12px}
+.plate-announcement-meta button,.plate-line-actions button,.plate-watch-more summary,.plate-number-card>.plate-watch-more summary{min-height:36px}
+.plate-compact-details>summary{min-height:48px}
+.plate-quick-actions button{min-height:64px;padding:11px 12px}
+.plate-source-list button{min-height:56px}
+.plate-detail-head button{width:44px;height:44px}
