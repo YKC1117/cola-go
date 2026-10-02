@@ -3558,10 +3558,21 @@ function bindChargingTools(){
         state.chargingCity="all";
         state.road="all";
         state.chargingDirection="all";
+        state.chargingConnector="all";
+        state.chargingPower=0;
+        state.chargingOperator="all";
+        state.chargingQuick="all";
+        state.chargingMajor="all";
         state.chargingFavoritesOnly=false;
         if($("#chargingCity"))$("#chargingCity").value="all";
         if($("#chargingDirection"))$("#chargingDirection").value="all";
+        if($("#chargingConnector"))$("#chargingConnector").value="all";
+        if($("#chargingPower"))$("#chargingPower").value="0";
+        if($("#chargingOperator"))$("#chargingOperator").value="all";
+        if($("#chargingSearch"))$("#chargingSearch").value="";
         $$("#roadFilter button").forEach((b,i)=>b.classList.toggle("active",i===0));
+        $$("[data-charge-quick]").forEach(b=>b.classList.toggle("active",(b.dataset.chargeQuick||"all")==="all"));
+        $$("[data-charge-major]").forEach(b=>b.classList.toggle("active",(b.dataset.chargeMajor||"all")==="all"));
       }
       renderCharging();
       toast(availableOnly?"已顯示附近空槍／最近回報":"已依距離排序充電站");
