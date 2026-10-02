@@ -3908,11 +3908,6 @@ function bindInstall(){
   }
 }
 
-$("#refreshBtn").onclick=()=>{
-  toast("重新整理");
-  load();
-};
-
 bindNav();
 bindDisclosureBehavior();
 bindExternal();

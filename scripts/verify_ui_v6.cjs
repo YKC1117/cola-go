@@ -646,6 +646,9 @@ let browser;
   }
   await page.evaluate(()=>show('nonexistent'));
   check('Unknown route recovers to home',await page.locator('[data-view=home]').isVisible());
+  check('Home header no longer exposes refresh/install icon buttons',await page.locator('.top-actions').count()===0&&await page.locator('#refreshBtn').count()===0);
+  await page.evaluate(()=>show('tools'));
+  check('PWA install entry moved to owner tools',await page.locator('#installBtn').isVisible()&&await page.locator('#installBtn').textContent().then(x=>x.includes('安裝 COLA GO')));
   await page.locator('#installBtn').click();
   check('PWA installation help is available',await page.locator('#toast').textContent().then(x=>x.includes('主畫面')||x.includes('安裝')));
   await page.evaluate(()=>show('shortcuts'));
