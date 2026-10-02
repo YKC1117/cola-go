@@ -54,7 +54,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V20";
+const APP_RELEASE="Public Beta V21";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -3950,6 +3950,25 @@ function bindConnector(){
   };
 }
 
+let pwaUpdatePending=false;
+let pwaUpdateSawHidden=false;
+function markPwaUpdatePending(release=""){
+  if(release&&release===APP_RELEASE)return;
+  if(pwaUpdatePending)return;
+  pwaUpdatePending=true;
+  toast("COLA GO 有新版，切到背景再回來會自動更新",4200);
+}
+function bindPwaUpdateLifecycle(){
+  document.addEventListener("visibilitychange",()=>{
+    if(!pwaUpdatePending)return;
+    if(document.hidden){
+      pwaUpdateSawHidden=true;
+      return;
+    }
+    if(pwaUpdateSawHidden)location.reload();
+  });
+}
+
 function bindInstall(){
   const installBtn=$("#installBtn");
   const standalone=(window.matchMedia&&window.matchMedia("(display-mode: standalone)").matches)||window.navigator.standalone===true;
@@ -3984,7 +4003,21 @@ function bindInstall(){
   }
 
   if("serviceWorker" in navigator){
-    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+    const hadController=Boolean(navigator.serviceWorker.controller);
+    navigator.serviceWorker.addEventListener("message",event=>{
+      const type=String(event.data?.type||"");
+      const release=String(event.data?.release||"");
+      if(type==="COLA_GO_SW_ACTIVATED"||type==="COLA_GO_SW_RELEASE"){
+        if(hadController&&release&&release!==APP_RELEASE)markPwaUpdatePending(release);
+      }
+    });
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{
+      if(hadController)markPwaUpdatePending();
+    });
+    navigator.serviceWorker.register("./sw.js").then(registration=>{
+      try{registration.active?.postMessage({type:"COLA_GO_GET_RELEASE"})}catch{}
+      if(navigator.onLine)registration.update().catch(()=>{});
+    }).catch(()=>{});
   }
 }
 
@@ -4005,6 +4038,7 @@ bindParts();
 bindLucky();
 bindWarranty();
 bindConnector();
+bindPwaUpdateLifecycle();
 bindInstall();
 show(location.hash.slice(1)||"home",false);
 load();
