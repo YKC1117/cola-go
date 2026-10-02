@@ -1,17 +1,10 @@
-name: Build Tesla audio test shortcut
+name: Package Tesla test shortcut
 
 on:
   push:
     branches:
       - "test/tesla-audio-friendly-20261002"
     paths:
-      - "carkit-sign/build_tesla_audio_test.py"
-      - ".github/workflows/carkit-tesla-audio-test.yml"
-  pull_request:
-    branches:
-      - "main"
-    paths:
-      - "carkit-sign/build_tesla_audio_test.py"
       - ".github/workflows/carkit-tesla-audio-test.yml"
   workflow_dispatch:
 
@@ -19,50 +12,46 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: macos-15
+  package:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build helper
-        run: |
-          python3 carkit-sign/build_tesla_audio_test.py
-          plutil -convert binary1 "carkit-sign/generated/特斯拉上車助手.wflow"
-
-      - name: Sign helper for anyone
+      - name: Package verified signed shortcut
         run: |
           mkdir -p test-output
-          shortcuts sign --mode anyone             --input "carkit-sign/generated/特斯拉上車助手.wflow"             --output "test-output/特斯拉上車助手.shortcut"
           cp "downloads/tesla-driver.shortcut" "test-output/特斯拉助手.shortcut"
-          printf 'Signed helper magic: '
-          head -c 4 "test-output/特斯拉上車助手.shortcut"
-          printf '\n'
-          test "$(head -c 4 "test-output/特斯拉上車助手.shortcut")" = "AEA1"
-          shasum -a 256 "test-output/特斯拉上車助手.shortcut" "test-output/特斯拉助手.shortcut"
-
-      - name: Add test notes
-        run: |
           cat > "test-output/車友測試說明.txt" <<'EOF'
           CarKit TW｜Tesla 車友音訊測試版
 
-          1. 安裝「特斯拉助手.shortcut」：原 v1.6 完整功能，不更動車控核心。
-          2. 安裝「特斯拉上車助手.shortcut」：只做神盾／極行／先不用選單。
-          3. iPhone 捷徑 App → 自動化 → 新增 → Bluetooth → 選自己的 Tesla。
-          4. 選擇立即執行，動作設定為「執行捷徑」→「特斯拉上車助手」。
-          5. 如果要全自動神盾或極行，不必跑助手：Bluetooth 自動化裡直接加入「開啟 App」→ 神盾或極行。
-          6. 音訊安全原則：不要加入調整音量、設定播放目的地、播放聲音、播放／暫停媒體等動作。
+          本包使用目前正式、已簽署的「特斯拉助手 v1.6」原檔。
+          不修改既有車控核心，也不加入任何音量或音訊路由控制。
 
-          請測：
-          A. Tesla 播音樂時觸發神盾／極行
-          B. 通話中遇到警示
-          C. 警示結束後音樂是否正常
-          D. 掛電話後音樂是否正常恢復
-          E. 是否發生音量被改變、音訊來源被切換
+          iPhone 自動化設定：
+          1. 捷徑 App → 自動化 → 新增個人自動化。
+          2. 選 Bluetooth → 指定自己的 Tesla。
+          3. 選「連線時」→「立即執行」。
+          4. 詢問模式：新增「從選單中選擇」，項目為「神盾測速照相／極行／先不用」；
+             前兩個分支各加入「開啟 App」。
+          5. 全自動模式：不用選單，直接加入「開啟 App」→ 神盾或極行。
+          6. 不要加入：調整音量、設定播放目的地、播放聲音、播放／暫停媒體。
+
+          請車友協助測試：
+          A. Tesla 播放音樂時，神盾／極行警示會不會中斷或改變音樂。
+          B. 通話中遇到警示時，是否影響電話聲音。
+          C. 警示結束後，音樂是否正常。
+          D. 掛電話後，音樂是否正常恢復。
+          E. 是否發生系統音量改變或音訊來源被切換。
+
+          注意：
+          捷徑本身不控制音訊。實際警示是否與 Tesla 車內音樂／通話混音，
+          由 iOS 與神盾／極行 App 本身的音訊策略決定。
           EOF
+          sha256sum "test-output/特斯拉助手.shortcut"
 
       - name: Upload test pack
         uses: actions/upload-artifact@v4
         with:
-          name: Tesla-Audio-Test
+          name: Tesla-Test-Package
           path: test-output/
           if-no-files-found: error
