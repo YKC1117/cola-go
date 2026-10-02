@@ -40,6 +40,8 @@ let officeFetchAt=0;
 let lineNotifyConfig={status:"idle",enabled:false,apiBase:"",oaUrl:"https://lin.ee/Tu89Qyk"};
 let lineNotifyBusy=false;
 let lineNotifyAutoSyncTimer=null;
+const exactConfirmCache=new Map();
+const exactConfirmPending=new Map();
 
 function loadRows(){try{const x=JSON.parse(localStorage.getItem(STORE_KEY)||"[]");return Array.isArray(x)?x:[]}catch{return[]}}
 function saveRows(rows){try{localStorage.setItem(STORE_KEY,JSON.stringify(rows));markLineNotifyDirty()}catch{}}
@@ -514,6 +516,74 @@ function recordAnnouncementChanges(data){
   savePlateJson(ANNOUNCEMENT_SNAPSHOT_KEY,snapshot);
   renderAnnouncementChanges();
 }
+
+function exactConfirmKey(value){
+  const number=watchNumber(value)||normalize(value);
+  return number+"|"+loadVehicleScope()+"|"+String(announcementData.updatedAt||"");
+}
+function renderExactConfirmation(value){
+  const root=$p("#plateExactConfirm"),state=$p("#plateSearchResultState");
+  if(!root)return;
+  const number=watchNumber(value)||normalize(value);
+  if(root.dataset.number!==number)return;
+  const key=exactConfirmKey(number),data=exactConfirmCache.get(key);
+  if(!data){
+    root.innerHTML='<div class="plate-exact-loading"><b>官方實牌確認中</b><span>正在核對監理服務網公告區間與「重複號牌排除明細」。</span></div>';
+    return;
+  }
+  const matches=Array.isArray(data.matches)?data.matches:[];
+  const usable=matches.filter(x=>x.exactStatus!=="excluded");
+  const confirmed=usable.filter(x=>x.exactStatus==="confirmed");
+  if(state)state.textContent=confirmed.length?confirmed.length+" 筆官方實牌確認":usable.length?usable.length+" 筆公告區間命中":"目前未確認";
+  if(!usable.length){
+    root.innerHTML='<div class="plate-exact-empty"><b>目前沒有可確認的 '+escPlate(number)+'</b><span>'+
+      (Number(data.excludedCount)>0?"官方公告區間雖包含這組數字，但明細列為重複號牌排除。":"目前未在符合車種的未決標公告中確認到這組數字。")+
+      '</span></div>';
+    return;
+  }
+  root.innerHTML=
+    '<div class="plate-exact-head"><div><small>OFFICIAL EXACT CHECK</small><b>'+escPlate(number)+' 官方實牌</b></div><span>'+confirmed.length+' 筆明細確認</span></div>'+
+    usable.map(row=>{
+      const status=auctionState(row),verified=row.exactStatus==="confirmed";
+      return '<article class="plate-exact-card">'+
+        '<div class="plate-exact-top"><div><b>'+escPlate(row.exactPlate||number)+'</b><small>'+escPlate(row.office||"監理單位")+'・'+escPlate(row.category||"")+'</small></div>'+
+          '<span class="'+(verified?'verified':'range-only')+'">'+(verified?'官方明細已確認':'公告區間命中')+'</span></div>'+
+        '<div class="plate-watch-meta"><div><small>狀態</small><b>'+escPlate(auctionLabel(status))+'</b></div><div><small>起標</small><b>'+escPlate(fmtTime(row.startAt))+'</b></div><div><small>公告決標</small><b>'+escPlate(fmtTime(row.endAt))+'</b></div></div>'+
+        '<div class="plate-exact-proof">'+(verified?'已核對官方「重複號牌排除明細」，此完整牌號未被排除。':'官方明細暫時無法驗證，僅能確認號碼落在公告區間。')+'</div>'+
+        '<button class="plate-exact-official" data-plate-search-action="official-exact" data-value="'+escPlate(row.exactPlate||number)+'" type="button">複製 '+escPlate(row.exactPlate||number)+' ＋ 開官方競標頁</button>'+
+      '</article>';
+    }).join("")+
+    (Number(data.excludedCount)>0?'<div class="plate-exact-excluded">另有 '+escPlate(data.excludedCount)+' 筆公告區間被官方重複號牌明細排除，已自動不列入可競標實牌。</div>':"");
+}
+async function loadExactConfirmation(value){
+  const number=watchNumber(value)||normalize(value);
+  if(!/^\d{1,4}$/.test(number))return;
+  const key=exactConfirmKey(number);
+  if(exactConfirmCache.has(key)){renderExactConfirmation(number);return}
+  if(exactConfirmPending.has(key)){renderExactConfirmation(number);return exactConfirmPending.get(key)}
+  renderExactConfirmation(number);
+  const base=lineNotifyApiBase();
+  if(!base){
+    const root=$p("#plateExactConfirm");
+    if(root&&root.dataset.number===number)root.innerHTML='<div class="plate-exact-loading"><b>精準確認服務準備中</b><span>全台公告區間仍可正常查看。</span></div>';
+    return;
+  }
+  const task=(async()=>{
+    try{
+      const res=await fetch(base+"/v1/plate-line/confirm?number="+encodeURIComponent(number)+"&scope="+encodeURIComponent(loadVehicleScope()),{cache:"no-store",headers:{Accept:"application/json"}});
+      if(!res.ok)throw new Error("HTTP "+res.status);
+      const data=await res.json();
+      exactConfirmCache.set(key,data);
+    }catch(error){
+      exactConfirmCache.set(key,{number,matches:[],confirmedCount:0,excludedCount:0,rangeOnlyCount:0,error:String(error?.message||error)});
+    }finally{
+      exactConfirmPending.delete(key);
+      renderExactConfirmation(number);
+    }
+  })();
+  exactConfirmPending.set(key,task);
+  return task;
+}
 function renderPlateSearchResult(value){
   const panel=$p("#plateSearchResultPanel"),root=$p("#plateSearchResult"),state=$p("#plateSearchResultState");
   if(!panel||!root)return;
@@ -531,25 +601,26 @@ function renderPlateSearchResult(value){
     const p={live:0,upcoming:1,ended:2};
     return p[auctionState(a)]-p[auctionState(b)]||Date.parse(a.startAt||0)-Date.parse(b.startAt||0);
   });
-  if(state)state.textContent=rows.length?rows.length+" 筆全台命中":"目前未命中";
+  if(state)state.textContent=rows.length?"官方實牌確認中":"目前未命中";
   if(rows.length){
     const offices=[...new Set(rows.map(x=>x.office).filter(Boolean))];
-    root.innerHTML='<div class="plate-number-result-head"><b>'+escPlate(target)+'</b><span>全台命中 '+rows.length+' 筆・'+offices.length+' 個監理單位</span></div>'+
-    rows.slice(0,12).map(row=>{
-      const status=auctionState(row),range=row.startNumber===row.endNumber?row.startNumber:row.startNumber+" ～ "+row.endNumber;
-      return '<article class="plate-watch-card">'+
-        '<div class="plate-watch-top"><div><div class="plate-watch-number">'+escPlate(watchNumber(range)||target)+'</div><small class="meta">'+escPlate(range)+'・'+escPlate(row.office||"監理單位")+'・'+escPlate(row.category||"")+'</small></div><span class="plate-auction-state '+status+'">'+escPlate(auctionLabel(status))+'</span></div>'+
-        '<div class="plate-watch-meta"><div><small>起標</small><b>'+escPlate(fmtTime(row.startAt))+'</b></div><div><small>公告決標</small><b>'+escPlate(fmtTime(row.endAt))+'</b></div></div>'+
-      '</article>';
-    }).join("")+
-    '<div class="plate-watch-actions"><button data-plate-search-action="watch" data-value="'+escPlate(target)+'" type="button">全台追蹤 '+escPlate(target)+'</button>'+
-    (rows.some(x=>auctionState(x)==="live")?'<button data-plate-search-action="bid" type="button">正式競標</button>':"")+'</div>';
+    root.innerHTML='<div class="plate-number-result-head"><b>'+escPlate(target)+'</b><span>公告區間 '+rows.length+' 筆・'+offices.length+' 個監理單位</span></div>'+
+      '<div class="plate-exact-confirm" id="plateExactConfirm" data-number="'+escPlate(target)+'"></div>'+
+      '<details class="plate-range-preview"><summary><span><b>查看公告區間</b><small>精準結果以官方排除明細核對為準</small></span><span>'+rows.length+' 筆</span></summary><div class="plate-range-preview-body">'+
+      rows.slice(0,12).map(row=>{
+        const status=auctionState(row),range=row.startNumber===row.endNumber?row.startNumber:row.startNumber+" ～ "+row.endNumber;
+        return '<article class="plate-watch-card">'+
+          '<div class="plate-watch-top"><div><div class="plate-watch-number">'+escPlate(watchNumber(range)||target)+'</div><small class="meta">'+escPlate(range)+'・'+escPlate(row.office||"監理單位")+'・'+escPlate(row.category||"")+'</small></div><span class="plate-auction-state '+status+'">'+escPlate(auctionLabel(status))+'</span></div>'+
+          '<div class="plate-watch-meta"><div><small>起標</small><b>'+escPlate(fmtTime(row.startAt))+'</b></div><div><small>公告決標</small><b>'+escPlate(fmtTime(row.endAt))+'</b></div></div>'+
+        '</article>';
+      }).join("")+'</div></details>'+
+      '<div class="plate-watch-actions"><button data-plate-search-action="watch" data-value="'+escPlate(target)+'" type="button">全台追蹤 '+escPlate(target)+'</button></div>';
+    void loadExactConfirmation(target);
     return;
   }
   root.innerHTML='<div class="plate-watch-empty"><b>目前全台公開標牌公告沒有找到 '+escPlate(target)+'</b><br>加入追蹤後，之後任何英文前綴、任何監理單位公告出現這組數字，都會列入候選通知。</div>'+
     '<div class="plate-watch-actions"><button data-plate-search-action="watch" data-value="'+escPlate(target)+'" type="button">全台追蹤 '+escPlate(target)+'</button><button data-plate-search-action="pick" type="button">官方即時可選確認</button></div>';
 }
-
 function openPlateDetail(row){
   detailRow=row||null;
   const dialog=$p("#plateDetailDialog"),body=$p("#plateDetailBody"),title=$p("#plateDetailTitle"),bid=$p("#plateDetailBid"),watch=$p("#plateDetailWatch");
@@ -834,7 +905,7 @@ async function openOfficialBidFor(value){
   if(plate){
     try{
       await navigator.clipboard.writeText(plate);
-      if(window.toast)toast(plate+" 已複製，正在開啟官方競標");
+      if(window.toast)toast(plate+" 已複製，請到官方頁完成正式競標");
     }catch{}
   }
   window.open(official.bid,"_blank","noopener");
@@ -1477,6 +1548,7 @@ function bind(){
     if(!btn)return;
     const action=btn.dataset.plateSearchAction,value=normalize(btn.dataset.value||announcementQuery);
     if(action==="watch"){if(value){upsertWatch(value,0,0,bestOfficialMatch(value)?.endAt||"");if(window.toast)toast((watchNumber(value)||value)+" 已開始全台追蹤")}return}
+    if(action==="official-exact"){openOfficialBidFor(value);return}
     if(action==="bid"){openOfficialBidFor(value);return}
     if(action==="pick"){window.open(official.pick,"_blank","noopener")}
   };

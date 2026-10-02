@@ -199,3 +199,12 @@
   .plate-watch-glance{grid-template-columns:repeat(2,minmax(0,1fr))}
   .plate-number-result-head{align-items:flex-start;flex-direction:column}
 }
+
+
+/* Plate Center V14: official exact-number confirmation */
+.plate-exact-confirm{display:grid;gap:8px;margin:10px 0}
+.plate-exact-loading,.plate-exact-empty{display:grid;gap:3px;padding:11px 12px;border:1px solid var(--line);border-radius:11px;background:#101619}.plate-exact-loading b,.plate-exact-empty b{font-size:12px}.plate-exact-loading span,.plate-exact-empty span{color:var(--muted);font-size:9px;line-height:1.5}
+.plate-exact-head{display:flex;align-items:end;justify-content:space-between;gap:10px;padding:2px 1px}.plate-exact-head small{display:block;color:var(--muted);font-size:8px;font-weight:800}.plate-exact-head b{display:block;margin-top:2px;font-size:14px}.plate-exact-head>span{font-size:9px;color:#91c8a5;font-weight:800}
+.plate-exact-card{display:grid;gap:8px;padding:12px;border:1px solid #365544;border-radius:12px;background:#101914}.plate-exact-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.plate-exact-top>div>b{display:block;font-size:24px;letter-spacing:.06em}.plate-exact-top>div>small{display:block;margin-top:2px;color:var(--muted);font-size:9px}.plate-exact-top>span{flex:none;padding:4px 7px;border-radius:999px;font-size:8px;font-weight:850}.plate-exact-top>span.verified{background:#173322;color:#81e7a6}.plate-exact-top>span.range-only{background:#30291a;color:#e7cb8f}
+.plate-exact-proof{font-size:9px;line-height:1.5;color:#93a99a}.plate-exact-official{min-height:42px;border:1px solid #3e7252;border-radius:10px;background:#173622;color:#8ff0b1;font-size:10px;font-weight:850}.plate-exact-excluded{padding:8px 10px;border-radius:9px;background:#24191b;color:#d6a0a7;font-size:9px;line-height:1.5}
+.plate-range-preview{margin-top:9px}.plate-range-preview>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#101518;list-style:none;cursor:pointer}.plate-range-preview>summary::-webkit-details-marker{display:none}.plate-range-preview>summary b{display:block;font-size:10px}.plate-range-preview>summary small{display:block;margin-top:1px;color:var(--muted);font-size:8px}.plate-range-preview>summary>span:last-child{color:var(--muted);font-size:9px}.plate-range-preview-body{display:grid;gap:7px;padding-top:8px}

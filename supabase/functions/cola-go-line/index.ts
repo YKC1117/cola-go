@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import * as XLSX from "npm:xlsx@0.18.5";
 
 const SITE_ORIGIN = "https://ykc1117.github.io";
 const SITE_PLATE_URL = "https://ykc1117.github.io/cola-go/#plate";
@@ -7,6 +8,7 @@ const MVDIS_ANNOUNCE_URL = "https://www.mvdis.gov.tw/m3-emv-plate/bid/announce";
 const ANNOUNCEMENT_SOURCE_URL = MVDIS_ANNOUNCE_URL;
 const ANNOUNCEMENT_DATASET_URL = "https://data.gov.tw/dataset/96623";
 const ANNOUNCEMENT_CACHE_TTL_MS = 6*60*60*1000;
+const DETAIL_CACHE_TTL_MS = 24*60*60*1000;
 const DEFAULT_OA_ID = "@638jxfra";
 const LINE_WEBHOOK_URL = "https://papqrnqbfauwuipjwwdh.supabase.co/functions/v1/cola-go-line/v1/line/webhook";
 const encoder = new TextEncoder();
@@ -212,14 +214,16 @@ function stableAnnouncementId(row:any) {
 function parseMvdisRows(html:string) {
   const items:any[]=[];
   for (const match of html.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
-    const cells=[...match[1].matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(m=>decodeHtml(m[1]));
+    const rowHtml=match[1];
+    const cells=[...rowHtml.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)].map(m=>decodeHtml(m[1]));
     if (cells.length<7) continue;
     const office=cells[0],category=cells[1];
     const startNumber=String(cells[2]||"").replace(/\s+/g,"").toUpperCase();
     const endNumber=String(cells[3]||"").replace(/\s+/g,"").toUpperCase();
     if (!office||!/^[A-Z]{1,4}-?\d{1,4}$/i.test(startNumber)||!/^[A-Z]{1,4}-?\d{1,4}$/i.test(endNumber)) continue;
+    const seq=rowHtml.match(/method=initdetail(?:&|&amp;)seq=(\d+)/i)?.[1]||"";
     const row={
-      office,category,startNumber,endNumber,
+      office,category,startNumber,endNumber,seq,
       startAt:parseOfficialTime(cells[4]),
       endAt:parseOfficialTime(cells[5]),
       transferDeadline:parseOfficialTime(cells[6])
@@ -232,6 +236,65 @@ function dedupeAnnouncements(items:any[]) {
   const out=new Map<string,any>();
   for (const row of items) out.set(String(row.id),row);
   return [...out.values()].sort((a,b)=>String(a.startAt||"9999").localeCompare(String(b.startAt||"9999"))||String(a.office||"").localeCompare(String(b.office||""))||String(a.startNumber||"").localeCompare(String(b.startNumber||"")));
+}
+const detailMemo=new Map<string,Promise<{excluded:string[],fetchedAt:string}>>();
+function normalizePlateCell(value:unknown) {
+  return String(value||"").replace(/\s+/g,"").toUpperCase();
+}
+function parseExcludedPlates(bytes:Uint8Array) {
+  const workbook=XLSX.read(bytes,{type:"array"});
+  const excluded=new Set<string>();
+  for (const name of workbook.SheetNames) {
+    const ws=workbook.Sheets[name];
+    const rows:any[][]=XLSX.utils.sheet_to_json(ws,{header:1,defval:"",raw:false});
+    const headerAt=rows.findIndex(row=>String(row?.[0]||"").trim()==="序號"&&String(row?.[1]||"").includes("車牌號碼"));
+    if (headerAt<0) continue;
+    for (const row of rows.slice(headerAt+1)) {
+      const plate=normalizePlateCell(row?.[1]);
+      if (/^[A-Z]{1,4}-\d{1,4}$/.test(plate)) excluded.add(plate);
+    }
+  }
+  return [...excluded].sort();
+}
+async function detailExclusions(seq:string) {
+  seq=String(seq||"").replace(/\D/g,"");
+  if(!seq) return {excluded:[],fetchedAt:"",verified:false};
+  if(detailMemo.has(seq)) {
+    const result=await detailMemo.get(seq)!;
+    return {...result,verified:true};
+  }
+  const task=(async()=>{
+    const {data:cached}=await db.from("plate_line_detail_cache")
+      .select("seq,fetched_at,excluded_plates")
+      .eq("seq",seq).maybeSingle();
+    const cachedAt=Date.parse(cached?.fetched_at||"");
+    if(cached&&Number.isFinite(cachedAt)&&Date.now()-cachedAt<DETAIL_CACHE_TTL_MS&&Array.isArray(cached.excluded_plates)) {
+      return {excluded:cached.excluded_plates.map(normalizePlateCell),fetchedAt:String(cached.fetched_at||"")};
+    }
+    const response=await fetch(MVDIS_ANNOUNCE_URL+"?method=initdetail&seq="+encodeURIComponent(seq),{
+      headers:{"user-agent":"Mozilla/5.0 COLA-GO/1.0","accept":"application/vnd.ms-excel,*/*"},
+      cache:"no-store"
+    });
+    if(!response.ok) throw new Error("MVDIS detail failed: "+response.status);
+    const bytes=new Uint8Array(await response.arrayBuffer());
+    const excluded=parseExcludedPlates(bytes);
+    const fetchedAt=new Date().toISOString();
+    const sourceHash=await sha256(Array.from(bytes.slice(0,256)).join(",")+":"+bytes.length);
+    const {error}=await db.from("plate_line_detail_cache").upsert({
+      seq,fetched_at:fetchedAt,excluded_plates:excluded,source_hash:sourceHash,bytes:bytes.length
+    },{onConflict:"seq"});
+    if(error) throw new Error("detail cache write failed");
+    return {excluded,fetchedAt};
+  })();
+  detailMemo.set(seq,task);
+  try {
+    const result=await task;
+    return {...result,verified:true};
+  } catch(error) {
+    detailMemo.delete(seq);
+    console.error("MVDIS detail",seq,error instanceof Error?error.message:String(error));
+    return {excluded:[],fetchedAt:"",verified:false};
+  }
 }
 function cachePayload(cache:any, stale=false) {
   const items=Array.isArray(cache?.items)?cache.items:[];
@@ -314,9 +377,10 @@ async function officialAnnouncements(force=false) {
     if (error) throw new Error("Official cache write failed");
     return {...cachePayload(row,false),pages:fresh.totalPages};
   } catch (error) {
-    console.error("MVDIS plate refresh",error instanceof Error?error.message:String(error));
-    if (cached && Array.isArray(cached.items) && cached.items.length) return cachePayload(cached,true);
-    return await fallbackOfficialPayload();
+    const refreshError=error instanceof Error?error.message:String(error);
+    console.error("MVDIS plate refresh",refreshError);
+    if (cached && Array.isArray(cached.items) && cached.items.length) return {...cachePayload(cached,true),refreshError};
+    return {...await fallbackOfficialPayload(),refreshError};
   }
 }
 function shortHash(value:string) {
@@ -337,8 +401,8 @@ function candidateFullPlate(row:any, plate:string) {
 function announcementSummaryEvent(plate:string, rows:any[]) {
   const ids=rows.map(r=>String(r?.id||"")).sort();
   const offices=[...new Set(rows.map(r=>String(r?.office||"")).filter(Boolean))];
-  const sample=rows.slice(0,2).map(r=>String(r?.office||"監理單位")+" "+candidateFullPlate(r,plate)).join("、");
-  return {key:"announcement:"+plate+":"+shortHash(ids.join("|")),text:plate+" 全台新增命中 "+rows.length+" 筆公告、"+offices.length+" 個監理單位"+(sample?"；"+sample+(rows.length>2?" 等":""):"")+"。"};
+  const sample=rows.slice(0,2).map(r=>String(r?.office||"監理單位")+" "+String(r?.exactPlate||candidateFullPlate(r,plate))).join("、");
+  return {key:"announcement:"+plate+":"+shortHash(ids.join("|")),text:plate+" 全台新增確認 "+rows.length+" 筆實牌、"+offices.length+" 個監理單位"+(sample?"；"+sample+(rows.length>2?" 等":""):"")+"。"};
 }
 function plateParts(value: unknown) {
   const s = normalizePlate(value).replace(/[^A-Z0-9-]/g,"");
@@ -359,12 +423,58 @@ function categoryMatchesVehicleScope(row:any, scope:string) {
   const category=String(row?.category||"").replace(/\s+/g,"");
   return ["自用小客貨車","電動自小客","身障自用小客貨車","電動身障自用小客貨"].includes(category);
 }
+async function exactRowsForNumber(number:string,scope:string,includeEnded=false) {
+  const target=String(number||"").replace(/\D/g,"");
+  if(!/^\d{1,4}$/.test(target)) return [];
+  const payload=await officialAnnouncements(false);
+  const now=Date.now();
+  const ranged=(Array.isArray(payload.items)?payload.items:[])
+    .filter((row:any)=>categoryMatchesVehicleScope(row,scope)&&rangeContains(row,target))
+    .filter((row:any)=>{
+      if(includeEnded)return true;
+      const end=Date.parse(row?.endAt||"");
+      return !Number.isFinite(end)||end>=now;
+    });
+  const checked=await Promise.all(ranged.map(async(row:any)=>{
+    const exactPlate=candidateFullPlate(row,target);
+    const detail=await detailExclusions(String(row?.seq||""));
+    const excluded=detail.verified&&detail.excluded.includes(exactPlate);
+    return {
+      ...row,
+      exactPlate,
+      exactStatus:excluded?"excluded":detail.verified?"confirmed":"range-only",
+      detailChecked:detail.verified,
+      detailFetchedAt:detail.fetchedAt||""
+    };
+  }));
+  return checked;
+}
+async function confirmPlateNumber(number:string,scope:string) {
+  const target=String(number||"").replace(/\D/g,"");
+  if(!/^\d{1,4}$/.test(target)) throw new Error("INVALID_NUMBER");
+  const payload=await officialAnnouncements(false);
+  const matches=await exactRowsForNumber(target,scope,false);
+  const confirmed=matches.filter((x:any)=>x.exactStatus==="confirmed");
+  const excluded=matches.filter((x:any)=>x.exactStatus==="excluded");
+  const rangeOnly=matches.filter((x:any)=>x.exactStatus==="range-only");
+  return {
+    number:target,
+    vehicleScope:scope==="all"?"all":"private-car",
+    updatedAt:payload.updatedAt||null,
+    stale:payload.stale===true,
+    proof:"監理服務網標售公告區間＋官方重複號牌排除明細",
+    confirmedCount:confirmed.length,
+    excludedCount:excluded.length,
+    rangeOnlyCount:rangeOnly.length,
+    matches
+  };
+}
 function eventCandidates(row: any, plate: string, events: Set<string>, now: number, deadlineChanged: boolean) {
   const out:{key:string,text:string}[] = [];
   const id = String(row?.id || [row?.office,row?.startNumber,row?.endNumber,row?.startAt].join("|"));
   const start = Date.parse(row?.startAt || ""), end = Date.parse(row?.endAt || "");
   const startMs = start - now, endMs = end - now;
-  const context=candidateFullPlate(row,plate)+"・"+String(row?.office||"監理單位");
+  const context=String(row?.exactPlate||candidateFullPlate(row,plate))+"・"+String(row?.office||"監理單位");
   if (events.has("auction_start") && Number.isFinite(start)) {
     if (startMs > 0 && startMs <= 15*60000) out.push({ key:"start15:"+id+":"+plate, text:context+" 距官方起標約剩 15 分鐘。" });
     else if (startMs <= 0 && (!Number.isFinite(end) || endMs > 0)) out.push({ key:"started:"+id+":"+plate, text:context+" 已進入公告競標時段，請到監理服務網確認最新狀態。" });
@@ -472,7 +582,16 @@ async function forceOfficialRefresh(req:Request) {
   const expected=await getSecret("colago_cron_secret");
   if (!supplied||!constantTimeEqual(supplied,expected)) return json({error:"UNAUTHORIZED"},401);
   const payload=await officialAnnouncements(true);
-  return json({ok:true,count:payload.count,updatedAt:payload.updatedAt,sourceUpdatedAt:payload.sourceUpdatedAt,stale:payload.stale===true},200);
+  return json({ok:true,count:payload.count,updatedAt:payload.updatedAt,sourceUpdatedAt:payload.sourceUpdatedAt,stale:payload.stale===true,refreshError:String(payload.refreshError||"")},200);
+}
+async function getExactPlateConfirmation(req:Request,origin:string) {
+  if(origin!==SITE_ORIGIN)return json({error:"ORIGIN_NOT_ALLOWED"},403,origin);
+  const url=new URL(req.url);
+  const number=String(url.searchParams.get("number")||"").replace(/\D/g,"");
+  const scope=url.searchParams.get("scope")==="all"?"all":"private-car";
+  if(!/^\d{1,4}$/.test(number))return json({error:"INVALID_NUMBER"},400,origin);
+  const result=await confirmPlateNumber(number,scope);
+  return json(result,200,origin);
 }
 async function configureLineWebhook(req: Request) {
   const supplied = req.headers.get("x-colago-cron-secret") || "";
@@ -540,10 +659,17 @@ async function runNotifications(req: Request) {
     const profile=sanitizeProfile(sub.profile), eventSet=new Set(profile.events);
     let candidates:any[]=[];
     for (const plate of profile.plates) {
-      const matched=rows.filter((row:any)=>rangeContains(row,plate)&&categoryMatchesVehicleScope(row,profile.vehicleScope)).filter((row:any)=>{
+      const ranged=rows.filter((row:any)=>rangeContains(row,plate)&&categoryMatchesVehicleScope(row,profile.vehicleScope)).filter((row:any)=>{
         const end=Date.parse(row?.endAt||"");
         return !Number.isFinite(end)||end>=now;
       });
+      const checked=await Promise.all(ranged.map(async(row:any)=>{
+        const exactPlate=candidateFullPlate(row,plate);
+        const detail=await detailExclusions(String(row?.seq||""));
+        if(detail.verified&&detail.excluded.includes(exactPlate))return null;
+        return {...row,exactPlate,exactStatus:detail.verified?"confirmed":"range-only"};
+      }));
+      const matched=checked.filter(Boolean);
       if (eventSet.has("announcement")) {
         for (const row of matched) {
           candidates.push({
@@ -649,6 +775,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (path==="/v1/plate-line/announcements" && req.method==="GET") return await getOfficialAnnouncements(origin);
+    if (path==="/v1/plate-line/confirm" && req.method==="GET") return await getExactPlateConfirmation(req,origin);
     if (path==="/v1/plate-line/refresh-source" && req.method==="POST") return await forceOfficialRefresh(req);
     if (path==="/v1/line/webhook" && req.method==="POST") return await handleWebhook(req);
     if (path==="/v1/line/setup-webhook" && req.method==="POST") return await configureLineWebhook(req);
