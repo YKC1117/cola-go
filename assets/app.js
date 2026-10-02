@@ -1178,9 +1178,14 @@ function renderCharging(){
     .filter(chargingQuickMatch)
     .filter(x=>!state.chargingFavoritesOnly||state.chargingFavorites.includes(chargingKey(x)))
     .filter(x=>!q||chargingOperatorSearchText(x).includes(q));
-  let rows=state.chargingAvailableOnly
-    ? candidateRows.filter(chargingHasAvailableReport)
-    : candidateRows;
+  const nearbyAvailableMode=state.chargingSort==="nearby"&&state.chargingAvailableOnly&&Boolean(state.chargingOrigin);
+  const nearbyRadiusKm=25;
+  let rows=nearbyAvailableMode
+    ? candidateRows.filter(x=>{
+        const distance=chargingDistanceKm(x);
+        return distance!=null&&distance<=nearbyRadiusKm;
+      })
+    : (state.chargingAvailableOnly?candidateRows.filter(chargingHasAvailableReport):candidateRows);
 
   rows.sort((a,b)=>{
     if(state.chargingSort!=="nearby"&&state.chargingQuick==="priorityfast"){
@@ -1188,6 +1193,10 @@ function renderCharging(){
       if(trusted)return trusted;
     }
     if(state.chargingSort==="nearby"){
+      if(nearbyAvailableMode){
+        const rank=chargingSortRank(a)-chargingSortRank(b);
+        if(rank)return rank;
+      }
       const da=chargingDistanceKm(a),db=chargingDistanceKm(b);
       if(da!=null||db!=null){
         if(da==null)return 1;
@@ -1218,7 +1227,7 @@ function renderCharging(){
   if($("#chargingAvailableOnly")){
     $("#chargingAvailableOnly").setAttribute("aria-pressed",String(state.chargingAvailableOnly));
     const label=$("#chargingAvailableOnly").querySelector("b");
-    if(label)label.textContent=state.chargingAvailableOnly?"只顯示有空槍":"只看有空槍";
+    if(label)label.textContent=nearbyAvailableMode?"附近空槍結果":(state.chargingAvailableOnly?"只顯示有空槍":"只看有空槍");
   }
   if($("#chargingPriorityFast"))$("#chargingPriorityFast").setAttribute("aria-pressed",String(state.chargingQuick==="priorityfast"));
   if($("#chargingNearby")){
@@ -1231,8 +1240,8 @@ function renderCharging(){
   if($("#chargingResultSummary")){
     const suffix=resultCount>shown.length?" · 先顯示前 "+shown.length+" 站":"";
     const context=[];
-    if(state.chargingSort==="nearby")context.push("附近排序");
-    if(state.chargingAvailableOnly)context.push("只看空槍");
+    if(state.chargingSort==="nearby")context.push(nearbyAvailableMode?"25 km 內":"附近排序");
+    if(state.chargingAvailableOnly&&!nearbyAvailableMode)context.push("只看空槍");
     const cityText=$("#chargingCity")?.selectedOptions?.[0]?.textContent;
     if(state.chargingCity!=="all"&&cityText)context.push(cityText);
     if(state.chargingQuick==="fast")context.push("100 kW+");
@@ -1253,6 +1262,14 @@ function renderCharging(){
     if(q)context.push("搜尋「"+q+"」");
     if(resultCount===0&&state.chargingAvailableOnly&&!chargingLiveDatasetReady()){
       $("#chargingResultSummary").textContent="正在載入官方即時槍況…";
+    }else if(nearbyAvailableMode){
+      const confirmed=rows.filter(x=>chargingAvailabilityInfo(x).tier==="live"&&chargingLiveCounts(x).available>0).length;
+      const recent=rows.filter(x=>chargingAvailabilityInfo(x).tier==="recent"&&chargingLiveCounts(x).available>0).length;
+      const unknown=rows.filter(x=>{
+        const tier=chargingAvailabilityInfo(x).tier;
+        return x?.officialSupplemental||tier==="unknown"||tier==="stale";
+      }).length;
+      $("#chargingResultSummary").textContent="25 km 內 "+resultCount+" 站 · 已確認有空槍 "+confirmed+" 站"+(recent?" · 最近回報 "+recent+" 站":"")+(unknown?" · 空槍未確認 "+unknown+" 站":"")+suffix;
     }else if(resultCount===0&&state.chargingAvailableOnly){
       $("#chargingResultSummary").textContent="目前沒有 6 小時內的空槍回報"+(state.chargingSort==="nearby"?" · 可改看附近站點":"");
     }else if(state.chargingAvailableOnly){
@@ -1271,7 +1288,7 @@ function renderCharging(){
   }
   if($("#chargingFindNow"))$("#chargingFindNow").setAttribute("aria-pressed",String(state.chargingSort==="nearby"&&state.chargingAvailableOnly));
 
-  const unverifiedRows=state.chargingAvailableOnly?candidateRows.filter(x=>{
+  const unverifiedRows=state.chargingAvailableOnly?(nearbyAvailableMode?rows:candidateRows).filter(x=>{
     if(x?.officialSupplemental)return true;
     if(x?.road!=="tdx")return false;
     const tier=chargingAvailabilityInfo(x).tier;
