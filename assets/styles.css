@@ -664,3 +664,6 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
   .charging-major-filter button span { font-size:10px; }
   .charging-major-filter button small { font-size:7.5px; }
 }
+
+/* Public launch trust strip */
+.public-trust{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;margin:18px 0 6px;padding:10px 12px;border-top:1px solid var(--line);color:var(--muted);font-size:9px}.public-trust span{font-weight:800;color:var(--text)}.public-trust a{color:inherit;text-decoration:none}.public-trust a:hover{text-decoration:underline}.public-source-note{max-width:640px;margin:0 auto 12px;padding:0 14px;text-align:center;color:var(--muted);font-size:8px;line-height:1.55}
