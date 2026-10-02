@@ -340,13 +340,13 @@
     if(state.parkingRemote?.source?.includes("TDX")&&state.parkingRemote.city===state.parkingCity){
       const t=document.querySelector("#parkingLiveTime");
       const s=document.querySelector("#parkingScopeStatus");
-      if(state.parkingRemote.stale){
-        if(t)t.textContent=state.parkingRemote.updatedAt?formatTime(state.parkingRemote.updatedAt):"最後可用資料";
-        if(s)s.textContent="TDX 更新暫時中斷，顯示最後可用資料";
-      }else{
-        if(t)t.textContent=state.parkingRemote.updatedAt?formatTime(state.parkingRemote.updatedAt):"TDX 官方資料";
-        if(s)s.textContent="TDX 官方停車資料 · 以顯示更新時間為準";
-      }
+      const info=dataStatusInfo(state.parkingRemote);
+      if(t)t.textContent=info.known?info.label:"尚無更新時間";
+      if(s)s.textContent=info.live
+        ?"TDX 官方停車資料 · "+state.parkingRemote.items.length+" 筆"
+        :state.parkingRemote.items.length
+          ?"資料較舊 · "+state.parkingRemote.items.length+" 筆 · 剩餘車位僅供參考"
+          :"TDX 官方停車資料暫不可用";
     }
   };
 

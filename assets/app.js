@@ -68,18 +68,18 @@ function toast(message){
 }
 
 function resetViewDisclosures(view){
-  const root=$(".view").find(el=>el.dataset.view===view);
+  const root=$$(".view").find(el=>el.dataset.view===view);
   if(!root)return;
-  $("details",root).forEach(el=>{
+  $$("details",root).forEach(el=>{
     if(!el.hasAttribute("data-keep-open"))el.open=false;
   });
 }
 function show(view,push=true){
-  if(!$(".view").some(el=>el.dataset.view===view))view="home";
+  if(!$$(".view").some(el=>el.dataset.view===view))view="home";
   state.view=view;
-  $(".view").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
+  $$(".view").forEach(el=>el.classList.toggle("active",el.dataset.view===view));
   resetViewDisclosures(view);
-  $(".bottom-nav button").forEach(el=>{
+  $$(".bottom-nav button").forEach(el=>{
     const active=el.dataset.go===view;
     el.classList.toggle("active",active);
     if(active)el.setAttribute("aria-current","page"); else el.removeAttribute("aria-current");
@@ -110,7 +110,7 @@ function bindDisclosureBehavior(){
     if(!(current instanceof HTMLDetailsElement)||!current.open||current.hasAttribute("data-allow-multi"))return;
     const view=current.closest(".view");
     if(!view)return;
-    $("details",view).forEach(other=>{
+    $$("details",view).forEach(other=>{
       if(other===current||other.contains(current)||current.contains(other)||other.hasAttribute("data-allow-multi"))return;
       other.open=false;
     });
@@ -153,11 +153,35 @@ async function getJSON(url){
   return response.json();
 }
 
+function dataAgeInfo(value,maxAgeMs=45*60*1000,now=Date.now()){
+  const time=Date.parse(value||"");
+  if(!Number.isFinite(time))return {known:false,fresh:false,stale:true,ageMs:Infinity,label:"更新時間未提供"};
+  const ageMs=Math.max(0,now-time);
+  const minutes=Math.floor(ageMs/60000);
+  let label="";
+  if(minutes<1)label="剛剛更新";
+  else if(minutes<60)label=minutes+" 分鐘前更新";
+  else if(minutes<1440)label=Math.floor(minutes/60)+" 小時前更新";
+  else label=new Intl.DateTimeFormat("zh-TW",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(time))+" 更新";
+  return {known:true,fresh:ageMs<=maxAgeMs,stale:ageMs>maxAgeMs,ageMs,label};
+}
 function formatTime(value){
-  if(!value)return "等待資料";
-  const date=new Date(value);
-  if(Number.isNaN(date.getTime()))return value;
-  return new Intl.DateTimeFormat("zh-TW",{hour:"2-digit",minute:"2-digit",hour12:false}).format(date)+" 更新";
+  if(!value)return "尚無更新時間";
+  const info=dataAgeInfo(value,Infinity);
+  return info.known?info.label:String(value);
+}
+function dataStatusInfo(data,maxAgeMs=45*60*1000){
+  const stamp=data?.liveUpdatedAt||data?.updatedAt||"";
+  const age=dataAgeInfo(stamp,maxAgeMs);
+  const explicitStale=Boolean(data?.stale||data?.status==="stale");
+  const hasData=Boolean(data&&stamp);
+  return {
+    ...age,
+    hasData,
+    stale:hasData&&(explicitStale||!age.fresh),
+    live:hasData&&!explicitStale&&age.fresh,
+    label:!hasData?"尚無資料":explicitStale||!age.fresh?"資料較舊":data?.status==="live"?"即時":"官方資料"
+  };
 }
 
 function avg(rows){
@@ -214,24 +238,24 @@ function renderAll(){
   renderCCTV();
   renderHomeCCTVQuickRoutes();
 
-  const trafficStatus=state.traffic?.status||"unavailable";
-  const live=trafficStatus==="live";
-  const stale=trafficStatus==="stale";
-  $("#syncState").classList.toggle("ready",live);
-  $("#syncText").textContent=live?"即時":stale?"最後可用":"同步中";
-  $("#lastUpdate").textContent=formatTime(state.traffic?.updatedAt);
+  const trafficInfo=dataStatusInfo(state.traffic);
+  $("#syncState").classList.toggle("ready",trafficInfo.live);
+  $("#syncState").classList.toggle("stale",trafficInfo.stale);
+  $("#syncText").textContent=trafficInfo.live?"即時":trafficInfo.hasData?"資料較舊":"更新中";
+  $("#lastUpdate").textContent=trafficInfo.known?trafficInfo.label:"尚無更新時間";
 
   $("#chargeQuick").textContent=state.charging.length?state.charging.length+" 處":"服務區";
   $("#chargeValue").textContent=state.charging.length||"—";
 
   const h1=avg(state.traffic?.highways?.["1"]||[]);
   $("#trafficValue").textContent=h1?h1+" km/h":"—";
-  $("#trafficDot").className=live?"dot ready":"dot pending";
-  $("#trafficCaption").textContent=live&&h1?"國 1 平均":stale&&h1?"TDX 最後可用資料":"可開 1968 即時查看";
+  $("#trafficDot").className=trafficInfo.live?"dot ready":"dot pending";
+  $("#trafficCaption").textContent=trafficInfo.live&&h1?"國 1 平均":trafficInfo.hasData&&h1?"最後可用 · "+trafficInfo.label:"可開 1968 即時查看";
 
   const snow=avg([...(state.tunnel?.south||[]),...(state.tunnel?.north||[])]);
+  const tunnelInfo=dataStatusInfo(state.tunnel);
   $("#tunnelValue").textContent=snow?snow+" km/h":"—";
-  $("#tunnelDot").className=state.tunnel?.status==="live"&&snow?"dot ready":"dot pending";
+  $("#tunnelDot").className=tunnelInfo.live&&snow?"dot ready":"dot pending";
 }
 
 function chargingKey(x){
@@ -711,7 +735,7 @@ function chargingStatusMarkup(x){
     counts.unavailable?'<span class="unknown">其他不可用 '+counts.unavailable+'</span>':"",
     counts.unknown?'<span class="unknown">未知 '+counts.unknown+'</span>':""
   ].join("");
-  return '<details class="charging-live-detail"'+(counts.fault>0?' open':"")+'>'+
+  return '<details class="charging-live-detail">'+
     '<summary><span><b>槍況詳情</b><small>總計 '+counts.total+' 槍 · '+esc(updated)+'</small></span><em>'+(counts.fault>0?'有故障資訊':'查看')+'</em></summary>'+
     '<div class="charging-live-badges">'+badges+'</div>'+
   '</details>';
@@ -1399,22 +1423,25 @@ function parkingSelectedRows(){
 }
 
 function renderParkingCard(x){
-  const live=x.available!==null&&x.available!==undefined&&Number.isFinite(Number(x.available));
-  const available=live?Number(x.available):null;
+  const hasAvailability=x.available!==null&&x.available!==undefined&&Number.isFinite(Number(x.available));
+  const freshness=dataAgeInfo(x.dataCollectTime);
+  const live=hasAvailability&&freshness.fresh;
+  const staleAvailability=hasAvailability&&!freshness.fresh;
+  const available=hasAvailability?Number(x.available):null;
   const cls=!live?"":available>=20?"good":available>=5?"mid":"bad";
   const query=encodeURIComponent(x.address||((x.name||"")+" "+parkingCityName(x.city)));
   const meta=[parkingCityName(x.city),x.town].filter(Boolean).join(" · ");
-  return '<article class="parking-card">'+
+  return '<article class="parking-card'+(staleAvailability?' is-stale-data':'')+'">'+
     '<div class="parking-card-top"><div><h3>'+esc(x.name||"停車場")+'</h3><span class="parking-zone">'+esc(meta)+'</span></div>'+
-    (live?'<div class="parking-space"><b class="'+cls+'">'+available+'</b><small>汽車剩餘</small></div>':'<span class="parking-static-chip">停車場資料</span>')+
+    (hasAvailability?'<div class="parking-space"><b class="'+cls+'">'+available+'</b><small>'+(live?'汽車剩餘':'最後剩餘')+'</small></div>':'<span class="parking-static-chip">停車場資料</span>')+
     '</div>'+
     '<div class="parking-specs">'+
       '<div><small>總格數</small><b>'+(x.total?money(Number(x.total)):"—")+'</b></div>'+
-      '<div><small>即時狀態</small><b>'+(live?"官方剩餘":"未提供")+'</b></div>'+
+      '<div><small>車位狀態</small><b>'+(live?"官方即時":staleAvailability?"資料較舊":"未提供")+'</b></div>'+
       '<div><small>收費</small><b>'+esc(x.fare||x.chargeTime||"依現場")+'</b></div>'+
     '</div>'+
     '<div class="parking-address">'+esc(x.address||"地址由官方資料提供")+'</div>'+
-    (x.dataCollectTime?'<div class="parking-update">官方更新：'+esc(x.dataCollectTime)+'</div>':"")+
+    '<div class="parking-update '+(freshness.stale?'stale':'')+'">'+esc(freshness.label)+(staleAvailability?' · 請以現場為準':'')+'</div>'+
     '<div class="item-actions"><button class="go" data-parking-map="'+query+'">Google Maps</button><button data-parking-apple="'+query+'">Apple 地圖</button></div>'+
   '</article>';
 }
@@ -1448,10 +1475,9 @@ function renderParking(){
     root.innerHTML='<div class="parking-national-intro"><b>全台停車快速入口</b><p>選擇縣市後，可使用 Google Maps／Apple 地圖快速尋找附近停車場；有官方即時資料時會同步顯示。</p><div class="item-actions"><button class="go" data-national-map="google">Google Maps 找附近</button><button data-national-map="apple">Apple 地圖找附近</button></div></div>';
   }else if(city==="Tainan"){
     const rows=parkingSelectedRows().filter(x=>!query||[x.name,x.town,x.address].join(" ").toLowerCase().includes(query)).sort((a,b)=>(b.available??-1)-(a.available??-1));
-    const tainanLive=state.parkingLive?.status==="live";
-    const tainanStale=state.parkingLive?.status==="stale";
-    $("#parkingLiveTime").textContent=tainanLive?(state.parkingLive.updatedAt||"官方即時"):tainanStale?(state.parkingLive.updatedAt||"最後可用"):"官方即時暫不可用";
-    $("#parkingScopeStatus").textContent=tainanLive?"已接臺南市 TDX 即時剩餘車位":tainanStale?"TDX 更新暫時中斷，顯示最後可用資料":"仍可使用全台地圖搜尋";
+    const tainanInfo=dataStatusInfo(state.parkingLive);
+    $("#parkingLiveTime").textContent=tainanInfo.known?tainanInfo.label:"尚無更新時間";
+    $("#parkingScopeStatus").textContent=tainanInfo.live?"臺南官方即時剩餘車位":tainanInfo.hasData?"資料較舊，剩餘車位僅供參考":"即時資料暫不可用，仍可使用地圖搜尋";
     root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>'+(query?"找不到符合的臺南停車場":"臺南官方即時資料暫時無法取得")+'</b><p>即時車位資料暫時無法取得，仍可使用 Google Maps 或 Apple 地圖找停車場。</p></div>';
   }else if(state.parkingRemote.status==="loading"&&state.parkingRemote.city===city){
     $("#parkingLiveTime").textContent="讀取官方資料中";
@@ -1459,8 +1485,9 @@ function renderParking(){
     root.innerHTML='<div class="empty"><b>正在讀取 '+esc(cityName)+' 停車資料</b><p>官方停車資料暫時無法取得時，仍可使用地圖搜尋附近停車場。</p></div>';
   }else if(state.parkingRemote.status==="ready"&&state.parkingRemote.city===city){
     const rows=parkingSelectedRows().filter(x=>!query||[x.name,x.town,x.address,x.fare].join(" ").toLowerCase().includes(query));
-    $("#parkingLiveTime").textContent=state.parkingRemote.updatedAt||"官方資料";
-    $("#parkingScopeStatus").textContent="官方停車場資料 · "+state.parkingRemote.items.length+" 筆";
+    const remoteInfo=dataStatusInfo(state.parkingRemote);
+    $("#parkingLiveTime").textContent=remoteInfo.known?remoteInfo.label:"官方資料";
+    $("#parkingScopeStatus").textContent=(remoteInfo.live?"官方停車資料":remoteInfo.stale?"資料較舊":"官方停車資料")+" · "+state.parkingRemote.items.length+" 筆";
     root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>找不到符合的停車場</b><p>換個停車場名稱、行政區或地址試試。</p></div>';
   }else{
     $("#parkingLiveTime").textContent="地圖搜尋";
@@ -3129,9 +3156,12 @@ function renderTraffic(){
     '</article>'
   ).join(""):'<div class="empty"><b>國 '+state.highway+' 自動同步目前沒有資料</b><p>即時路況資料暫時無法取得，可直接開啟高公局 1968 查看。</p></div>';
 
-  const statusNote=state.traffic?.status==="stale"
-    ? '<div class="notice">TDX 暫時無法更新，以下顯示最後可用資料 · '+esc(formatTime(state.traffic?.updatedAt))+'</div>'
-    : "";
+  const trafficInfo=dataStatusInfo(state.traffic);
+  const statusNote=trafficInfo.stale&&trafficInfo.hasData
+    ? '<div class="notice data-age-warning">資料較舊 · '+esc(trafficInfo.label)+'，路況請以 1968 當下資訊為準。</div>'
+    : trafficInfo.live
+      ? '<div class="data-age-ok">官方即時 · '+esc(trafficInfo.label)+'</div>'
+      : "";
   root.innerHTML=statusNote+list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
   $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad(state.highway));
@@ -3155,9 +3185,12 @@ function renderTunnel(){
     '</article>'
   ).join(""):'<div class="empty"><b>雪隧自動同步目前沒有資料</b><p>直接開 1968 可查看國 5 即時影像與路況。</p></div>';
 
-  const statusNote=state.tunnel?.status==="stale"
-    ? '<div class="notice">TDX 暫時無法更新，以下顯示最後可用資料 · '+esc(formatTime(state.tunnel?.updatedAt))+'</div>'
-    : "";
+  const tunnelInfo=dataStatusInfo(state.tunnel);
+  const statusNote=tunnelInfo.stale&&tunnelInfo.hasData
+    ? '<div class="notice data-age-warning">資料較舊 · '+esc(tunnelInfo.label)+'，國 5／雪隧請以 1968 當下資訊為準。</div>'
+    : tunnelInfo.live
+      ? '<div class="data-age-ok">官方即時 · '+esc(tunnelInfo.label)+'</div>'
+      : "";
   root.innerHTML=statusNote+list+official;
   $$("[data-official]",root).forEach(b=>b.onclick=()=>window.open(b.dataset.official,"_blank","noopener"));
   $$("[data-open-cctv]",root).forEach(b=>b.onclick=()=>openCCTVForRoad("5"));

@@ -701,3 +701,11 @@ h3 { font-size: 16px; line-height: 1.45; font-weight: 650; margin: 0; overflow-w
   .ui-disclosure>summary{min-height:46px;padding:9px 11px}
   .ui-disclosure-body{padding:0 10px 10px}
 }
+
+/* V18 — public launch freshness states */
+.data-age-ok{margin:0 0 10px;padding:7px 9px;border-radius:9px;background:#0f1d17;color:#8fd5aa;font-size:10px;line-height:1.4}
+.data-age-warning{margin-bottom:10px}
+.parking-card.is-stale-data{border-color:#4b4231}
+.parking-card.is-stale-data .parking-space b{color:#d1b981}
+.parking-update.stale{color:#d1b981}
+.source-status .sync-state.stale i{background:#d8b64d}

@@ -531,6 +531,11 @@ function renderExactConfirmation(value){
     root.innerHTML='<div class="plate-exact-loading"><b>官方實牌確認中</b><span>正在核對監理服務網公告區間與「重複號牌排除明細」。</span></div>';
     return;
   }
+  if(data.error){
+    if(state)state.textContent="精準確認暫不可用";
+    root.innerHTML='<div class="plate-exact-empty"><b>官方實牌確認暫時無法完成</b><span>公告區間結果仍可查看；正式競標前請到監理服務網再次確認。</span></div>';
+    return;
+  }
   const matches=Array.isArray(data.matches)?data.matches:[];
   const usable=matches.filter(x=>x.exactStatus!=="excluded");
   const confirmed=usable.filter(x=>x.exactStatus==="confirmed");
@@ -1138,7 +1143,7 @@ function renderWatchList(){
         '<button class="danger" data-plate-action="remove" type="button">移除追蹤</button>'+
       '</div></details>';
     return '<article class="plate-watch-card plate-number-card'+(stage.active?' is-final-stage':'')+(isPrimary?' is-primary-target':'')+'" data-plate-id="'+escPlate(row.id)+'">'+
-      '<div class="plate-watch-top"><div><div class="plate-watch-number">'+escPlate(number)+(isPrimary?'<span class="plate-primary-chip">主攻</span>':'')+'</div><small class="meta">全台不限英文字母・不限監理站・escPlate(vehicleScopeLabel())</small></div><span class="plate-auction-state '+badgeCls+'">'+escPlate(badge)+'</span></div>'+
+      '<div class="plate-watch-top"><div><div class="plate-watch-number">'+escPlate(number)+(isPrimary?'<span class="plate-primary-chip">主攻</span>':'')+'</div><small class="meta">全台不限英文字母・不限監理站・'+escPlate(vehicleScopeLabel())+'</small></div><span class="plate-auction-state '+badgeCls+'">'+escPlate(badge)+'</span></div>'+
       '<div class="plate-number-match-line">'+escPlate(matchLine)+'</div>'+
       '<div class="plate-number-card-actions"><button data-plate-action="matches" type="button">'+(matches.length?'查看全台命中':'查看全台公告')+'</button></div>'+
       stageLine+finalQuick+advanced+

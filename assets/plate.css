@@ -219,3 +219,6 @@
 .plate-quick-actions button{min-height:64px;padding:11px 12px}
 .plate-source-list button{min-height:56px}
 .plate-detail-head button{width:44px;height:44px}
+
+/* V18 — exact-check failure stays distinct from a confirmed empty result */
+.plate-exact-empty span{display:block}
