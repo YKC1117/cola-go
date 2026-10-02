@@ -176,3 +176,26 @@
 .plate-line-summary{padding:8px 9px;border-radius:9px;background:#0b130e;color:#cfe5d6;font-size:10px;font-weight:750}.plate-line-notify p{margin:0;color:#8fa399;font-size:9px;line-height:1.55}
 .plate-line-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.plate-line-actions button{min-height:36px;padding:6px 8px;border:1px solid #334d3d;border-radius:9px;background:#132019;color:#aad9bb;font-size:8px;font-weight:800}.plate-line-actions button.primary{border-color:#34774e;background:#153522;color:#7af0aa}.plate-line-actions button.danger{color:#e7a0aa;border-color:#553039}.plate-line-actions button:disabled{opacity:.36;cursor:not-allowed}.plate-line-privacy{display:block;color:#65766d;font-size:7px;line-height:1.5}
 @media(max-width:380px){.plate-line-actions{grid-template-columns:1fr}}
+
+
+/* Plate Center V13: number-first, nationwide tracking */
+.plate-hero-compact{gap:10px;padding:16px}.plate-hero-compact h2{font-size:22px}.plate-hero-compact p{font-size:12px;line-height:1.6}
+.plate-number-first{border-color:#4a3640;background:linear-gradient(135deg,#171013,#0d1114)}
+.plate-number-track-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:stretch}
+.plate-number-main{display:block;padding:10px 13px;border:1px solid #5a3a44;border-radius:12px;background:#0b0f11}
+.plate-number-main small{display:block;color:var(--muted);font-size:9px}.plate-number-main input{width:100%;border:0;background:transparent;font-size:28px;font-weight:900;letter-spacing:.08em;padding:3px 0 0;outline:0}
+.plate-number-track-row>.primary{min-width:128px;border-radius:12px}.plate-number-scope{margin:9px 0 0;color:#c7aeb5;font-size:10px;line-height:1.55}
+.plate-compact-details{margin-top:10px}.plate-compact-details>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:48px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:#101518;cursor:pointer;list-style:none}.plate-compact-details>summary::-webkit-details-marker{display:none}.plate-compact-details>summary span:first-child{min-width:0}.plate-compact-details>summary b{display:block;font-size:12px}.plate-compact-details>summary small{display:block;margin-top:2px;color:var(--muted);font-size:9px}.plate-compact-details[open]>summary{border-color:#4b5960;background:#131a1d}
+.plate-collapsible-body{padding-top:10px}.plate-watch-advanced-form{grid-template-columns:repeat(3,minmax(0,1fr))}
+.plate-watch-glance{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:8px 0}.plate-watch-glance span{padding:8px 7px;border-radius:10px;background:var(--soft);text-align:center}.plate-watch-glance b{display:block;font-size:15px}.plate-watch-glance small{display:block;margin-top:1px;color:var(--muted);font-size:8px}
+.plate-number-card{padding:13px}.plate-number-card .plate-watch-number{font-size:28px;letter-spacing:.07em}.plate-number-match-line{margin-top:9px;padding:8px 9px;border-radius:9px;background:#10171a;color:#aebbc1;font-size:10px;line-height:1.5}.plate-number-card-actions{display:flex;margin-top:8px}.plate-number-card-actions button{width:100%;min-height:42px;border:1px solid #46535a;border-radius:10px;background:#151d20;font-size:11px;font-weight:800}.plate-number-card>.plate-watch-more{margin-top:8px}.plate-number-card>.plate-watch-more summary{min-height:36px}
+.plate-number-result-head{display:flex;align-items:end;justify-content:space-between;gap:10px;margin-bottom:9px}.plate-number-result-head b{font-size:28px;letter-spacing:.07em}.plate-number-result-head span{color:var(--muted);font-size:10px;text-align:right}
+.plate-search-panel,.plate-announcement-panel{padding:10px 12px}.plate-search-panel>summary,.plate-announcement-panel>summary{border:0;background:transparent;padding:2px 0;min-height:42px}
+.plate-notify-details{margin-top:12px}.plate-notify-details .plate-notify-box{margin-top:0;border:0;padding:10px;background:#121714}
+.plate-source-section{padding:0;background:transparent;border:0}.plate-source-section>.plate-guide-body{padding-top:0}
+@media(max-width:430px){
+  .plate-number-track-row{grid-template-columns:1fr}.plate-number-track-row>.primary{min-width:0;min-height:48px}
+  .plate-watch-advanced-form{grid-template-columns:1fr}
+  .plate-watch-glance{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .plate-number-result-head{align-items:flex-start;flex-direction:column}
+}
