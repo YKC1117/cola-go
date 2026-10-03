@@ -27,6 +27,7 @@ const state={
   chargingCompareSort:"nearby",
   chargingFavoritesOnly:false,
   chargingFavorites:[],
+  chargingRenderLimit:36,
   highway:"1",
   direction:"south",
   modelFilter:"all",
@@ -55,7 +56,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V27";
+const APP_RELEASE="Public Beta V28";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -1220,7 +1221,7 @@ function renderCharging(){
   renderChargingCompare(rows);
 
   const resultCount=rows.length;
-  const shown=rows.slice(0,120);
+  const shown=rows.slice(0,state.chargingRenderLimit||36);
   const favCount=state.chargingFavorites.length;
   if($("#chargingFavoriteCount"))$("#chargingFavoriteCount").textContent=favCount;
   if($("#chargingFavoritesOnly"))$("#chargingFavoritesOnly").setAttribute("aria-pressed",String(state.chargingFavoritesOnly));
@@ -1370,7 +1371,15 @@ function renderCharging(){
         ? '<div class="empty charging-empty"><b>目前沒有 6 小時內的空槍回報</b><p>'+(unverifiedNote?esc(unverifiedNote)+" ":"")+'可能真的滿位，也可能業者尚未回傳新槍況。超過 6 小時的舊狀態不會被 COLA GO 當成可用。</p><button class="charging-empty-primary" data-charge-show-nearby>改看附近充電站</button><small>保留距離排序，只取消「只看空槍」</small></div>'
         : '<div class="empty charging-empty"><b>沒有符合的充電站</b><p>可以清除篩選，或改用搜尋站名、地址、業者品牌。</p><button class="charging-empty-secondary" data-charge-clear-filters>清除充電篩選</button></div>');
 
-  $$("[data-charge-favorite]",root).forEach(b=>b.onclick=()=>{
+  if(shown.length<resultCount){
+    root.insertAdjacentHTML("beforeend",'<div class="charging-more"><button type="button" data-charge-more>載入更多充電站</button><small>已顯示 '+shown.length+' / '+resultCount+' 站</small></div>');
+    $("[data-charge-more]",root)?.addEventListener("click",()=>{
+      state.chargingRenderLimit=Math.min(resultCount,(state.chargingRenderLimit||36)+36);
+      renderCharging();
+    });
+  }
+
+  $("[data-charge-favorite]",root).forEach(b=>b.onclick=()=>{
     const key=b.dataset.chargeFavorite;
     const i=state.chargingFavorites.indexOf(key);
     if(i>=0)state.chargingFavorites.splice(i,1); else state.chargingFavorites.push(key);
@@ -3586,7 +3595,24 @@ function bindChargingTools(){
 
   const requestChargingOrigin=(nearbyAvailable=false)=>{
     if(!navigator.geolocation)return toast("此瀏覽器無法取得目前位置");
+    const findButton=$("#chargingFindNow");
+    const nearbyButton=$("#chargingNearby");
+    const busyButton=nearbyAvailable?findButton:nearbyButton;
+    if(busyButton?.dataset.locating==="1")return;
+    if(busyButton){
+      busyButton.dataset.locating="1";
+      busyButton.setAttribute("aria-busy","true");
+      const label=busyButton.querySelector("b");
+      if(label){busyButton.dataset.oldLabel=label.textContent||"";label.textContent="定位中…";}
+    }
     toast(nearbyAvailable?"正在尋找 25 km 內充電站與可用槍況":"正在取得目前位置");
+    const finishLocate=()=>{
+      if(!busyButton)return;
+      busyButton.dataset.locating="0";
+      busyButton.removeAttribute("aria-busy");
+      const label=busyButton.querySelector("b");
+      if(label&&busyButton.dataset.oldLabel)label.textContent=busyButton.dataset.oldLabel;
+    };
     navigator.geolocation.getCurrentPosition(pos=>{
       state.chargingOrigin={lat:pos.coords.latitude,lon:pos.coords.longitude};
       state.chargingSort="nearby";
@@ -3610,9 +3636,11 @@ function bindChargingTools(){
         if($("#chargingSearch"))$("#chargingSearch").value="";
         $$("#roadFilter button").forEach(b=>b.classList.toggle("active",b.dataset.road==="all"));
       }
+      state.chargingRenderLimit=36;
+      finishLocate();
       renderCharging();
       toast(nearbyAvailable?"已顯示 25 km 內站點，空槍回報優先":"已依距離排序充電站");
-    },()=>toast("無法取得位置，請確認定位權限"),{
+    },()=>{finishLocate();toast("無法取得位置，請確認定位權限");},{
       enableHighAccuracy:false,timeout:8000,maximumAge:300000
     });
   };
@@ -3704,7 +3732,14 @@ function bindFilters(){
     renderCharging();
   });
 
-  if($("#chargingSearch"))$("#chargingSearch").oninput=renderCharging;
+  if($("#chargingSearch")){
+    let chargingSearchTimer=0;
+    $("#chargingSearch").oninput=()=>{
+      clearTimeout(chargingSearchTimer);
+      state.chargingRenderLimit=36;
+      chargingSearchTimer=setTimeout(renderCharging,140);
+    };
+  }
   if($("#parkingSearch"))$("#parkingSearch").oninput=renderParking;
   $("#parkingCitySelect")?.addEventListener("change",e=>{
     state.parkingCity=e.target.value;
