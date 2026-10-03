@@ -524,6 +524,27 @@
   addEventListener("hashchange",maybeStartChargingOfficialLoads);
   maybeStartChargingOfficialLoads();
 
-  Promise.resolve().then(loadOfficialCCTV);
-  Promise.resolve().then(loadOfficialTraffic);
+  // V26: official CCTV/traffic snapshots are demand-loaded. Bundled summaries
+  // remain immediately usable, so the home screen never waits for these feeds.
+  let cctvOfficialLoadStarted=false;
+  let trafficOfficialLoadStarted=false;
+  function startOfficialForView(view){
+    if(view==="cctv"&&!cctvOfficialLoadStarted){
+      cctvOfficialLoadStarted=true;
+      Promise.resolve().then(loadOfficialCCTV);
+    }
+    if((view==="highway"||view==="tunnel")&&!trafficOfficialLoadStarted){
+      trafficOfficialLoadStarted=true;
+      Promise.resolve().then(loadOfficialTraffic);
+    }
+  }
+  function maybeStartOtherOfficialLoads(){
+    startOfficialForView((location.hash||"#home").slice(1));
+  }
+  document.addEventListener("click",event=>{
+    const view=event.target.closest("[data-go]")?.dataset.go;
+    if(view)startOfficialForView(view);
+  },{passive:true});
+  addEventListener("hashchange",maybeStartOtherOfficialLoads);
+  maybeStartOtherOfficialLoads();
 })();

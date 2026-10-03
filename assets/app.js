@@ -55,7 +55,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V25";
+const APP_RELEASE="Public Beta V26";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -243,31 +243,32 @@ function metricClass(v){
 
 async function load(){
   loadCCTVSegmentStorage();
+  // V26: first paint only needs the small driver summaries. Larger feature
+  // datasets are fetched after paint or when their page is opened.
   const results=await Promise.allSettled([
     getJSON("./data/charging.json"),
     getJSON("./data/traffic.json"),
     getJSON("./data/tunnel.json"),
-    getJSON("./data/parking.json"),
-    getJSON("./data/parking-live-tainan.json"),
-    getJSON("./data/tesla-models.json"),
-    getJSON("./data/marketplace.json"),
-    getJSON("./data/community.json"),
-    getJSON("./data/tesla-locations.json"),
-    getJSON("./data/cctv.json")
+    getJSON("./data/parking-live-tainan.json")
   ]);
-
   if(results[0].status==="fulfilled")state.charging=results[0].value;
   if(results[1].status==="fulfilled")state.traffic=results[1].value;
   if(results[2].status==="fulfilled")state.tunnel=results[2].value;
-  if(results[3].status==="fulfilled")state.parking=results[3].value;
-  if(results[4].status==="fulfilled")state.parkingLive=results[4].value;
-  if(results[5].status==="fulfilled")state.models=results[5].value.models||[];
-  if(results[6].status==="fulfilled")state.market=results[6].value;
-  if(results[7].status==="fulfilled")state.community=results[7].value;
-  if(results[8].status==="fulfilled")state.locations=results[8].value;
-  if(results[9].status==="fulfilled"&&Array.isArray(results[9].value?.items))state.cctv=results[9].value;
-
+  if(results[3].status==="fulfilled")state.parkingLive=results[3].value;
   renderAll();
+
+  const deferred=[
+    ["./data/parking.json",data=>{state.parking=data;renderParking();}],
+    ["./data/tesla-models.json",data=>{state.models=data.models||[];renderModels();}],
+    ["./data/marketplace.json",data=>{state.market=data;renderMarket();}],
+    ["./data/community.json",data=>{state.community=data;renderCommunity();}],
+    ["./data/tesla-locations.json",data=>{state.locations=data;renderLocations();}],
+    ["./data/cctv.json",data=>{if(Array.isArray(data?.items)){state.cctv=data;renderCCTV();renderHomeCCTVQuickRoutes();}}]
+  ];
+  const startDeferred=()=>Promise.allSettled(deferred.map(([url,apply])=>getJSON(url).then(apply)));
+  if("requestIdleCallback" in window)requestIdleCallback(startDeferred,{timeout:2500});
+  else setTimeout(startDeferred,900);
+
   if(location.hash==="#cctv"){
     if(readCCTVSharedCamera())requestAnimationFrame(()=>applyCCTVSharedCamera());
     else if(readCCTVSharedSegment())requestAnimationFrame(()=>applyCCTVSharedSegment());

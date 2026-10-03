@@ -1,5 +1,5 @@
-const CACHE="cola-go-ui-v6-44";
-const SW_RELEASE="Public Beta V25";
+const CACHE="cola-go-ui-v6-45";
+const SW_RELEASE="Public Beta V26";
 const CORE=["./","./index.html","./manifest.webmanifest","./assets/logo.svg","./assets/styles.css","./assets/plate.css","./assets/legal.css","./privacy.html","./terms.html","./assets/app.js","./assets/tdx-runtime.js","./assets/plate.js","./assets/images/drive-hero.webp","./assets/images/tunnel.webp","./assets/images/trip-road.webp","./assets/images/trip-parking.webp","./assets/images/trip-charging.webp","./data/charging.json","./data/traffic.json","./data/tunnel.json","./data/parking.json","./data/parking-live-tainan.json","./data/cctv.json","./data/tesla-models.json","./data/marketplace.json","./data/community.json","./data/tesla-locations.json"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(
