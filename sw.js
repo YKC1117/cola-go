@@ -1,5 +1,5 @@
-const CACHE="cola-go-ui-v6-49";
-const SW_RELEASE="Public Beta V30";
+const CACHE="cola-go-ui-v6-50";
+const SW_RELEASE="Public Beta V31";
 const CORE=["./","./index.html","./manifest.webmanifest","./assets/logo.svg","./assets/styles.css","./assets/app.js","./assets/tdx-runtime.js","./assets/images/drive-hero.webp","./data/charging.json","./data/traffic.json","./data/tunnel.json","./data/parking-live-tainan.json"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(
