@@ -56,7 +56,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V29";
+const APP_RELEASE="Public Beta V30";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -102,7 +102,8 @@ function show(view,push=true){
 }
 
 function bindNav(){
-  $$("[data-go]").forEach(el=>{
+  $("[data-go]").forEach(el=>{
+    el.addEventListener("pointerdown",()=>ensureFeatureData(el.dataset.go),{passive:true});
     el.onclick=e=>{
       e.preventDefault();
       if(el.hasAttribute("data-home-reload")&&el.dataset.go==="home"){
@@ -112,6 +113,7 @@ function bindNav(){
         return;
       }
       show(el.dataset.go);
+      ensureFeatureData(el.dataset.go);
     };
   });
   addEventListener("hashchange",()=>show(location.hash.slice(1)||"home",false));
@@ -197,7 +199,7 @@ function bindCopy(root=document){
 }
 
 async function getJSON(url){
-  const response=await fetch(url,{cache:"no-store"});
+  const response=await fetch(url,{cache:"default"});
   if(!response.ok)throw new Error(url);
   return response.json();
 }
@@ -242,33 +244,75 @@ function metricClass(v){
   return v>=80?"good":v>=50?"mid":"bad";
 }
 
+const featureDataLoaded=new Set();
+const featureDataJobs=new Map();
+const FEATURE_DATA={
+  parking:["./data/parking.json",data=>{state.parking=data;renderParking();}],
+  "tesla-db":["./data/tesla-models.json",data=>{state.models=data.models||[];renderModels();}],
+  market:["./data/marketplace.json",data=>{state.market=data;renderMarket();}],
+  community:["./data/community.json",data=>{state.community=data;renderCommunity();}],
+  locations:["./data/tesla-locations.json",data=>{state.locations=data;renderLocations();}],
+  cctv:["./data/cctv.json",data=>{if(Array.isArray(data?.items)){state.cctv=data;renderCCTV();renderHomeCCTVQuickRoutes();}}]
+};
+function ensureFeatureData(view){
+  const spec=FEATURE_DATA[view];
+  if(!spec||featureDataLoaded.has(view))return Promise.resolve();
+  if(featureDataJobs.has(view))return featureDataJobs.get(view);
+  const [url,apply]=spec;
+  const job=getJSON(url).then(data=>{
+    apply(data);
+    featureDataLoaded.add(view);
+  }).catch(()=>{}).finally(()=>featureDataJobs.delete(view));
+  featureDataJobs.set(view,job);
+  return job;
+}
+function scheduleFeaturePrewarm(){
+  const queue=["parking","cctv","tesla-db","market","community","locations"];
+  const runNext=()=>{
+    if(!queue.length||document.visibilityState!=="visible")return;
+    const view=queue.shift();
+    ensureFeatureData(view).finally(()=>{
+      if("requestIdleCallback" in window)requestIdleCallback(runNext,{timeout:5000});
+      else setTimeout(runNext,1200);
+    });
+  };
+  setTimeout(()=>{
+    if("requestIdleCallback" in window)requestIdleCallback(runNext,{timeout:4500});
+    else runNext();
+  },3500);
+}
+
 async function load(){
   loadCCTVSegmentStorage();
-  // V26: first paint only needs the small driver summaries. Larger feature
-  // datasets are fetched after paint or when their page is opened.
-  const results=await Promise.allSettled([
-    getJSON("./data/charging.json"),
-    getJSON("./data/traffic.json"),
-    getJSON("./data/tunnel.json"),
-    getJSON("./data/parking-live-tainan.json")
-  ]);
-  if(results[0].status==="fulfilled")state.charging=results[0].value;
-  if(results[1].status==="fulfilled")state.traffic=results[1].value;
-  if(results[2].status==="fulfilled")state.tunnel=results[2].value;
-  if(results[3].status==="fulfilled")state.parkingLive=results[3].value;
-  renderAll();
 
-  const deferred=[
-    ["./data/parking.json",data=>{state.parking=data;renderParking();}],
-    ["./data/tesla-models.json",data=>{state.models=data.models||[];renderModels();}],
-    ["./data/marketplace.json",data=>{state.market=data;renderMarket();}],
-    ["./data/community.json",data=>{state.community=data;renderCommunity();}],
-    ["./data/tesla-locations.json",data=>{state.locations=data;renderLocations();}],
-    ["./data/cctv.json",data=>{if(Array.isArray(data?.items)){state.cctv=data;renderCCTV();renderHomeCCTVQuickRoutes();}}]
-  ];
-  const startDeferred=()=>Promise.allSettled(deferred.map(([url,apply])=>getJSON(url).then(apply)));
-  if("requestIdleCallback" in window)requestIdleCallback(startDeferred,{timeout:2500});
-  else setTimeout(startDeferred,900);
+  // V30: never gate the first useful paint on the slowest request.
+  // Each critical snapshot updates its own surface as soon as it arrives.
+  getJSON("./data/charging.json").then(data=>{
+    state.charging=data;
+    renderCharging();
+    renderHomeMetrics();
+  }).catch(()=>{});
+  getJSON("./data/traffic.json").then(data=>{
+    state.traffic=data;
+    renderTraffic();
+    renderHomeMetrics();
+  }).catch(()=>{});
+  getJSON("./data/tunnel.json").then(data=>{
+    state.tunnel=data;
+    renderTunnel();
+    renderHomeMetrics();
+  }).catch(()=>{});
+  getJSON("./data/parking-live-tainan.json").then(data=>{
+    state.parkingLive=data;
+    renderParking();
+  }).catch(()=>{});
+
+  // Heavy feature data is warmed one-by-one only while the browser is idle.
+  // Pointer-down/navigation still promotes the requested feature immediately.
+  scheduleFeaturePrewarm();
+
+  const initialView=(location.hash||"#home").slice(1);
+  ensureFeatureData(initialView);
 
   if(location.hash==="#cctv"){
     if(readCCTVSharedCamera())requestAnimationFrame(()=>applyCCTVSharedCamera());
@@ -276,15 +320,7 @@ async function load(){
   }
 }
 
-function renderAll(){
-  // V27: first paint updates only driver-critical surfaces. Heavy feature
-  // pages render when their own data arrives or when the user opens them.
-  renderCharging();
-  renderParking();
-  renderTraffic();
-  renderTunnel();
-  renderHomeCCTVQuickRoutes();
-
+function renderHomeMetrics(){
   const trafficInfo=dataStatusInfo(state.traffic);
   $("#syncState").classList.toggle("ready",trafficInfo.live);
   $("#syncState").classList.toggle("stale",trafficInfo.stale);
@@ -303,6 +339,15 @@ function renderAll(){
   const tunnelInfo=dataStatusInfo(state.tunnel);
   $("#tunnelValue").textContent=snow?snow+" km/h":"—";
   $("#tunnelDot").className=tunnelInfo.live&&snow?"dot ready":"dot pending";
+}
+
+function renderAll(){
+  renderCharging();
+  renderParking();
+  renderTraffic();
+  renderTunnel();
+  renderHomeCCTVQuickRoutes();
+  renderHomeMetrics();
 }
 
 function chargingKey(x){

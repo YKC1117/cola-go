@@ -552,9 +552,11 @@
   function maybeStartChargingOfficialLoads(){
     if((location.hash||"#home")==="#charging")startChargingOfficialLoads();
   }
-  document.addEventListener("click",event=>{
+  const primeChargingFromEvent=event=>{
     if(event.target.closest('[data-go="charging"]'))startChargingOfficialLoads();
-  },{passive:true});
+  };
+  document.addEventListener("pointerdown",primeChargingFromEvent,{passive:true});
+  document.addEventListener("click",primeChargingFromEvent,{passive:true});
   addEventListener("hashchange",maybeStartChargingOfficialLoads);
   maybeStartChargingOfficialLoads();
 
@@ -575,10 +577,12 @@
   function maybeStartOtherOfficialLoads(){
     startOfficialForView((location.hash||"#home").slice(1));
   }
-  document.addEventListener("click",event=>{
+  const primeOfficialFromEvent=event=>{
     const view=event.target.closest("[data-go]")?.dataset.go;
     if(view)startOfficialForView(view);
-  },{passive:true});
+  };
+  document.addEventListener("pointerdown",primeOfficialFromEvent,{passive:true});
+  document.addEventListener("click",primeOfficialFromEvent,{passive:true});
   addEventListener("hashchange",maybeStartOtherOfficialLoads);
   maybeStartOtherOfficialLoads();
 })();

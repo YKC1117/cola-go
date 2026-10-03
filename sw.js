@@ -1,5 +1,5 @@
-const CACHE="cola-go-ui-v6-48";
-const SW_RELEASE="Public Beta V29";
+const CACHE="cola-go-ui-v6-49";
+const SW_RELEASE="Public Beta V30";
 const CORE=["./","./index.html","./manifest.webmanifest","./assets/logo.svg","./assets/styles.css","./assets/app.js","./assets/tdx-runtime.js","./assets/images/drive-hero.webp","./data/charging.json","./data/traffic.json","./data/tunnel.json","./data/parking-live-tainan.json"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(
@@ -17,22 +17,25 @@ self.addEventListener("fetch",e=>{
     e.respondWith(fetch(e.request));
     return;
   }
+  const network=fetch(e.request).then(r=>{
+    if(r&&r.ok){
+      const copy=r.clone();
+      caches.open(CACHE).then(c=>c.put(e.request,copy));
+    }
+    return r;
+  });
+  e.waitUntil(network.then(()=>{},()=>{}));
   e.respondWith(
-    fetch(e.request)
-      .then(r=>{
-        const copy=r.clone();
-        caches.open(CACHE).then(c=>c.put(e.request,copy));
-        return r;
-      })
-      .catch(async()=>{
-        const cached=await caches.match(e.request);
-        if(cached)return cached;
+    caches.match(e.request).then(cached=>{
+      if(cached)return cached;
+      return network.catch(async()=>{
         if(e.request.mode==="navigate"){
           const shell=await caches.match("./index.html");
           if(shell)return shell;
         }
         return new Response("",{status:503,statusText:"Offline"});
-      })
+      });
+    })
   );
 });
 
