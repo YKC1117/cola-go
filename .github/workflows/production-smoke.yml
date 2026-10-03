@@ -128,7 +128,16 @@ jobs:
           grep -Fq 'renderCCTVRoadOverview' "$work/app.js"
           grep -Fq 'renderCCTVGroups' "$work/app.js"
           grep -Fq '里程分段' "$work/app.js"
-          grep -Fq 'cola-go-ui-v6-43' "$work/sw.js"
+          grep -Eq 'const CACHE="cola-go-ui-v6-[0-9]+";' "$work/sw.js"
+          python3 - "$work/app.js" "$work/sw.js" <<'PY'
+          import re, sys
+          app=open(sys.argv[1], encoding="utf-8").read()
+          sw=open(sys.argv[2], encoding="utf-8").read()
+          app_release=re.search(r'APP_RELEASE="([^"]+)"', app)
+          sw_release=re.search(r'SW_RELEASE="([^"]+)"', sw)
+          assert app_release and sw_release, "release marker missing"
+          assert app_release.group(1) == sw_release.group(1), (app_release.group(1), sw_release.group(1))
+          PY
           ! grep -Fq 'www.icloud.com/shortcuts/' "$work/index.html"
           ! grep -Eqi 'waze\.com|data-map="waze"' "$work/index.html" "$work/app.js"
           grep -Fq 'el.hasAttribute("data-home-reload")' "$work/app.js"
