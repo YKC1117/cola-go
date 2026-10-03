@@ -56,7 +56,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V31";
+const APP_RELEASE="Public Beta V30";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -101,48 +101,9 @@ function show(view,push=true){
 
 }
 
-let plateModulePromise=null;
-function ensurePlateModule(){
-  if(plateModulePromise)return plateModulePromise;
-  plateModulePromise=new Promise(resolve=>{
-    const finish=()=>resolve();
-    let pending=0;
-    const done=()=>{pending--;if(pending<=0)finish();};
-
-    if(!document.querySelector('link[data-cola-plate-style]')){
-      pending++;
-      const link=document.createElement("link");
-      link.rel="stylesheet";
-      link.href="./assets/plate.css";
-      link.dataset.colaPlateStyle="1";
-      link.onload=done;
-      link.onerror=done;
-      document.head.appendChild(link);
-    }
-
-    if(!document.querySelector('script[data-cola-plate-module]')){
-      pending++;
-      const script=document.createElement("script");
-      script.src="./assets/plate.js";
-      script.defer=true;
-      script.dataset.colaPlateModule="1";
-      script.onload=done;
-      script.onerror=done;
-      document.body.appendChild(script);
-    }
-
-    if(pending===0)finish();
-  });
-  return plateModulePromise;
-}
-function ensureViewModule(view){
-  if(view==="plate")return ensurePlateModule();
-  return Promise.resolve();
-}
-
 function bindNav(){
   $("[data-go]").forEach(el=>{
-    el.addEventListener("pointerdown",()=>{ensureFeatureData(el.dataset.go);ensureViewModule(el.dataset.go);},{passive:true});
+    el.addEventListener("pointerdown",()=>ensureFeatureData(el.dataset.go),{passive:true});
     el.onclick=e=>{
       e.preventDefault();
       if(el.hasAttribute("data-home-reload")&&el.dataset.go==="home"){
@@ -153,10 +114,9 @@ function bindNav(){
       }
       show(el.dataset.go);
       ensureFeatureData(el.dataset.go);
-      ensureViewModule(el.dataset.go);
     };
   });
-  addEventListener("hashchange",()=>{const view=location.hash.slice(1)||"home";show(view,false);ensureFeatureData(view);ensureViewModule(view);});
+  addEventListener("hashchange",()=>show(location.hash.slice(1)||"home",false));
 }
 function bindDisclosureBehavior(){
   document.addEventListener("toggle",event=>{
@@ -353,7 +313,6 @@ async function load(){
 
   const initialView=(location.hash||"#home").slice(1);
   ensureFeatureData(initialView);
-  ensureViewModule(initialView);
 
   if(location.hash==="#cctv"){
     if(readCCTVSharedCamera())requestAnimationFrame(()=>applyCCTVSharedCamera());
