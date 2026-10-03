@@ -2,9 +2,9 @@
   "schema": 2,
   "source": "TAIL 特爾電力官方站點",
   "sourceUrl": "https://www.evtail.com.tw/locations",
-  "updatedAt": "2026-10-02T09:50:20.213346Z",
-  "lastSuccessAt": "2026-10-02T09:50:20.213346Z",
-  "lastAttemptAt": "2026-10-02T09:50:20.213346Z",
+  "updatedAt": "2026-10-03T09:12:44.973020Z",
+  "lastSuccessAt": "2026-10-03T09:12:44.973020Z",
+  "lastAttemptAt": "2026-10-03T09:12:44.973020Z",
   "syncStatus": "ok",
   "count": 106,
   "items": [
