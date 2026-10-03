@@ -290,6 +290,20 @@
     });
   }
 
+  let enrichedChargingCache=[];
+  let enrichedChargingCacheOperatorVersion=-1;
+  let operatorChargingVersion=0;
+  function rebuildEnrichedChargingCache(){
+    enrichedChargingCache=enrichOfficialRows(officialChargingAll);
+    enrichedChargingCacheOperatorVersion=operatorChargingVersion;
+  }
+  function enrichedChargingRows(){
+    if(enrichedChargingCacheOperatorVersion!==operatorChargingVersion||enrichedChargingCache.length!==officialChargingAll.length){
+      rebuildEnrichedChargingCache();
+    }
+    return enrichedChargingCache;
+  }
+
   renderCharging=function(){
     ensureChargingCityFilter();
     const currentCurated=(state.charging||[]).filter(x=>x.road!=="tdx");
@@ -299,8 +313,11 @@
       renderChargingCoverage();
       return;
     }
-    const rawOfficial=state.road==="all"?chargingSubset():[];
-    const official=enrichOfficialRows(rawOfficial);
+    const city=document.querySelector("#chargingCity")?.value||"all";
+    const cachedOfficial=enrichedChargingRows();
+    const official=state.road==="all"
+      ?(city==="all"?cachedOfficial:cachedOfficial.filter(x=>x.city===city))
+      :[];
     const supplemental=state.road==="all"?operatorSupplementRows(official):[];
     state.charging=[...official,...supplemental,...curatedCharging];
     originalRenderCharging();
@@ -317,8 +334,7 @@
     if(title)title.textContent="TDX 全台官方充電站＋業者品牌";
     if(chip||sourceNote){
       const city=document.querySelector("#chargingCity")?.value||"all";
-      const baseScope=city==="all"?officialChargingAll:officialChargingAll.filter(x=>x.city===city);
-      const scope=enrichOfficialRows(baseScope);
+      const scope=city==="all"?cachedOfficial:cachedOfficial.filter(x=>x.city===city);
       const supplement=operatorSupplementRows(scope);
       const total=scope.length+supplement.length;
       const liveCount=scope.filter(x=>!x.liveStale&&Number(x.liveStateCount)>0).length;
@@ -372,6 +388,8 @@
         );
         return {...x,liveStale:rowStale,liveDatasetStale:Boolean(data.stale)};
       });
+      enrichedChargingCache=[];
+      enrichedChargingCacheOperatorVersion=-1;
       chargingUpdatedAt=data.liveUpdatedAt||data.updatedAt||null;
       chargingStatus=data.status||"official";
       syncChargingOperatorOptions();
@@ -403,6 +421,9 @@
     operatorChargingAll=datasets.flatMap(({result,source})=>
       result.value.items.map(x=>({...x,officialSupplemental:true,networkKey:x.networkKey||source.key,officialSyncStatus:result.value.syncStatus||"ok"}))
     );
+    operatorChargingVersion++;
+    enrichedChargingCache=[];
+    enrichedChargingCacheOperatorVersion=-1;
     operatorUpdatedAt=datasets.map(x=>x.result.value.lastSuccessAt||x.result.value.updatedAt).filter(Boolean).sort().at(-1)||null;
     syncChargingOperatorOptions();
     renderCharging();

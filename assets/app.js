@@ -55,7 +55,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V26";
+const APP_RELEASE="Public Beta V27";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -276,15 +276,12 @@ async function load(){
 }
 
 function renderAll(){
+  // V27: first paint updates only driver-critical surfaces. Heavy feature
+  // pages render when their own data arrives or when the user opens them.
   renderCharging();
   renderParking();
   renderTraffic();
   renderTunnel();
-  renderMarket();
-  renderModels();
-  renderCommunity();
-  renderLocations();
-  renderCCTV();
   renderHomeCCTVQuickRoutes();
 
   const trafficInfo=dataStatusInfo(state.traffic);
