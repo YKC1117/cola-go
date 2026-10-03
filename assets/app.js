@@ -102,7 +102,7 @@ function show(view,push=true){
 }
 
 function bindNav(){
-  $("[data-go]").forEach(el=>{
+  $$("[data-go]").forEach(el=>{
     el.addEventListener("pointerdown",()=>ensureFeatureData(el.dataset.go),{passive:true});
     el.onclick=e=>{
       e.preventDefault();
