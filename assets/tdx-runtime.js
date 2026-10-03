@@ -479,7 +479,20 @@
         changed=true;
       }
     }
-    if(changed)renderAll();
+    if(changed){
+      renderTraffic();
+      renderTunnel();
+      const trafficInfo=dataStatusInfo(state.traffic);
+      const syncState=document.querySelector("#syncState");
+      const syncText=document.querySelector("#syncText");
+      const lastUpdate=document.querySelector("#lastUpdate");
+      if(syncState){
+        syncState.classList.toggle("ready",trafficInfo.live);
+        syncState.classList.toggle("stale",trafficInfo.stale);
+      }
+      if(syncText)syncText.textContent=trafficInfo.live?"即時":trafficInfo.hasData?"資料較舊":"更新中";
+      if(lastUpdate)lastUpdate.textContent=trafficInfo.known?trafficInfo.label:"尚無更新時間";
+    }
   }
 
   ensureParkingCity=async function(city){
