@@ -2,6 +2,10 @@ name: Validate COLA GO V3
 on:
   push:
     branches: ["main", "design/v3-product-ui", "feature/full-toolbox", "feature/market-db", "feature/owner-plus", "feature/community-locations", "feature/tainan-live-parking", "fix/mobile-home-quality", "feature/highway-cctv-live", "feature/charging-core", "feature/taiwan-parking"]
+    paths-ignore:
+      - "data/tdx/**"
+      - "data/operators/**"
+      - "data/plates/**"
   workflow_dispatch:
 permissions:
   contents: read
