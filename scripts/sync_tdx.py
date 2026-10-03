@@ -65,9 +65,23 @@ def request(url, *, data=None, headers=None, timeout=50):
             with urllib.request.urlopen(req, timeout=timeout) as response:
                 return json.load(response)
         except urllib.error.HTTPError as error:
-            if error.code == 429 and attempt < 4:
-                delay = max(35, int(error.headers.get("Retry-After") or 35))
-                print("TDX_RATE_LIMIT", delay, "seconds", file=sys.stderr, flush=True)
+            retryable = error.code == 429 or 500 <= error.code <= 504
+            if retryable and attempt < 4:
+                if error.code == 429:
+                    delay = max(35, int(error.headers.get("Retry-After") or 35))
+                    label = "TDX_RATE_LIMIT"
+                else:
+                    delay = min(60, 5 * (attempt + 1))
+                    label = "TDX_HTTP_RETRY"
+                print(label, error.code, delay, "seconds", file=sys.stderr, flush=True)
+                time.sleep(delay)
+                last_call = time.monotonic()
+                continue
+            raise
+        except (urllib.error.URLError, TimeoutError) as error:
+            if attempt < 4:
+                delay = min(60, 5 * (attempt + 1))
+                print("TDX_NETWORK_RETRY", repr(error), delay, "seconds", file=sys.stderr, flush=True)
                 time.sleep(delay)
                 last_call = time.monotonic()
                 continue
