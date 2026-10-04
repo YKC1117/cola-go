@@ -56,7 +56,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V34";
+const APP_RELEASE="Public Beta V35";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -1423,7 +1423,7 @@ function renderCharging(){
     });
   }
 
-  $("[data-charge-favorite]",root).forEach(b=>b.onclick=()=>{
+  $$("[data-charge-favorite]",root).forEach(b=>b.onclick=()=>{
     const key=b.dataset.chargeFavorite;
     const i=state.chargingFavorites.indexOf(key);
     if(i>=0)state.chargingFavorites.splice(i,1); else state.chargingFavorites.push(key);
@@ -3728,7 +3728,7 @@ function bindChargingTools(){
     if($("#chargingConnector"))$("#chargingConnector").value="all";
     if($("#chargingPower"))$("#chargingPower").value="0";
     if($("#chargingSearch"))$("#chargingSearch").value="";
-    $("#roadFilter button").forEach((b,i)=>b.classList.toggle("active",i===0));
+    $$("#roadFilter button").forEach((b,i)=>b.classList.toggle("active",i===0));
     renderCharging();
     toast(active?"已取消主力空槍快充":"已套用主力空槍快充");
   });
