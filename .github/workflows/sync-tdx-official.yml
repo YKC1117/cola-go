@@ -13,8 +13,8 @@ on:
           - dynamic
           - static
   schedule:
-    - cron: "0 * * * *"
-    - cron: "5 18 * * *"
+    - cron: "17 * * * *"
+    - cron: "35 18 * * *"
 
 permissions:
   contents: write
@@ -41,7 +41,7 @@ jobs:
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             mode="${{ inputs.mode }}"
           elif [[ "${{ github.event_name }}" == "schedule" ]]; then
-            if [[ "${{ github.event.schedule }}" == "5 18 * * *" ]]; then
+            if [[ "${{ github.event.schedule }}" == "35 18 * * *" ]]; then
               mode="static"
             else
               mode="dynamic"
