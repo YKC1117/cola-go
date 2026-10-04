@@ -99,16 +99,31 @@ def token():
         "client_id": client_id,
         "client_secret": client_secret,
     }).encode()
-    payload = request(
-        TOKEN_URL,
-        data=body,
-        headers={
-            "Content-Type": "application/x-www-form-urlencoded",
-            "User-Agent": "COLA-GO/1.0",
-        },
-    )
+    try:
+        payload = request(
+            TOKEN_URL,
+            data=body,
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded",
+                "User-Agent": "COLA-GO/1.0",
+            },
+        )
+    except urllib.error.HTTPError as error:
+        if error.code in {400, 401, 403}:
+            print(
+                f"TDX_AUTH_REJECTED HTTP {error.code}; keeping last published cache and retrying on the next schedule",
+                file=sys.stderr,
+                flush=True,
+            )
+            return None
+        raise
     if not payload.get("access_token"):
-        raise RuntimeError("TDX OAuth response missing access_token")
+        print(
+            "TDX_AUTH_REJECTED access_token missing; keeping last published cache and retrying on the next schedule",
+            file=sys.stderr,
+            flush=True,
+        )
+        return None
     return payload["access_token"]
 
 
@@ -1217,6 +1232,9 @@ def main():
     PARK.mkdir(parents=True, exist_ok=True)
     tok = token()
     print("TDX_SYNC_MODE", SYNC_MODE, flush=True)
+    if not tok:
+        print("TDX_SYNC_SKIPPED_AUTH; existing published cache remains unchanged", flush=True)
+        return 0
 
     if SYNC_MODE in {"all", "static"}:
         sync_parking_static(tok)
