@@ -56,7 +56,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V33";
+const APP_RELEASE="Public Beta V34";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -1231,7 +1231,6 @@ function renderCharging(){
         return distance!=null&&distance<=nearbyRadiusKm;
       })
     : (state.chargingAvailableOnly?candidateRows.filter(chargingHasAvailableReport):candidateRows);
-  if(nearbyAvailableMode&&!chargingLiveDatasetReady())rows=[];
 
   rows.sort((a,b)=>{
     if(state.chargingSort!=="nearby"&&state.chargingQuick==="priorityfast"){
