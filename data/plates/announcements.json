@@ -5,231 +5,11 @@
   "sourceUrl": "https://www.thb.gov.tw/News_Content_thbOpenData.aspx?n=13&s=506",
   "datasetUrl": "https://data.gov.tw/dataset/96623",
   "downloadUrl": "https://www.thb.gov.tw/Common/ThbOpenDataService.ashx?SN=506&format=1",
-  "updatedAt": "2026-10-02T15:07:39+08:00",
+  "updatedAt": "2026-10-04T15:03:30+08:00",
   "sourceUpdatedAt": null,
-  "sourceHash": "2aaac26c098480448212fee3f6d034700005cb18634223dc2741a64c9a64ba29",
-  "count": 551,
+  "sourceHash": "f183bcbe1c4156bc4aca337f7b2b63a27efb5ce0f41e1a74f0b7f0f68132cf05",
+  "count": 566,
   "items": [
-    {
-      "id": "56195f20cd5ef9",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-3001",
-      "endNumber": "PKX-3017",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "80b17d9d750705",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-3019",
-      "endNumber": "PKX-3199",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "e4503747930b01",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-3201",
-      "endNumber": "PKX-3386",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "9f0b200b80bbcd",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-3388",
-      "endNumber": "PKX-3391",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "bc25ccca90fa61",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-3393",
-      "endNumber": "PKX-3396",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "042497ee220ec6",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-3501",
-      "endNumber": "PKX-3699",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "7dec8ad93d554a",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-3729",
-      "endNumber": "PKX-3729",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "67d28047c2d935",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-3733",
-      "endNumber": "PKX-3871",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "716585710b1bc2",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-3873",
-      "endNumber": "PKX-5030",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "868835238acd09",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-5032",
-      "endNumber": "PKX-5099",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "1c9fa15e8230df",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-5101",
-      "endNumber": "PKX-5299",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "9218ea1e6b905e",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-5301",
-      "endNumber": "PKX-5599",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "c6d23e34bf92fc",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-5601",
-      "endNumber": "PKX-5869",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "c12ca0eb6f9fa3",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-5871",
-      "endNumber": "PKX-5999",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "25fc557e34f7f4",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-6001",
-      "endNumber": "PKX-6100",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "b9ed903ce278a7",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-9001",
-      "endNumber": "PKX-9555",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "d1414a93425696",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-9557",
-      "endNumber": "PKX-9665",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "81b79f1014defa",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-9667",
-      "endNumber": "PKX-9699",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "02af268daac279",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-9701",
-      "endNumber": "PKX-9763",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "4ca481f65c8868",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-9766",
-      "endNumber": "PKX-9863",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "46af81f786b702",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-9866",
-      "endNumber": "PKX-9963",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
-    {
-      "id": "3a2b8366b6b0f4",
-      "office": "臺中市監理站",
-      "category": "普通重型機車",
-      "startNumber": "PKX-9966",
-      "endNumber": "PKX-9998",
-      "startAt": "2026-09-30T10:00:00+08:00",
-      "endAt": "2026-10-02T10:00:00+08:00",
-      "transferDeadline": "2026-10-03T10:00:00+08:00"
-    },
     {
       "id": "e41ddd4376e3ac",
       "office": "屏東監理站",
@@ -4471,16 +4251,6 @@
       "transferDeadline": "2026-10-15T02:00:00+08:00"
     },
     {
-      "id": "c6fa6fe45c30ff",
-      "office": "麻豆監理站",
-      "category": "自用小客貨車",
-      "startNumber": "CGA-0992",
-      "endNumber": "CGA-0992",
-      "startAt": "2026-10-12T10:00:00+08:00",
-      "endAt": "2026-10-14T10:00:00+08:00",
-      "transferDeadline": "2026-10-15T10:00:00+08:00"
-    },
-    {
       "id": "898a18942b98b0",
       "office": "臺中區監理所",
       "category": "電動小營客車",
@@ -4971,11 +4741,351 @@
       "transferDeadline": "2026-10-16T10:00:00+08:00"
     },
     {
+      "id": "ef9ac841e4baac",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-1122",
+      "endNumber": "PJY-1122",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "4257dbc1e53baf",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-1133",
+      "endNumber": "PJY-1133",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "3432a8ea68ab09",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-1155",
+      "endNumber": "PJY-1155",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "898a6c635d0463",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-1166",
+      "endNumber": "PJY-1166",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "7b59f8b832d22e",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-1177",
+      "endNumber": "PJY-1177",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "e4ea1e082ac512",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-1188",
+      "endNumber": "PJY-1188",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "90b72130204087",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-1199",
+      "endNumber": "PJY-1199",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "0c6c7bcd7562de",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-2233",
+      "endNumber": "PJY-2233",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "373af32882cbc3",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-2255",
+      "endNumber": "PJY-2255",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "aefafeb1678e8f",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-2277",
+      "endNumber": "PJY-2277",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "2ae177c5d2d612",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-2288",
+      "endNumber": "PJY-2288",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "03f6b82452cc16",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-2299",
+      "endNumber": "PJY-2299",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "4bfdfa6e2b94d9",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-3355",
+      "endNumber": "PJY-3355",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "8ccc3b0196e95e",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-3366",
+      "endNumber": "PJY-3366",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "6e36e3f5ad8f5a",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-3377",
+      "endNumber": "PJY-3377",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "ec3dada19837c2",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-3388",
+      "endNumber": "PJY-3388",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "74bb1949aa262b",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-3399",
+      "endNumber": "PJY-3399",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "f4c972eed63edd",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-5566",
+      "endNumber": "PJY-5566",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "cfaefa861d102e",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-5577",
+      "endNumber": "PJY-5577",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "0104b76334851d",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-5599",
+      "endNumber": "PJY-5599",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "ba1e4e2f38b96a",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-5678",
+      "endNumber": "PJY-5678",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "d57e3a8cbd1b25",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-6699",
+      "endNumber": "PJY-6699",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "2b193371c0eb03",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-6789",
+      "endNumber": "PJY-6789",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "25e7d4050fd75d",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-7788",
+      "endNumber": "PJY-7788",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "c01fe55f817585",
+      "office": "臺北市區監理所",
+      "category": "普通重型機車",
+      "startNumber": "PJY-8888",
+      "endNumber": "PJY-8888",
+      "startAt": "2026-10-13T10:00:00+08:00",
+      "endAt": "2026-10-15T10:00:00+08:00",
+      "transferDeadline": "2026-10-16T10:00:00+08:00"
+    },
+    {
+      "id": "86a583fd05e7c8",
+      "office": "板橋監理站",
+      "category": "電動普通重型機車",
+      "startNumber": "ERZ-1122",
+      "endNumber": "ERZ-3399",
+      "startAt": "2026-10-15T08:00:00+08:00",
+      "endAt": "2026-10-19T10:00:00+08:00",
+      "transferDeadline": "2026-10-20T10:00:00+08:00"
+    },
+    {
+      "id": "be1446282af3a8",
+      "office": "板橋監理站",
+      "category": "550cc以下重機",
+      "startNumber": "LBK-1122",
+      "endNumber": "LBK-1122",
+      "startAt": "2026-10-15T08:00:00+08:00",
+      "endAt": "2026-10-19T10:00:00+08:00",
+      "transferDeadline": "2026-10-20T10:00:00+08:00"
+    },
+    {
+      "id": "e93ded22cc013f",
+      "office": "板橋監理站",
+      "category": "550cc以下重機",
+      "startNumber": "LBK-1133",
+      "endNumber": "LBK-1133",
+      "startAt": "2026-10-15T08:00:00+08:00",
+      "endAt": "2026-10-19T10:00:00+08:00",
+      "transferDeadline": "2026-10-20T10:00:00+08:00"
+    },
+    {
+      "id": "bac6c33c51d1f5",
+      "office": "板橋監理站",
+      "category": "550cc以下重機",
+      "startNumber": "LBK-1155",
+      "endNumber": "LBK-1155",
+      "startAt": "2026-10-15T08:00:00+08:00",
+      "endAt": "2026-10-19T10:00:00+08:00",
+      "transferDeadline": "2026-10-20T10:00:00+08:00"
+    },
+    {
+      "id": "96ea3833069ab7",
+      "office": "板橋監理站",
+      "category": "550cc以下重機",
+      "startNumber": "LBK-1166",
+      "endNumber": "LBK-1166",
+      "startAt": "2026-10-15T08:00:00+08:00",
+      "endAt": "2026-10-19T10:00:00+08:00",
+      "transferDeadline": "2026-10-20T10:00:00+08:00"
+    },
+    {
+      "id": "3926b0c94757e2",
+      "office": "板橋監理站",
+      "category": "550cc以下重機",
+      "startNumber": "LBK-1171",
+      "endNumber": "LBK-1181",
+      "startAt": "2026-10-15T08:00:00+08:00",
+      "endAt": "2026-10-19T10:00:00+08:00",
+      "transferDeadline": "2026-10-20T10:00:00+08:00"
+    },
+    {
+      "id": "a5eb78efcd1421",
+      "office": "板橋監理站",
+      "category": "550cc以下重機",
+      "startNumber": "LBK-1177",
+      "endNumber": "LBK-1177",
+      "startAt": "2026-10-15T08:00:00+08:00",
+      "endAt": "2026-10-19T10:00:00+08:00",
+      "transferDeadline": "2026-10-20T10:00:00+08:00"
+    },
+    {
+      "id": "711a1589c0a6fd",
+      "office": "板橋監理站",
+      "category": "550cc以下重機",
+      "startNumber": "LBK-1199",
+      "endNumber": "LBK-1199",
+      "startAt": "2026-10-15T08:00:00+08:00",
+      "endAt": "2026-10-19T10:00:00+08:00",
+      "transferDeadline": "2026-10-20T10:00:00+08:00"
+    },
+    {
       "id": "6009a8b5a8cce4",
       "office": "板橋監理站",
       "category": "普通重型機車",
       "startNumber": "PGT-1122",
       "endNumber": "PGT-7788",
+      "startAt": "2026-10-15T08:00:00+08:00",
+      "endAt": "2026-10-19T10:00:00+08:00",
+      "transferDeadline": "2026-10-20T10:00:00+08:00"
+    },
+    {
+      "id": "58f431cc03f413",
+      "office": "板橋監理站",
+      "category": "普通重型機車",
+      "startNumber": "PLY-0001",
+      "endNumber": "PLY-9999",
       "startAt": "2026-10-15T08:00:00+08:00",
       "endAt": "2026-10-19T10:00:00+08:00",
       "transferDeadline": "2026-10-20T10:00:00+08:00"
@@ -5401,6 +5511,26 @@
       "transferDeadline": "2026-10-24T10:00:00+08:00"
     },
     {
+      "id": "34dcaa66946765",
+      "office": "苓雅監理站",
+      "category": "普通重型機車",
+      "startNumber": "PMU-0001",
+      "endNumber": "PMU-9999",
+      "startAt": "2026-10-21T10:00:00+08:00",
+      "endAt": "2026-10-23T10:00:00+08:00",
+      "transferDeadline": "2026-10-24T10:00:00+08:00"
+    },
+    {
+      "id": "05357a75ea9d78",
+      "office": "中壢監理站",
+      "category": "電動普通輕型機車",
+      "startNumber": "EXA-6301",
+      "endNumber": "EXA-7000",
+      "startAt": "2026-11-03T10:00:00+08:00",
+      "endAt": "2026-11-05T10:00:00+08:00",
+      "transferDeadline": "2026-11-06T10:00:00+08:00"
+    },
+    {
       "id": "aa58f0f7a7a88a",
       "office": "麻豆監理站",
       "category": "自用小客貨車",
@@ -5449,6 +5579,26 @@
       "startAt": "2026-11-23T10:00:00+08:00",
       "endAt": "2026-11-25T10:00:00+08:00",
       "transferDeadline": "2026-11-26T10:00:00+08:00"
+    },
+    {
+      "id": "4a205057c6ed87",
+      "office": "麻豆監理站",
+      "category": "自用小客貨車",
+      "startNumber": "CGA-0992",
+      "endNumber": "CGA-0992",
+      "startAt": "2026-12-14T10:00:00+08:00",
+      "endAt": "2026-12-16T10:00:00+08:00",
+      "transferDeadline": "2026-12-17T10:00:00+08:00"
+    },
+    {
+      "id": "fbebed91f12b02",
+      "office": "高雄區監理所",
+      "category": "自用小客貨車",
+      "startNumber": "BMW-1785",
+      "endNumber": "BMW-1806",
+      "startAt": "2027-01-18T10:00:00+08:00",
+      "endAt": "2027-01-20T10:00:00+08:00",
+      "transferDeadline": "2027-01-21T10:00:00+08:00"
     },
     {
       "id": "31a447924808c5",
