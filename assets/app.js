@@ -56,7 +56,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V35";
+const APP_RELEASE="Public Beta V36";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -3607,13 +3607,16 @@ function bindCommunity(){
   });
 }
 
+function resetChargingRenderWindow(){
+  state.chargingRenderLimit=36;
+}
 function bindChargingTools(){
   loadChargingFavorites();
 
   const bindSelect=(id,key,transform=v=>v)=>{
     const el=$("#"+id);
     if(!el)return;
-    el.onchange=()=>{state[key]=transform(el.value);renderCharging();};
+    el.onchange=()=>{state[key]=transform(el.value);resetChargingRenderWindow();renderCharging();};
   };
   bindSelect("chargingCity","chargingCity");
   bindSelect("chargingDirection","chargingDirection");
@@ -3623,17 +3626,20 @@ function bindChargingTools(){
   if(chargingOperatorSelect)chargingOperatorSelect.onchange=()=>{
     state.chargingOperator=chargingOperatorSelect.value;
     state.chargingMajor="all";
+    resetChargingRenderWindow();
     renderCharging();
   };
 
   $$("[data-charge-quick]").forEach(b=>b.addEventListener("click",()=>{
     state.chargingQuick=b.dataset.chargeQuick||"all";
+    resetChargingRenderWindow();
     renderCharging();
   }));
   $$("[data-charge-major]").forEach(b=>b.addEventListener("click",()=>{
     state.chargingMajor=b.dataset.chargeMajor||"all";
     state.chargingOperator="all";
     if($("#chargingOperator"))$("#chargingOperator").value="all";
+    resetChargingRenderWindow();
     renderCharging();
   }));
 
@@ -3706,6 +3712,7 @@ function bindChargingTools(){
   $("#chargingAvailableOnly")?.addEventListener("click",()=>{
     state.chargingNearbyAvailableMode=false;
     state.chargingAvailableOnly=!state.chargingAvailableOnly;
+    resetChargingRenderWindow();
     renderCharging();
   });
 
@@ -3735,6 +3742,7 @@ function bindChargingTools(){
 
   $("#chargingFavoritesOnly")?.addEventListener("click",()=>{
     state.chargingFavoritesOnly=!state.chargingFavoritesOnly;
+    resetChargingRenderWindow();
     renderCharging();
   });
 
@@ -3773,6 +3781,7 @@ function bindFilters(){
     $$("#roadFilter button").forEach(x=>x.classList.remove("active"));
     b.classList.add("active");
     state.road=b.dataset.road;
+    resetChargingRenderWindow();
     renderCharging();
   });
 
@@ -3784,7 +3793,13 @@ function bindFilters(){
       chargingSearchTimer=setTimeout(renderCharging,140);
     };
   }
-  if($("#parkingSearch"))$("#parkingSearch").oninput=renderParking;
+  if($("#parkingSearch")){
+    let parkingSearchTimer=0;
+    $("#parkingSearch").oninput=()=>{
+      clearTimeout(parkingSearchTimer);
+      parkingSearchTimer=setTimeout(renderParking,120);
+    };
+  }
   $("#parkingCitySelect")?.addEventListener("change",e=>{
     state.parkingCity=e.target.value;
     if($("#parkingSearch"))$("#parkingSearch").value="";
@@ -3808,12 +3823,16 @@ function bindFilters(){
       button.textContent="重新整理清單";
     }
   });
-  if($("#cctvSearch"))$("#cctvSearch").oninput=()=>{
-    state.cctvNearby=false;
-    state.cctvGroupLimit=24;
-    $("#cctvNearbyBtn")?.setAttribute("aria-pressed","false");
-    renderCCTV();
-  };
+  if($("#cctvSearch")){
+    let cctvSearchTimer=0;
+    $("#cctvSearch").oninput=()=>{
+      state.cctvNearby=false;
+      state.cctvGroupLimit=24;
+      $("#cctvNearbyBtn")?.setAttribute("aria-pressed","false");
+      clearTimeout(cctvSearchTimer);
+      cctvSearchTimer=setTimeout(renderCCTV,140);
+    };
+  }
   $("#cctvNearbyBtn")?.addEventListener("click",requestCCTVNearby);
   $$("#cctvRoadFilter button").forEach(b=>b.onclick=()=>selectCCTVRoad(b.dataset.cctvRoad));
   $$("[data-cctv-direction]").forEach(b=>b.onclick=()=>{
