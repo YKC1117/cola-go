@@ -6,6 +6,7 @@ const state={
   parking:null,
   parkingLive:{status:"not-synced",items:[]},
   parkingCity:"all",
+  parkingRenderLimit:40,
   parkingRemote:{status:"idle",city:"",items:[],updatedAt:null,source:"",error:""},
   parkingRemoteLoading:false,
   parkingRemoteAttempts:{},
@@ -56,7 +57,7 @@ const state={
   installPrompt:null
 };
 
-const APP_RELEASE="Public Beta V36";
+const APP_RELEASE="Public Beta V37";
 const VIEW_LABELS={
   home:"首頁",trip:"路線規劃",charging:"充電",parking:"停車",highway:"國道路況",tunnel:"雪隧",
   cctv:"CCTV 即時影像",plate:"車牌中心",tools:"車主工具",shortcuts:"車用捷徑",market:"買車・賣車",
@@ -1659,6 +1660,16 @@ function renderParkingCard(x){
   '</article>';
 }
 
+function parkingRowsMarkup(rows,emptyMarkup){
+  const limit=Math.max(40,Number(state.parkingRenderLimit)||40);
+  const shown=(rows||[]).slice(0,limit);
+  if(!shown.length)return emptyMarkup;
+  return shown.map(renderParkingCard).join("")+
+    (shown.length<rows.length
+      ?'<div class="charging-more parking-more"><button type="button" data-parking-more>載入更多停車場</button><small>已顯示 '+shown.length+' / '+rows.length+' 筆</small></div>'
+      :"");
+}
+
 function renderParking(){
   const root=$("#liveParkingList");
   const grid=$("#parkingCityGrid");
@@ -1678,6 +1689,7 @@ function renderParking(){
 
   $$("[data-parking-city]",grid).forEach(b=>b.onclick=()=>{
     state.parkingCity=b.dataset.parkingCity;
+    state.parkingRenderLimit=40;
     if($("#parkingSearch"))$("#parkingSearch").value="";
     renderParking();
   });
@@ -1691,7 +1703,7 @@ function renderParking(){
     const tainanInfo=dataStatusInfo(state.parkingLive);
     $("#parkingLiveTime").textContent=tainanInfo.known?tainanInfo.label:"尚無更新時間";
     $("#parkingScopeStatus").textContent=tainanInfo.live?"臺南官方即時剩餘車位":tainanInfo.hasData?"資料較舊，剩餘車位僅供參考":"即時資料暫不可用，仍可使用地圖搜尋";
-    root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>'+(query?"找不到符合的臺南停車場":"臺南官方即時資料暫時無法取得")+'</b><p>即時車位資料暫時無法取得，仍可使用 Google Maps 或 Apple 地圖找停車場。</p></div>';
+    root.innerHTML=parkingRowsMarkup(rows,'<div class="empty"><b>'+(query?"找不到符合的臺南停車場":"臺南官方即時資料暫時無法取得")+'</b><p>即時車位資料暫時無法取得，仍可使用 Google Maps 或 Apple 地圖找停車場。</p></div>');
   }else if(state.parkingRemote.status==="loading"&&state.parkingRemote.city===city){
     $("#parkingLiveTime").textContent="讀取官方資料中";
     $("#parkingScopeStatus").textContent="正在讀取 "+cityName+" 官方停車資料";
@@ -1701,14 +1713,18 @@ function renderParking(){
     const remoteInfo=dataStatusInfo(state.parkingRemote);
     $("#parkingLiveTime").textContent=remoteInfo.known?remoteInfo.label:"官方資料";
     $("#parkingScopeStatus").textContent=(remoteInfo.live?"官方停車資料":remoteInfo.stale?"資料較舊":"官方停車資料")+" · "+state.parkingRemote.items.length+" 筆";
-    root.innerHTML=rows.length?rows.map(renderParkingCard).join(""):'<div class="empty"><b>找不到符合的停車場</b><p>換個停車場名稱、行政區或地址試試。</p></div>';
+    root.innerHTML=parkingRowsMarkup(rows,'<div class="empty"><b>找不到符合的停車場</b><p>換個停車場名稱、行政區或地址試試。</p></div>');
   }else{
     $("#parkingLiveTime").textContent="地圖搜尋";
     $("#parkingScopeStatus").textContent=cityName+" 可直接搜尋與導航";
     root.innerHTML='<div class="market-empty"><b>'+esc(cityName)+' 停車快速搜尋</b><p>可直接開啟地圖搜尋 '+esc(cityName)+' 停車場並開始導航。</p><div class="item-actions"><button class="go" data-city-map="google">Google Maps</button><button data-city-map="apple">Apple 地圖</button></div></div>';
   }
 
-  $$("[data-parking-map]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.parkingMap,"_blank","noopener"));
+  $("[data-parking-more]",root)?.addEventListener("click",()=>{
+    state.parkingRenderLimit=(Number(state.parkingRenderLimit)||40)+40;
+    renderParking();
+  });
+  $("[data-parking-map]",root).forEach(b=>b.onclick=()=>window.open("https://www.google.com/maps/search/?api=1&query="+b.dataset.parkingMap,"_blank","noopener"));
   $$("[data-parking-apple]",root).forEach(b=>b.onclick=()=>window.open("https://maps.apple.com/?q="+b.dataset.parkingApple,"_blank","noopener"));
   $$("[data-national-map]",root).forEach(b=>b.onclick=()=>openParkingMap(b.dataset.nationalMap,"停車場"));
   $$("[data-city-map]",root).forEach(b=>b.onclick=()=>openParkingMap(b.dataset.cityMap,cityName+" 停車場"));
@@ -3797,11 +3813,13 @@ function bindFilters(){
     let parkingSearchTimer=0;
     $("#parkingSearch").oninput=()=>{
       clearTimeout(parkingSearchTimer);
+      state.parkingRenderLimit=40;
       parkingSearchTimer=setTimeout(renderParking,120);
     };
   }
   $("#parkingCitySelect")?.addEventListener("change",e=>{
     state.parkingCity=e.target.value;
+    state.parkingRenderLimit=40;
     if($("#parkingSearch"))$("#parkingSearch").value="";
     renderParking();
   });
