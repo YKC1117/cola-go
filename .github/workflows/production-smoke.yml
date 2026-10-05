@@ -55,6 +55,7 @@ jobs:
           curl -fsSL "$base/downloads/oil-driver.shortcut" -o "$work/oil-driver.shortcut"
           curl -fsSL "$base/downloads/tesla-driver.shortcut" -o "$work/tesla-driver.shortcut"
           curl -fsSL "$base/data/tdx/charging.json" -o "$work/charging.json"
+          curl -fsSL "$base/data/tdx/charging-fast.json" -o "$work/charging-fast.json"
           curl -fsSL "$base/data/tdx/traffic.json" -o "$work/traffic.json"
           curl -fsSL "$base/data/tdx/tunnel.json" -o "$work/tunnel.json"
           curl -fsSL "$base/data/tdx/cctv.json" -o "$work/cctv.json"
@@ -100,7 +101,6 @@ jobs:
           grep -Fq 'operatorSourceHealth' "$work/tdx-runtime.js"
           grep -Fq 'syncStatus' "$work/tdx-runtime.js"
           grep -Fq './data/operators/evalue.json' "$work/tdx-runtime.js"
-          grep -Fq 'EVALUE_URL' "$work/../scripts/sync_operator_sources.py" || true
           grep -Fq '電小二 EV2' "$work/app.js"
           grep -Fq 'https://www.ev2.com.tw/' "$work/app.js"
           grep -Fq 'U-POWER' "$work/app.js"
@@ -129,6 +129,8 @@ jobs:
           grep -Fq 'renderCCTVGroups' "$work/app.js"
           grep -Fq '里程分段' "$work/app.js"
           grep -Eq 'const CACHE="cola-go-ui-v6-[0-9]+";' "$work/sw.js"
+          grep -Fq 'expandChargingFastResponse' "$work/sw.js"
+          grep -Fq 'charging-fast.json' "$work/sw.js"
           python3 - "$work/app.js" "$work/sw.js" <<'PY'
           import re, sys
           app=open(sys.argv[1], encoding="utf-8").read()
@@ -158,6 +160,7 @@ jobs:
           status=json.load(open(root/"status.json", encoding="utf-8"))
           plate_announcements=json.load(open(root/"plate-announcements.json", encoding="utf-8"))
           charging=json.load(open(root/"charging.json", encoding="utf-8"))
+          charging_fast=json.load(open(root/"charging-fast.json", encoding="utf-8"))
           traffic=json.load(open(root/"traffic.json", encoding="utf-8"))
           tunnel=json.load(open(root/"tunnel.json", encoding="utf-8"))
           cctv=json.load(open(root/"cctv.json", encoding="utf-8"))
@@ -179,6 +182,19 @@ jobs:
 
           assert charging.get("status") in {"live","partial","stale","official"}
           assert len(charging.get("items",[])) > 0
+
+          # Cold-start charging contract: the deployed compact snapshot must
+          # stay small and decodable before the full snapshot is cached.
+          fast_size=(root/"charging-fast.json").stat().st_size
+          assert fast_size <= 1_500_000, fast_size
+          assert charging_fast.get("fastSnapshot") is True
+          assert charging_fast.get("fastSchema") == 2
+          fast_fields=charging_fast.get("fields")
+          fast_items=charging_fast.get("items")
+          assert isinstance(fast_fields,list) and len(fast_fields) >= 15, fast_fields
+          assert {"name","lat","lon","availableConnectors","statusUpdatedAt"}.issubset(set(fast_fields)), fast_fields
+          assert isinstance(fast_items,list) and len(fast_items) == len(charging.get("items",[])), (len(fast_items),len(charging.get("items",[])))
+          assert all(isinstance(row,list) and len(row) == len(fast_fields) for row in fast_items[:100]), "invalid compact rows"
 
           items=charging.get("items",[])
           detailed_location=sum(1 for x in items if x.get("location") and x.get("location") != x.get("cityName"))
@@ -214,6 +230,7 @@ jobs:
 
           print("PRODUCTION_SMOKE_PASS")
           print("charging", len(charging["items"]), charging.get("status"), charging.get("updatedAt"))
+          print("charging-fast", len(fast_items), fast_size, "bytes", round(fast_size / (root/"charging.json").stat().st_size * 100,1), "%")
           print("charging diagnostics", "detailed_location", detailed_location, "numeric_operator", numeric_operator, "numeric_connector_rows", numeric_connector_rows, "normalized_connector", normalized_connector)
           print("traffic", sum(len(v) for v in traffic["highways"].values()), traffic.get("status"), traffic.get("updatedAt"))
           print("tunnel", len(tunnel.get("south",[])), len(tunnel.get("north",[])), tunnel.get("status"), tunnel.get("updatedAt"))
