@@ -1,0 +1,76 @@
+/* COLA GO mobile polish V4 — visual hierarchy only. */
+
+/* Road hub */
+[data-view="highway"]{padding-left:12px;padding-right:12px}
+[data-view="highway"] .page-head{padding:15px 1px 11px}
+[data-view="highway"] .page-head h1::after{font-size:23px}
+[data-view="highway"] .page-head .page-subtitle::after{font-size:10px;line-height:1.45;color:#829097}
+[data-view="highway"] .tunnel-link,[data-view="highway"] .cctv-link{min-height:78px;padding:11px;border-radius:15px;margin-bottom:10px}
+[data-view="highway"] .tunnel-link b,[data-view="highway"] .cctv-link b{font-size:12px}
+[data-view="highway"] .tunnel-link small,[data-view="highway"] .cctv-link small{font-size:9px}
+[data-view="highway"] #highwayTabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:5px 0 8px;margin-bottom:7px;background:linear-gradient(180deg,#08090b 78%,#08090b00)}
+[data-view="highway"] #highwayTabs::-webkit-scrollbar{display:none}
+[data-view="highway"] #highwayTabs button{flex:0 0 auto;min-width:58px;min-height:36px;padding:6px 10px;border-radius:99px;font-size:11px;background:#0e1417;border-color:#263137}
+[data-view="highway"] #highwayTabs button.active{background:#edf3f5;color:#101619;border-color:#edf3f5;font-weight:850}
+[data-view="highway"] #highwayTabs button[data-highway="5"]{min-width:91px}
+[data-view="highway"] #highwayList{padding-bottom:4px}
+
+/* Snow Tunnel — direction first, result second. */
+[data-view="tunnel"]{padding-left:12px;padding-right:12px}
+[data-view="tunnel"] .page-head{padding:15px 1px 11px}
+[data-view="tunnel"] .page-head h1{font-size:23px;letter-spacing:-.035em}
+[data-view="tunnel"] .page-subtitle{font-size:10px;color:#859299}
+[data-view="tunnel"] #tunnelDirection{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:0 0 10px}
+[data-view="tunnel"] #tunnelDirection button{min-height:47px;padding:8px 10px;border-radius:13px;font-size:10px;line-height:1.35;background:#0e1417;border-color:#283238}
+[data-view="tunnel"] #tunnelDirection button.active{background:#efe8ce;color:#17150e;border-color:#efe8ce;font-weight:850}
+[data-view="tunnel"] .tunnel-visual{margin:0 0 10px;border-radius:16px;overflow:hidden;background:#0d1214;border:1px solid #283137}
+[data-view="tunnel"] .tunnel-visual img{display:block;width:100%;max-height:150px;object-fit:cover;opacity:.82}
+[data-view="tunnel"] .tunnel-visual figcaption{padding:9px 11px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+[data-view="tunnel"] .tunnel-visual figcaption b{font-size:12px}
+[data-view="tunnel"] .tunnel-visual figcaption span{font-size:8px;color:#7d898f}
+[data-view="tunnel"] #tunnelList{gap:8px}
+
+/* CCTV — location and road filters become the decision area. */
+[data-view="cctv"]{padding-left:12px;padding-right:12px}
+[data-view="cctv"] .page-head{padding:15px 1px 10px}
+[data-view="cctv"] .page-head h1{font-size:23px;letter-spacing:-.035em}
+[data-view="cctv"] .live-source-head{margin:0 0 8px;padding:11px 12px;border:1px solid #29343a;border-radius:15px;background:linear-gradient(145deg,#11181b,#0c1113)}
+[data-view="cctv"] .live-source-head h2{font-size:14px}
+[data-view="cctv"] .live-source-head .mini-label{font-size:7px;color:#6f8088}
+[data-view="cctv"] .cctv-source-tools{gap:6px}
+[data-view="cctv"] .cctv-source-tools .updated{font-size:8px;color:#78868d}
+[data-view="cctv"] .cctv-source-tools button{min-height:32px;padding:5px 8px;border-radius:9px;font-size:8px}
+[data-view="cctv"] #cctvRoadFilter,[data-view="cctv"] #cctvDirectionFilter{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 0 7px}
+[data-view="cctv"] #cctvRoadFilter::-webkit-scrollbar,[data-view="cctv"] #cctvDirectionFilter::-webkit-scrollbar{display:none}
+[data-view="cctv"] #cctvRoadFilter button,[data-view="cctv"] #cctvDirectionFilter button{flex:0 0 auto;min-height:35px;padding:6px 11px;border-radius:99px;font-size:10px;background:#0e1417;border-color:#273137}
+[data-view="cctv"] #cctvRoadFilter button.active,[data-view="cctv"] #cctvDirectionFilter button.active{background:#e7f2f6;color:#10171a;border-color:#e7f2f6;font-weight:850}
+[data-view="cctv"] .cctv-nearby-tools{gap:7px;margin:4px 0 9px}
+[data-view="cctv"] #cctvNearbyBtn{min-height:45px;border-radius:12px;font-size:10px;font-weight:800}
+[data-view="cctv"] #cctvNearbyBtn[aria-pressed="true"]{background:#143825;border-color:#2d684a;color:#d9f6e5}
+[data-view="cctv"] #cctvList{gap:8px}
+
+/* Utility detail pages — one consistent form language. */
+[data-view="vin"],[data-view="calculator"],[data-view="delivery"],[data-view="maintenance"],[data-view="parts"],[data-view="lucky"]{padding-left:12px;padding-right:12px}
+[data-view="vin"] .page-head,[data-view="calculator"] .page-head,[data-view="delivery"] .page-head,[data-view="maintenance"] .page-head,[data-view="parts"] .page-head,[data-view="lucky"] .page-head{padding:15px 1px 11px}
+[data-view="vin"] .page-head h1,[data-view="calculator"] .page-head h1,[data-view="delivery"] .page-head h1,[data-view="maintenance"] .page-head h1,[data-view="parts"] .page-head h1,[data-view="lucky"] .page-head h1{font-size:23px;letter-spacing:-.035em}
+[data-view="vin"] .mini-label,[data-view="calculator"] .mini-label,[data-view="delivery"] .mini-label,[data-view="maintenance"] .mini-label,[data-view="parts"] .mini-label,[data-view="lucky"] .mini-label{font-size:8px;color:#718087}
+.tool-form,.calc-grid{gap:8px;margin-bottom:10px}
+.tool-form label,.calc-grid label{padding:10px 11px;border:1px solid #29343a;border-radius:13px;background:#0f1518}
+.tool-form label small,.calc-grid label small{display:block;margin-bottom:5px;font-size:8px;color:#829097;font-weight:750}
+.tool-form input,.calc-grid input,.tool-form select,.calc-grid select{min-height:43px;border-radius:10px;font-size:13px;background:#0b1012;border-color:#303b41}
+[data-view="vin"] .primary,[data-view="calculator"] .primary,[data-view="delivery"] .primary,[data-view="maintenance"] .primary,[data-view="parts"] .primary,[data-view="lucky"] .primary{min-height:47px;border-radius:12px;font-size:11px;font-weight:850}
+.tool-scene{margin:0 0 10px;border-radius:16px;min-height:112px}
+.check-head{margin:0 0 8px;padding:9px 11px;border:1px solid #29343a;border-radius:12px;background:#0f1518}
+.check-head span{font-size:11px;font-weight:850}
+.check-head button{min-height:32px;border-radius:9px;font-size:9px}
+.notice{font-size:9px;line-height:1.55;color:#7e8a90}
+.stack-actions{gap:7px}
+.stack-actions button{min-height:46px;border-radius:11px;font-size:10px}
+.calc-result{border-radius:15px}
+
+@media(max-width:380px){
+  [data-view="highway"],[data-view="tunnel"],[data-view="cctv"],[data-view="vin"],[data-view="calculator"],[data-view="delivery"],[data-view="maintenance"],[data-view="parts"],[data-view="lucky"]{padding-left:10px;padding-right:10px}
+  [data-view="highway"] .tunnel-link,[data-view="highway"] .cctv-link{min-height:73px;padding:10px 9px}
+  [data-view="tunnel"] #tunnelDirection{grid-template-columns:1fr}
+  .tool-form,.calc-grid{grid-template-columns:1fr}
+}
