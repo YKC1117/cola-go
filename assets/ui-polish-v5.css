@@ -53,6 +53,18 @@
 [data-view="warranty"] .info-box,[data-view="connector"] .info-box{border-radius:14px;background:#0f1518;border-color:#29343a}
 [data-view="warranty"] .external-btn,[data-view="connector"] .external-btn{min-height:46px;border-radius:11px;font-size:10px}
 
+/* Phone interaction QA: stop iOS focus-zoom and keep frequent filters finger-friendly. */
+@media(max-width:599px){
+  .view input:not([type="checkbox"]):not([type="radio"]),.view select,.view textarea{font-size:16px!important}
+  [data-view="plate"] #plateCandidate{font-size:25px!important}
+  [data-view="charging"] .charging-quick-filter button,
+  [data-view="highway"] #highwayTabs button,
+  [data-view="cctv"] #cctvRoadFilter button,
+  [data-view="cctv"] #cctvDirectionFilter button,
+  [data-view="plate"] .plate-filter-row button,
+  [data-view="tesla-db"] .compare-tray button{min-height:44px}
+}
+
 @media(max-width:380px){
   [data-view="trip"],[data-view="shortcuts"],[data-view="market"],[data-view="tesla-db"],[data-view="locations"],[data-view="community"],[data-view="partners"],[data-view="warranty"],[data-view="connector"]{padding-left:10px;padding-right:10px}
   [data-view="trip"] .route-form{padding:10px}
