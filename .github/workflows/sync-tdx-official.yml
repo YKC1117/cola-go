@@ -1,6 +1,8 @@
 name: Sync TDX official data
 
 on:
+  # TDX scheduled sync is intentionally paused while the current monthly quota is exhausted.
+  # Keep manual dispatch only. Re-enable quota-aware schedules after the quota resets.
   workflow_dispatch:
     inputs:
       mode:
@@ -14,16 +16,6 @@ on:
           - parking
           - static
           - all
-  schedule:
-    # Quota-aware schedule for the Basic 3-point/month allowance.
-    # Charging availability: 08:17 and 20:17 Taiwan time.
-    - cron: "17 0,12 * * *"
-    # Freeway / Snow Tunnel traffic: every 4 hours.
-    - cron: "47 */4 * * *"
-    # Parking live availability: once daily at 03:27 Taiwan time.
-    - cron: "27 19 * * *"
-    # Static station / parking / CCTV metadata: weekly, Monday 02:35 Taiwan time.
-    - cron: "35 18 * * 0"
 
 permissions:
   contents: write
@@ -47,24 +39,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            mode="${{ inputs.mode }}"
-          elif [[ "${{ github.event_name }}" == "schedule" ]]; then
-            case "${{ github.event.schedule }}" in
-              "17 0,12 * * *") mode="charging" ;;
-              "47 */4 * * *") mode="roads" ;;
-              "27 19 * * *") mode="parking" ;;
-              "35 18 * * 0") mode="static" ;;
-              *)
-                echo "::error title=Unknown TDX schedule::Refusing to fall back to a broad sync because the schedule is not recognized."
-                exit 1
-                ;;
-            esac
-          else
-            echo "::error title=Unexpected TDX event::Unsupported event: ${{ github.event_name }}"
+          if [[ "${{ github.event_name }}" != "workflow_dispatch" ]]; then
+            echo "::error title=Unexpected TDX event::Scheduled TDX sync is paused; only manual workflow_dispatch is allowed."
             exit 1
           fi
 
+          mode="${{ inputs.mode }}"
           echo "TDX_BUDGET_MODE=$mode" >> "$GITHUB_ENV"
           echo "TDX quota-aware sync mode: $mode"
 
