@@ -53,6 +53,9 @@
 [data-view="warranty"] .info-box,[data-view="connector"] .info-box{border-radius:14px;background:#0f1518;border-color:#29343a}
 [data-view="warranty"] .external-btn,[data-view="connector"] .external-btn{min-height:46px;border-radius:11px;font-size:10px}
 
+/* Plate is now a primary bottom-nav destination; avoid the legacy back-to-tools affordance. */
+[data-view="plate"] .page-head>.back{display:none}
+
 /* Phone interaction QA: stop iOS focus-zoom and keep frequent filters finger-friendly. */
 @media(max-width:599px){
   .view input:not([type="checkbox"]):not([type="radio"]),.view select,.view textarea{font-size:16px!important}
