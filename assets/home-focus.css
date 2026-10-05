@@ -48,7 +48,7 @@
 [data-view="highway"] .cctv-link{order:1;margin:0 0 10px;border:1px solid #315365;border-radius:13px;background:linear-gradient(135deg,#0d202a,#10181d)}
 [data-view="highway"] .cctv-link b{font-size:14px}
 [data-view="highway"] .cctv-link small{color:#9eb4bf}
-[data-view="highway"] #highwayTabs{order:2;margin-bottom:10px}
+[data-view="highway"] #highwayTabs{order:2;margin-bottom:10px;position:sticky;top:6px;z-index:8;padding:6px 0;background:linear-gradient(180deg,#08090b 75%,#08090b00)}
 [data-view="highway"] #highwayTabs button[data-highway="5"]{font-size:0}
 [data-view="highway"] #highwayTabs button[data-highway="5"]::after{content:"國 5／雪隧";font-size:13px}
 [data-view="highway"] #highwayList{order:3}
