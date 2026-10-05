@@ -27,6 +27,11 @@
 <link href="./assets/logo.svg" rel="apple-touch-icon"/>
 <link href="./assets/styles.css" rel="stylesheet"/>
 <link href="./assets/plate.css" rel="stylesheet"/>
+<style>
+[data-view="highway"] .tunnel-link{order:1;margin:0 0 10px;border:1px solid #584d2d;border-radius:13px;background:linear-gradient(135deg,#251f0f,#151514)}
+[data-view="highway"] .tunnel-link b{font-size:14px}
+[data-view="highway"] .tunnel-link small{color:#c7b98c}
+</style>
 <title>COLA GO｜台灣車友出行工具</title>
 </head>
 <body>
@@ -335,6 +340,7 @@ Siri「特斯拉助手」：
 </section>
 <section class="view" data-view="highway">
 <div class="page-head"><button class="back" data-go="home"><svg><use href="#i-back"></use></svg></button><span class="page-icon highway"><svg><use href="#i-road"></use></svg></span><div><h1>國道路況</h1><p class="page-subtitle">官方路段資訊，掌握行車狀況</p></div></div>
+<button class="tunnel-link" data-go="tunnel"><span><svg><use href="#i-tunnel"></use></svg><b>雪隧資訊</b><small>國 5・南下／北上</small></span><svg><use href="#i-arrow"></use></svg></button>
 <div class="filter-row" id="highwayTabs"><button class="active" data-highway="1">國 1</button><button data-highway="2">國 2</button><button data-highway="3">國 3</button><button data-highway="4">國 4</button><button data-highway="5">國 5</button><button data-highway="6">國 6</button></div>
 <div class="list" id="highwayList"></div><button class="cctv-link" data-go="cctv"><span><svg><use href="#i-camera"></use></svg><b>即時影像 CCTV</b><small>查看官方攝影機清單</small></span><svg><use href="#i-arrow"></use></svg></button>
 </section>
@@ -745,8 +751,8 @@ Siri「特斯拉助手」：
 <button class="active" data-go="home"><svg><use href="#i-home"></use></svg><span>首頁</span></button>
 <button data-go="charging"><svg><use href="#i-bolt"></use></svg><span>充電</span></button>
 <button data-go="parking"><svg><use href="#i-park"></use></svg><span>停車</span></button>
-<button data-go="highway"><svg><use href="#i-road"></use></svg><span>國道</span></button>
-<button data-go="tunnel"><svg><use href="#i-tunnel"></use></svg><span>雪隧</span></button>
+<button data-go="highway"><svg><use href="#i-road"></use></svg><span>路況</span></button>
+<button data-go="plate"><svg><use href="#i-car"></use></svg><span>車牌</span></button>
 </nav>
 </div>
 </div>
@@ -754,5 +760,25 @@ Siri「特斯拉助手」：
 <script defer="" src="./assets/app.js"></script>
 <script defer="" src="./assets/tdx-runtime.js"></script>
 <script defer="" src="./assets/plate.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+  const ROAD_NAV_VIEWS=new Set(["highway","tunnel","cctv"]);
+  const nav=document.querySelector(".bottom-nav");
+  if(!nav)return;
+  const syncRoadNav=()=>{
+    const view=document.querySelector(".view.active")?.dataset.view||"home";
+    const navView=ROAD_NAV_VIEWS.has(view)?"highway":view;
+    nav.querySelectorAll("button[data-go]").forEach(button=>{
+      const active=button.dataset.go===navView;
+      button.classList.toggle("active",active);
+      if(active)button.setAttribute("aria-current","page");else button.removeAttribute("aria-current");
+    });
+  };
+  const observer=new MutationObserver(syncRoadNav);
+  document.querySelectorAll(".view").forEach(view=>observer.observe(view,{attributes:true,attributeFilter:["class"]}));
+  addEventListener("hashchange",syncRoadNav);
+  syncRoadNav();
+});
+</script>
 </body>
 </html>

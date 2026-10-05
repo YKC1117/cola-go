@@ -66,3 +66,30 @@ jobs:
           python3 -m py_compile scripts/sync_tainan_parking.py scripts/sync_traffic.py scripts/sync_cctv.py
           ! grep -q 'if(view==="cctv")ensureCCTV' assets/app.js
           ! grep -q 'ensureParkingCity(state.parkingCity)' assets/app.js
+      - name: Check focused primary navigation
+        run: |
+          python3 - <<'PY'
+          from html.parser import HTMLParser
+          html=open('index.html',encoding='utf-8').read()
+          class NavParser(HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.in_nav=False; self.depth=0; self.items=[]
+              def handle_starttag(self,tag,attrs):
+                  a=dict(attrs)
+                  if tag=='nav' and 'bottom-nav' in a.get('class','').split():
+                      self.in_nav=True; self.depth=1; return
+                  if self.in_nav:
+                      self.depth+=1
+                      if tag=='button' and a.get('data-go'): self.items.append(a['data-go'])
+              def handle_endtag(self,tag):
+                  if self.in_nav:
+                      self.depth-=1
+                      if self.depth==0: self.in_nav=False
+          p=NavParser(); p.feed(html)
+          assert p.items==['home','charging','parking','highway','plate'], p.items
+          assert 'class="tunnel-link" data-go="tunnel"' in html
+          assert 'const ROAD_NAV_VIEWS=new Set(["highway","tunnel","cctv"])' in html
+          assert '<button data-go="highway"><svg><use href="#i-road"></use></svg><span>路況</span></button>' in html
+          assert '<button data-go="plate"><svg><use href="#i-car"></use></svg><span>車牌</span></button>' in html
+          print('PRIMARY_NAV_CONTRACT_PASS', ','.join(p.items))
+          PY
