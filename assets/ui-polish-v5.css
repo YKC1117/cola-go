@@ -1,5 +1,8 @@
 /* COLA GO mobile polish V5 — secondary pages share one visual language. */
 
+/* Keep the shared bottom spacing/fixed-dock metric aligned with the real 70px nav. */
+:root{--nav:70px}
+
 [data-view="trip"],[data-view="shortcuts"],[data-view="market"],[data-view="tesla-db"],[data-view="locations"],[data-view="community"],[data-view="partners"],[data-view="warranty"],[data-view="connector"]{padding-left:12px;padding-right:12px}
 [data-view="trip"] .page-head,[data-view="shortcuts"] .page-head,[data-view="market"] .page-head,[data-view="tesla-db"] .page-head,[data-view="locations"] .page-head,[data-view="community"] .page-head,[data-view="partners"] .page-head,[data-view="warranty"] .page-head,[data-view="connector"] .page-head{padding:15px 1px 11px}
 [data-view="trip"] .page-head h1,[data-view="shortcuts"] .page-head h1,[data-view="market"] .page-head h1,[data-view="tesla-db"] .page-head h1,[data-view="locations"] .page-head h1,[data-view="community"] .page-head h1,[data-view="partners"] .page-head h1,[data-view="warranty"] .page-head h1,[data-view="connector"] .page-head h1{font-size:23px;letter-spacing:-.035em}
