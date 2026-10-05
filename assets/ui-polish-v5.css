@@ -1,0 +1,60 @@
+/* COLA GO mobile polish V5 — secondary pages share one visual language. */
+
+[data-view="trip"],[data-view="shortcuts"],[data-view="market"],[data-view="tesla-db"],[data-view="locations"],[data-view="community"],[data-view="partners"],[data-view="warranty"],[data-view="connector"]{padding-left:12px;padding-right:12px}
+[data-view="trip"] .page-head,[data-view="shortcuts"] .page-head,[data-view="market"] .page-head,[data-view="tesla-db"] .page-head,[data-view="locations"] .page-head,[data-view="community"] .page-head,[data-view="partners"] .page-head,[data-view="warranty"] .page-head,[data-view="connector"] .page-head{padding:15px 1px 11px}
+[data-view="trip"] .page-head h1,[data-view="shortcuts"] .page-head h1,[data-view="market"] .page-head h1,[data-view="tesla-db"] .page-head h1,[data-view="locations"] .page-head h1,[data-view="community"] .page-head h1,[data-view="partners"] .page-head h1,[data-view="warranty"] .page-head h1,[data-view="connector"] .page-head h1{font-size:23px;letter-spacing:-.035em}
+[data-view="trip"] .mini-label,[data-view="shortcuts"] .mini-label,[data-view="market"] .mini-label,[data-view="tesla-db"] .mini-label,[data-view="locations"] .mini-label,[data-view="community"] .mini-label,[data-view="partners"] .mini-label,[data-view="warranty"] .mini-label,[data-view="connector"] .mini-label{font-size:8px;color:#718087}
+
+/* Route planning */
+[data-view="trip"] .route-form{gap:8px;margin:0 0 10px;padding:12px;border:1px solid #29343a;border-radius:16px;background:linear-gradient(145deg,#11181b,#0c1113)}
+[data-view="trip"] .route-form label{min-width:0}
+[data-view="trip"] .route-form small{display:block;margin-bottom:5px;font-size:8px;color:#829097;font-weight:750}
+[data-view="trip"] .route-form input,[data-view="trip"] .route-form select{min-height:45px;border-radius:11px;background:#0b1012;border-color:#303b41;font-size:13px}
+[data-view="trip"] .route-form button{min-height:47px;border-radius:12px;font-size:11px;font-weight:850}
+
+/* CarKit shortcuts */
+[data-view="shortcuts"] .ui-disclosure{margin-bottom:8px;border-radius:14px;background:#0e1417;border-color:#273137}
+[data-view="shortcuts"] .ui-disclosure>summary{min-height:48px;padding:9px 11px}
+[data-view="shortcuts"] .ui-disclosure>summary b{font-size:11px}
+[data-view="shortcuts"] .ui-disclosure>summary small{font-size:8px;color:#7d898f}
+[data-view="shortcuts"] .shortcut-grid{gap:9px}
+[data-view="shortcuts"] .shortcut-card{padding:14px;border-radius:16px;background:linear-gradient(145deg,#12191c,#0c1113);border-color:#29343a;box-shadow:0 6px 18px #0002}
+[data-view="shortcuts"] .shortcut-card h2,[data-view="shortcuts"] .shortcut-card h3{font-size:16px}
+[data-view="shortcuts"] .shortcut-download{min-height:47px;border-radius:12px;font-size:11px}
+[data-view="shortcuts"] .shortcut-disclaimer{margin-top:10px;font-size:9px;line-height:1.55;color:#78858b}
+
+/* Marketplace / community / partners */
+.market-hero,.community-hero,.partner-hero,.model-hero,.service-hero{margin:0 0 10px;padding:14px;border:1px solid #29343a;border-radius:16px;background:linear-gradient(145deg,#12191c,#0c1113);box-shadow:inset 0 1px #ffffff09}
+.market-hero>span,.community-hero>span,.partner-hero>span,.model-hero>span,.service-hero>span{font-size:8px;color:#74838a;font-weight:800;letter-spacing:.1em}
+.market-hero h2,.community-hero h2,.partner-hero h2,.model-hero h2,.service-hero h2{margin:4px 0 4px;font-size:18px;line-height:1.25;letter-spacing:-.025em}
+.market-hero p,.community-hero p,.partner-hero p,.model-hero p,.service-hero p{margin:0;font-size:10px;line-height:1.5;color:#86939a}
+.market-summary{gap:7px;margin-bottom:10px}
+.market-summary>div{padding:10px;border-radius:12px;background:#0f1518;border:1px solid #273137}
+.market-list{gap:8px}
+.market-list>article,.market-list>div{border-radius:15px}
+[data-view="partners"] .ui-disclosure{margin-bottom:8px;border-radius:14px;background:#0e1417;border-color:#273137}
+[data-view="partners"] .ui-disclosure>summary{min-height:48px;padding:9px 11px}
+[data-view="partners"] .partner-grid{gap:8px}
+
+/* Tesla database and locations */
+[data-view="tesla-db"] .compare-tray{border-radius:14px;background:#10171a;border-color:#2b373d;box-shadow:0 8px 24px #0004}
+[data-view="tesla-db"] .compare-tray button{min-height:38px;border-radius:10px;font-size:9px}
+[data-view="tesla-db"] .compare-table{border-radius:15px;overflow:auto;border:1px solid #29343a;background:#0d1214}
+[data-view="locations"] .roadside-card{margin-bottom:10px;padding:13px;border-radius:15px;background:#10171a;border-color:#29343a}
+[data-view="locations"] .location-list{gap:8px}
+[data-view="locations"] .location-section-head{margin:13px 0 8px}
+
+/* Remaining owner utilities */
+[data-view="warranty"] .tool-form,[data-view="connector"] .tool-form{gap:8px;margin-bottom:10px}
+[data-view="warranty"] .tool-form label,[data-view="connector"] .tool-form label{padding:10px 11px;border:1px solid #29343a;border-radius:13px;background:#0f1518}
+[data-view="warranty"] .tool-form small,[data-view="connector"] .tool-form small{display:block;margin-bottom:5px;font-size:8px;color:#829097;font-weight:750}
+[data-view="warranty"] .tool-form input,[data-view="warranty"] .tool-form select,[data-view="connector"] .tool-form input,[data-view="connector"] .tool-form select{min-height:43px;border-radius:10px;background:#0b1012;border-color:#303b41;font-size:13px}
+[data-view="warranty"] .primary,[data-view="connector"] .primary{min-height:47px;border-radius:12px;font-size:11px;font-weight:850}
+[data-view="warranty"] .info-box,[data-view="connector"] .info-box{border-radius:14px;background:#0f1518;border-color:#29343a}
+[data-view="warranty"] .external-btn,[data-view="connector"] .external-btn{min-height:46px;border-radius:11px;font-size:10px}
+
+@media(max-width:380px){
+  [data-view="trip"],[data-view="shortcuts"],[data-view="market"],[data-view="tesla-db"],[data-view="locations"],[data-view="community"],[data-view="partners"],[data-view="warranty"],[data-view="connector"]{padding-left:10px;padding-right:10px}
+  [data-view="trip"] .route-form{padding:10px}
+  .market-hero,.community-hero,.partner-hero,.model-hero,.service-hero{padding:12px}
+}
