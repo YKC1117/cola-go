@@ -28,6 +28,17 @@ jobs:
         run: python3 scripts/normalize_charging_cache.py
       - name: Build lightweight charging snapshot
         run: python3 scripts/build_charging_fast.py
+      - name: Verify lightweight snapshot budget
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          fast = Path("data/tdx/charging-fast.json").stat().st_size
+          full = Path("data/tdx/charging.json").stat().st_size
+          limit = 1_500_000
+          print("CHARGING_FAST_BUDGET", fast, "of", full, "bytes", round(fast / full * 100, 1), "%")
+          if fast > limit:
+              raise SystemExit(f"charging-fast.json too large: {fast} > {limit}")
+          PY
       - name: Publish normalized cache
         shell: bash
         run: |

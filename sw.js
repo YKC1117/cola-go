@@ -1,4 +1,4 @@
-const CACHE="cola-go-ui-v6-66";
+const CACHE="cola-go-ui-v6-67";
 const DATA_CACHE="cola-go-data-v1";
 const SW_RELEASE="Public Beta V37";
 const CORE=["./","./index.html","./manifest.webmanifest","./assets/logo.svg","./assets/styles.css","./assets/app.js","./assets/tdx-runtime.js","./assets/images/drive-hero.webp"];
@@ -10,14 +10,45 @@ self.addEventListener("activate",e=>e.waitUntil(
     .then(()=>self.clients.matchAll({type:"window",includeUncontrolled:true}))
     .then(clients=>Promise.all(clients.map(client=>client.postMessage({type:"COLA_GO_SW_ACTIVATED",release:SW_RELEASE}))))
 ));
+
+async function expandChargingFastResponse(response){
+  try{
+    const data=await response.clone().json();
+    if(!data?.fastSnapshot||data.fastSchema!==2||!Array.isArray(data.fields)||!Array.isArray(data.items))return response;
+    const rows=data.items.map(values=>{
+      if(!Array.isArray(values))return values;
+      const row={};
+      data.fields.forEach((key,index)=>{
+        const value=values[index];
+        if(value!==null&&value!==undefined&&value!=="")row[key]=value;
+      });
+      row.road="tdx";
+      if(!row.direction)row.direction=row.cityName||row.city||"";
+      if(!row.note)row.note="TDX 官方充電站";
+      if(!row.power&&Number(row.maxPowerKw)>0)row.power=String(Number(row.maxPowerKw))+" kW";
+      return row;
+    });
+    const expanded={...data,items:rows};
+    delete expanded.fields;
+    const headers=new Headers(response.headers);
+    headers.delete("content-length");
+    headers.set("content-type","application/json; charset=utf-8");
+    return new Response(JSON.stringify(expanded),{status:response.status,statusText:response.statusText,headers});
+  }catch{
+    return response;
+  }
+}
+
 self.addEventListener("fetch",e=>{
   if(e.request.method!=="GET")return;
   const u=new URL(e.request.url);
   if(u.origin!==location.origin)return;
 
-  // First Charging visit: use the lightweight snapshot before the ~4 MB full
-  // snapshot has ever been cached. Once a full snapshot exists, serve it
-  // immediately and refresh it in the background as before.
+  // First Charging visit: transfer the compact snapshot before the ~4 MB full
+  // snapshot has ever been cached. The compact rows are expanded back to the
+  // normal object shape inside the service worker, so the existing UI needs no
+  // special-case rendering. After first paint, the full snapshot is cached in
+  // the background for later visits.
   if(u.pathname.endsWith("/data/tdx/charging.json")){
     let refreshPromise=null;
     const refreshFull=()=>{
@@ -36,8 +67,8 @@ self.addEventListener("fetch",e=>{
       if(cached)return null;
       try{
         const fastUrl=new URL("./data/tdx/charging-fast.json",self.location.href);
-        const fast=await fetch(fastUrl.href,{cache:"no-store"});
-        return fast&&fast.ok?fast:null;
+        const fast=await fetch(fastUrl.href,{cache:"default"});
+        return fast&&fast.ok?expandChargingFastResponse(fast):null;
       }catch{
         return null;
       }

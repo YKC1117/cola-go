@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Build a small first-paint charging snapshot from the published TDX cache.
+"""Build a compact first-paint charging snapshot from the published TDX cache.
 
-The full charging cache intentionally keeps source IDs and detailed fields for
-maintenance/debugging. The browser's first charging visit only needs the
-fields below to sort nearby stations and render the normal charging cards.
+The full charging cache keeps maintenance/debug fields. The first charging
+paint only needs driver-facing fields. Rows are encoded as arrays so thousands
+of stations do not repeat JSON property names; the service worker expands them
+back to normal row objects before the existing UI sees them.
 """
 import json
 from pathlib import Path
@@ -17,19 +18,21 @@ META_KEYS = (
     "lastAttemptAt", "source", "failedCities",
 )
 
+# Keep everything required for the first useful charging screen: station
+# identity for humans, location/distance, rates, power/connectors and live gun
+# status. Internal IDs, source URLs and maintenance-only fields stay in the full
+# snapshot that is downloaded in the background.
 ROW_KEYS = (
-    "id", "sourceId", "city", "cityName", "name", "location", "locationSource",
-    "operator", "operatorId", "operatorWebURL", "serviceTime", "parkingRate",
-    "chargingRate", "road", "direction", "note", "spaces", "connectors",
-    "connectorCount", "powerModes", "maxPowerKw", "power", "lat", "lon",
-    "liveStateCount", "availableConnectors", "occupiedConnectors",
-    "faultedConnectors", "unavailableConnectors", "unknownConnectors",
-    "liveStatusKnown", "statusUpdatedAt", "liveStale",
+    "city", "cityName", "name", "location", "operator",
+    "parkingRate", "chargingRate", "spaces", "connectors", "connectorCount",
+    "maxPowerKw", "lat", "lon", "liveStateCount", "availableConnectors",
+    "occupiedConnectors", "faultedConnectors", "unavailableConnectors",
+    "unknownConnectors", "liveStatusKnown", "statusUpdatedAt", "liveStale",
 )
 
 
 def compact_row(row):
-    return {key: row[key] for key in ROW_KEYS if key in row}
+    return [row.get(key) for key in ROW_KEYS]
 
 
 def main():
@@ -40,6 +43,8 @@ def main():
 
     output = {key: data.get(key) for key in META_KEYS if key in data}
     output["fastSnapshot"] = True
+    output["fastSchema"] = 2
+    output["fields"] = list(ROW_KEYS)
     output["items"] = items
     TARGET.write_text(
         json.dumps(output, ensure_ascii=False, separators=(",", ":")),
