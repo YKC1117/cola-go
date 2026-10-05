@@ -1,4 +1,4 @@
-const CACHE="cola-go-ui-v6-69";
+const CACHE="cola-go-ui-v6-70";
 const DATA_CACHE="cola-go-data-v1";
 const SW_RELEASE="Public Beta V37";
 const CORE=["./","./index.html","./manifest.webmanifest","./assets/logo.svg","./assets/styles.css","./assets/plate.css","./assets/home-focus.css","./assets/ui-polish.css","./assets/app.js","./assets/tdx-runtime.js","./assets/images/drive-hero.webp"];
