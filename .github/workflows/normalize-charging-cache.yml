@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths:
       - "scripts/normalize_charging_cache.py"
+      - "scripts/build_charging_fast.py"
       - ".github/workflows/normalize-charging-cache.yml"
   workflow_dispatch:
 
@@ -25,13 +26,15 @@ jobs:
           fetch-depth: 0
       - name: Normalize checked-in charging cache
         run: python3 scripts/normalize_charging_cache.py
+      - name: Build lightweight charging snapshot
+        run: python3 scripts/build_charging_fast.py
       - name: Publish normalized cache
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "COLA GO Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/tdx/charging.json
+          git add data/tdx/charging.json data/tdx/charging-fast.json
           if git diff --cached --quiet; then
             echo "Charging cache already normalized."
             exit 0

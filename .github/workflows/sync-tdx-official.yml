@@ -51,6 +51,8 @@ jobs:
           echo "TDX sync mode: $mode"
       - name: Sync protected TDX data cache
         run: python3 scripts/sync_tdx.py
+      - name: Build lightweight charging snapshot
+        run: python3 scripts/build_charging_fast.py
       - name: Commit refreshed official cache
         run: |
           set -euo pipefail

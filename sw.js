@@ -1,4 +1,4 @@
-const CACHE="cola-go-ui-v6-65";
+const CACHE="cola-go-ui-v6-66";
 const DATA_CACHE="cola-go-data-v1";
 const SW_RELEASE="Public Beta V37";
 const CORE=["./","./index.html","./manifest.webmanifest","./assets/logo.svg","./assets/styles.css","./assets/app.js","./assets/tdx-runtime.js","./assets/images/drive-hero.webp"];
@@ -15,26 +15,41 @@ self.addEventListener("fetch",e=>{
   const u=new URL(e.request.url);
   if(u.origin!==location.origin)return;
 
-  // Charging snapshot is ~4 MB. Re-downloading it on every Charging visit
-  // made "附近有空槍" wait behind the network even after geolocation finished.
-  // Serve the last successful snapshot immediately, then refresh it in the
-  // background. The payload still carries liveUpdatedAt/liveStale, so the UI
-  // will not present an old snapshot as confirmed live availability.
+  // First Charging visit: use the lightweight snapshot before the ~4 MB full
+  // snapshot has ever been cached. Once a full snapshot exists, serve it
+  // immediately and refresh it in the background as before.
   if(u.pathname.endsWith("/data/tdx/charging.json")){
-    const refresh=fetch(e.request).then(async r=>{
-      if(r&&r.ok){
-        const copy=r.clone();
-        try{const cache=await caches.open(DATA_CACHE);await cache.put(e.request,copy)}catch{}
+    let refreshPromise=null;
+    const refreshFull=()=>{
+      if(refreshPromise)return refreshPromise;
+      refreshPromise=fetch(e.request).then(async r=>{
+        if(r&&r.ok){
+          const copy=r.clone();
+          try{const cache=await caches.open(DATA_CACHE);await cache.put(e.request,copy)}catch{}
+        }
+        return r;
+      });
+      return refreshPromise;
+    };
+    const cachedPromise=caches.open(DATA_CACHE).then(cache=>cache.match(e.request));
+    const fastPromise=cachedPromise.then(async cached=>{
+      if(cached)return null;
+      try{
+        const fastUrl=new URL("./data/tdx/charging-fast.json",self.location.href);
+        const fast=await fetch(fastUrl.href,{cache:"no-store"});
+        return fast&&fast.ok?fast:null;
+      }catch{
+        return null;
       }
-      return r;
     });
-    e.respondWith(caches.open(DATA_CACHE).then(async cache=>{
-      const cached=await cache.match(e.request);
-      if(cached){
-        e.waitUntil(refresh.then(()=>{},()=>{}));
-        return cached;
-      }
-      return refresh.catch(()=>new Response("",{status:503,statusText:"Offline"}));
+    const refreshPlan=Promise.all([cachedPromise,fastPromise])
+      .then(()=>refreshFull())
+      .then(()=>{},()=>{});
+    e.waitUntil(refreshPlan);
+    e.respondWith(Promise.all([cachedPromise,fastPromise]).then(([cached,fast])=>{
+      if(cached)return cached;
+      if(fast)return fast;
+      return refreshFull().catch(()=>new Response("",{status:503,statusText:"Offline"}));
     }));
     return;
   }
