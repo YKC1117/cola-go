@@ -63,3 +63,84 @@
 [data-view="highway"] #highwayTabs button[data-highway="5"]::after{content:"國 5／雪隧";font-size:13px}
 [data-view="highway"] #highwayList{order:3;grid-column:1/-1}
 @media(max-width:359px){[data-view="highway"] .tunnel-link,[data-view="highway"] .cctv-link{padding:9px 8px}[data-view="highway"] .tunnel-link b,[data-view="highway"] .cctv-link b{font-size:12px}[data-view="highway"] .tunnel-link small,[data-view="highway"] .cctv-link small{font-size:9px}}
+
+/* V38 — focused mobile polish. Keep the first screen useful, calm and consistent. */
+[data-view="home"].active{gap:10px;padding-left:12px;padding-right:12px}
+[data-view="home"] .home-hero{min-height:226px;margin:0 0 2px;border-radius:20px;overflow:hidden;box-shadow:0 12px 34px #0005}
+[data-view="home"] .hero-content h1{font-size:34px;line-height:1.05;letter-spacing:-.055em;margin-bottom:10px}
+[data-view="home"] .hero-content>p::after{font-size:12px;line-height:1.55;color:#d8dde0}
+[data-view="home"] .core-actions>button,[data-view="home"] .home-plate>button{min-height:86px;border-radius:16px!important;padding:12px 11px!important;border:1px solid #293238!important;background:linear-gradient(145deg,#141a1e,#0d1114)!important;box-shadow:inset 0 1px #ffffff0c,0 5px 15px #0002!important}
+[data-view="home"] .core-actions>button{display:flex;align-items:center;gap:10px;text-align:left;min-width:0}
+[data-view="home"] .core-actions>button>span:last-child{min-width:0;flex:1}
+[data-view="home"] .core-actions .core-icon,[data-view="home"] .home-plate>button>span:first-child{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:13px;background:#ffffff09!important}
+[data-view="home"] .core-actions .core-icon svg,[data-view="home"] .home-plate>button>span:first-child svg{width:25px;height:25px;stroke-width:1.9}
+[data-view="home"] .core-actions>button b,[data-view="home"] .home-plate .home-more-copy b{display:block;font-size:17px;font-weight:820;line-height:1.25;color:#f7f9fa}
+[data-view="home"] .core-actions>button small,[data-view="home"] .home-plate .home-more-copy small::after{display:block;margin-top:4px;font-size:10px;line-height:1.35;color:#8f9da4}
+[data-view="home"] .core-actions>button[data-go="charging"]{border-color:#563039!important}
+[data-view="home"] .core-actions>button[data-go="charging"] .core-icon{color:#ff6678;background:#2a1419!important}
+[data-view="home"] .core-actions>button[data-go="highway"]{border-color:#2d4950!important}
+[data-view="home"] .core-actions>button[data-go="highway"] .core-icon{color:#74d7e9;background:#10252a!important}
+[data-view="home"] .core-actions>button[data-go="parking"]{border-color:#29445b!important}
+[data-view="home"] .core-actions>button[data-go="parking"] .core-icon{color:#74bfff;background:#102131!important}
+[data-view="home"] .home-plate>button{gap:10px;text-align:left}
+[data-view="home"] .home-plate>button>span:first-child{color:#c4a0ff;background:#21182d!important}
+[data-view="home"] .home-plate>button{border-color:#463655!important}
+[data-view="home"] .home-plate .home-more-copy small{font-size:0}
+[data-view="home"] .road-now{margin-top:7px;padding-top:3px}
+[data-view="home"] .road-now .section-head{margin-bottom:8px}
+[data-view="home"] .road-now .section-head h2{font-size:14px;font-weight:750;color:#d9e0e3}
+[data-view="home"] .road-now .source-status{gap:5px}
+[data-view="home"] .road-now-grid{gap:6px}
+[data-view="home"] .road-now-grid button{min-height:70px;padding:9px;border-radius:13px;background:#0e1417;border-color:#222d32}
+[data-view="home"] .road-now-grid b{font-size:17px;margin:5px 0 1px}
+[data-view="home"] .road-now-grid small{font-size:9px;line-height:1.3}
+[data-view="home"] .road-label{font-size:10px}
+[data-view="home"] .support-line{margin-top:3px}
+[data-view="home"] .support-line>a{border-radius:14px;background:#0d1316;border:1px solid #263137}
+[data-view="home"] .more-tools{margin-top:0;border-top:1px solid #1e272c}
+[data-view="home"] .more-tools>summary{min-height:48px;display:flex;align-items:center;color:#9ba7ad;font-size:12px;font-weight:700}
+[data-view="home"] .public-trust{margin-top:10px;opacity:.78}
+
+/* Bottom navigation: stronger active state without making the bar visually heavy. */
+.bottom-nav{height:calc(70px + env(safe-area-inset-bottom,0px));padding:5px 8px env(safe-area-inset-bottom,0px);background:#090d10f2;border-top-color:#202a2f;box-shadow:0 -8px 24px #0005}
+.bottom-nav button{min-height:58px;gap:2px;padding:5px 0;color:#7f8b92;font-size:10px;font-weight:650}
+.bottom-nav svg{width:30px;height:30px;padding:5px;border-radius:11px;transition:background .15s,color .15s,transform .15s}
+.bottom-nav button.active{color:#fff;font-weight:800}
+.bottom-nav button.active svg{color:#ff5a6d;background:#32131a;transform:translateY(-1px)}
+.bottom-nav button.active::before{display:none}
+.bottom-nav [data-go="highway"] span{font-size:10px}
+.bottom-nav [data-go="highway"] span::after{content:none}
+
+/* Road center polish: two clear shortcuts, then road tabs. */
+[data-view="highway"].active{column-gap:10px}
+[data-view="highway"] .page-head{padding:17px 1px 12px}
+[data-view="highway"] .page-head h1::after{font-size:23px}
+[data-view="highway"] .page-head .page-subtitle::after{font-size:11px;color:#8f9ca3}
+[data-view="highway"] .tunnel-link,[data-view="highway"] .cctv-link{min-height:82px;margin-bottom:12px;padding:12px;border-radius:15px;box-shadow:inset 0 1px #ffffff09}
+[data-view="highway"] .tunnel-link{border-color:#514529;background:linear-gradient(145deg,#211c10,#111314)}
+[data-view="highway"] .cctv-link{border-color:#294754;background:linear-gradient(145deg,#0d1d25,#101416)}
+[data-view="highway"] .tunnel-link b,[data-view="highway"] .cctv-link b{font-size:13px;font-weight:800}
+[data-view="highway"] .tunnel-link small,[data-view="highway"] .cctv-link small{font-size:9px}
+[data-view="highway"] #highwayTabs{top:0;margin:0 -2px 9px;padding:7px 2px;background:linear-gradient(180deg,#08090b 78%,#08090b00)}
+[data-view="highway"] #highwayTabs button{border-radius:10px}
+
+@media(max-width:430px){
+  [data-view="home"] .home-hero{min-height:216px}
+  [data-view="home"] .hero-content h1{font-size:31px}
+  [data-view="home"] .core-actions>button,[data-view="home"] .home-plate>button{min-height:82px}
+  [data-view="home"] .core-actions .core-icon,[data-view="home"] .home-plate>button>span:first-child{width:39px;height:39px}
+  [data-view="home"] .core-actions>button b,[data-view="home"] .home-plate .home-more-copy b{font-size:16px}
+}
+@media(max-width:359px){
+  [data-view="home"].active{gap:7px;padding-left:10px;padding-right:10px}
+  [data-view="home"] .home-hero{min-height:204px}
+  [data-view="home"] .core-actions>button,[data-view="home"] .home-plate>button{min-height:76px;padding:9px!important}
+  [data-view="home"] .core-actions .core-icon,[data-view="home"] .home-plate>button>span:first-child{width:35px;height:37px}
+  [data-view="home"] .core-actions .core-icon svg,[data-view="home"] .home-plate>button>span:first-child svg{width:22px;height:22px}
+  [data-view="home"] .core-actions>button b,[data-view="home"] .home-plate .home-more-copy b,[data-view="home"] .core-actions button[data-go="highway"] b::after{font-size:15px}
+  [data-view="home"] .core-actions>button small,[data-view="home"] .home-plate .home-more-copy small::after,[data-view="home"] .core-actions button[data-go="highway"] small::after,[data-view="home"] .core-actions button[data-go="parking"] small::after{font-size:9px}
+  .bottom-nav{padding-left:4px;padding-right:4px}
+  .bottom-nav button{font-size:9px}
+  .bottom-nav svg{width:28px;height:28px}
+}
+@media(min-width:600px){[data-view="home"] .home-hero{min-height:290px}}
