@@ -1,6 +1,6 @@
 const CACHE="cola-go-ui-v6-63";
 const DATA_CACHE="cola-go-data-v1";
-const SW_RELEASE="Public Beta V38";
+const SW_RELEASE="Public Beta V37";
 const CORE=["./","./index.html","./manifest.webmanifest","./assets/logo.svg","./assets/styles.css","./assets/app.js","./assets/tdx-runtime.js","./assets/images/drive-hero.webp"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(
@@ -15,7 +15,7 @@ self.addEventListener("fetch",e=>{
   const u=new URL(e.request.url);
   if(u.origin!==location.origin)return;
 
-  // V38: charging.json is ~4 MB. Re-downloading it on every Charging visit
+  // Charging snapshot is ~4 MB. Re-downloading it on every Charging visit
   // made "附近有空槍" wait behind the network even after geolocation finished.
   // Serve the last successful snapshot immediately, then refresh it in the
   // background. The payload still carries liveUpdatedAt/liveStale, so the UI
