@@ -4,17 +4,26 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: "TDX sync mode"
+        description: "TDX quota-aware sync mode"
         required: true
-        default: "all"
+        default: "charging"
         type: choice
         options:
-          - all
-          - dynamic
+          - charging
+          - roads
+          - parking
           - static
+          - all
   schedule:
-    - cron: "17 * * * *"
-    - cron: "35 18 * * *"
+    # Quota-aware schedule for the Basic 3-point/month allowance.
+    # Charging availability: 08:17 and 20:17 Taiwan time.
+    - cron: "17 0,12 * * *"
+    # Freeway / Snow Tunnel traffic: every 4 hours.
+    - cron: "47 */4 * * *"
+    # Parking live availability: once daily at 03:27 Taiwan time.
+    - cron: "27 19 * * *"
+    # Static station / parking / CCTV metadata: weekly, Monday 02:35 Taiwan time.
+    - cron: "35 18 * * 0"
 
 permissions:
   contents: write
@@ -33,28 +42,38 @@ jobs:
       TDX_MIN_INTERVAL: "13"
     steps:
       - uses: actions/checkout@v4
-      - name: Select sync mode
+      - name: Select quota-aware sync mode
         shell: bash
         run: |
           set -euo pipefail
-          mode="all"
+
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             mode="${{ inputs.mode }}"
           elif [[ "${{ github.event_name }}" == "schedule" ]]; then
-            if [[ "${{ github.event.schedule }}" == "35 18 * * *" ]]; then
-              mode="static"
-            else
-              mode="dynamic"
-            fi
+            case "${{ github.event.schedule }}" in
+              "17 0,12 * * *") mode="charging" ;;
+              "47 */4 * * *") mode="roads" ;;
+              "27 19 * * *") mode="parking" ;;
+              "35 18 * * 0") mode="static" ;;
+              *)
+                echo "::error title=Unknown TDX schedule::Refusing to fall back to a broad sync because the schedule is not recognized."
+                exit 1
+                ;;
+            esac
+          else
+            echo "::error title=Unexpected TDX event::Unsupported event: ${{ github.event_name }}"
+            exit 1
           fi
-          echo "TDX_SYNC_MODE=$mode" >> "$GITHUB_ENV"
-          echo "TDX sync mode: $mode"
+
+          echo "TDX_BUDGET_MODE=$mode" >> "$GITHUB_ENV"
+          echo "TDX quota-aware sync mode: $mode"
+
       - name: Sync protected TDX data cache
         shell: bash
         run: |
           set -euo pipefail
           log="$(mktemp)"
-          python3 scripts/sync_tdx.py 2>&1 | tee "$log"
+          python3 scripts/sync_tdx_budgeted.py 2>&1 | tee "$log"
           if grep -q 'TDX_AUTH_REJECTED' "$log"; then
             echo "::warning title=TDX OAuth rejected::TDX refused the configured API key. Existing published cache is retained, but live data remains stale until TDX accepts the key again."
             {
@@ -65,8 +84,10 @@ jobs:
               echo "Check TDX Member Center → Data Services → API Key and refresh the two GitHub Actions secrets if needed."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
+
       - name: Build lightweight charging snapshot
         run: python3 scripts/build_charging_fast.py
+
       - name: Commit refreshed official cache
         run: |
           set -euo pipefail
