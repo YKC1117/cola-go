@@ -59,6 +59,16 @@
 /* Plate is now a primary bottom-nav destination; avoid the legacy back-to-tools affordance. */
 [data-view="plate"] .page-head>.back{display:none}
 
+/* Charging sync is non-blocking: make that explicit instead of looking frozen. */
+[data-view="charging"] .charging-filter-label small{font-size:0}
+[data-view="charging"] .charging-filter-label small::after{content:"可直接找站・站數與槍況背景更新";font-size:8px;color:#738087}
+#chargingMajorFilter [data-charge-major]:not([data-source-mode]) [data-major-status]{font-size:0}
+#chargingMajorFilter [data-charge-major]:not([data-source-mode]) [data-major-status]::after{content:"可先使用・背景同步中";font-size:8px;color:#829097}
+#chargingCoverage:has(#chargingCoverageGrid:not([data-source-health])) #chargingCoverageSummary{font-size:0}
+#chargingCoverage:has(#chargingCoverageGrid:not([data-source-health])) #chargingCoverageSummary::after{content:"可先找站・背景同步中";font-size:9px;color:#829097}
+#chargingCoverageGrid:not([data-source-health]) .charging-coverage-stats>em:not(.official){font-size:0}
+#chargingCoverageGrid:not([data-source-health]) .charging-coverage-stats>em:not(.official)::after{content:"背景同步中";font-size:8px}
+
 /* Phone interaction QA: stop iOS focus-zoom and keep frequent filters finger-friendly. */
 @media(max-width:599px){
   .view input:not([type="checkbox"]):not([type="radio"]),.view select,.view textarea{font-size:16px!important}
