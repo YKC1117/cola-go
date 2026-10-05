@@ -1,10 +1,11 @@
-const CACHE="cola-go-ui-v6-62";
-const SW_RELEASE="Public Beta V37";
+const CACHE="cola-go-ui-v6-63";
+const DATA_CACHE="cola-go-data-v1";
+const SW_RELEASE="Public Beta V38";
 const CORE=["./","./index.html","./manifest.webmanifest","./assets/logo.svg","./assets/styles.css","./assets/app.js","./assets/tdx-runtime.js","./assets/images/drive-hero.webp"];
 self.addEventListener("install",e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",e=>e.waitUntil(
   caches.keys()
-    .then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
+    .then(keys=>Promise.all(keys.filter(k=>k!==CACHE&&k!==DATA_CACHE).map(k=>caches.delete(k))))
     .then(()=>self.clients.claim())
     .then(()=>self.clients.matchAll({type:"window",includeUncontrolled:true}))
     .then(clients=>Promise.all(clients.map(client=>client.postMessage({type:"COLA_GO_SW_ACTIVATED",release:SW_RELEASE}))))
@@ -13,7 +14,54 @@ self.addEventListener("fetch",e=>{
   if(e.request.method!=="GET")return;
   const u=new URL(e.request.url);
   if(u.origin!==location.origin)return;
-  if(u.pathname.includes("/data/tdx/")||u.pathname.includes("/data/operators/")||u.pathname.includes("/data/plates/")){
+
+  // V38: charging.json is ~4 MB. Re-downloading it on every Charging visit
+  // made "附近有空槍" wait behind the network even after geolocation finished.
+  // Serve the last successful snapshot immediately, then refresh it in the
+  // background. The payload still carries liveUpdatedAt/liveStale, so the UI
+  // will not present an old snapshot as confirmed live availability.
+  if(u.pathname.endsWith("/data/tdx/charging.json")){
+    const refresh=fetch(e.request).then(async r=>{
+      if(r&&r.ok){
+        const copy=r.clone();
+        try{const cache=await caches.open(DATA_CACHE);await cache.put(e.request,copy)}catch{}
+      }
+      return r;
+    });
+    e.respondWith(caches.open(DATA_CACHE).then(async cache=>{
+      const cached=await cache.match(e.request);
+      if(cached){
+        e.waitUntil(refresh.then(()=>{},()=>{}));
+        return cached;
+      }
+      return refresh.catch(()=>new Response("",{status:503,statusText:"Offline"}));
+    }));
+    return;
+  }
+
+  // Operator snapshots are supplemental/static-ish data. Keep them warm too,
+  // so the charging screen does not start four extra blocking downloads every
+  // time it is reopened. They are refreshed in the background on each read.
+  if(u.pathname.includes("/data/operators/")){
+    const refresh=fetch(e.request).then(async r=>{
+      if(r&&r.ok){
+        const copy=r.clone();
+        try{const cache=await caches.open(DATA_CACHE);await cache.put(e.request,copy)}catch{}
+      }
+      return r;
+    });
+    e.respondWith(caches.open(DATA_CACHE).then(async cache=>{
+      const cached=await cache.match(e.request);
+      if(cached){
+        e.waitUntil(refresh.then(()=>{},()=>{}));
+        return cached;
+      }
+      return refresh.catch(()=>new Response("",{status:503,statusText:"Offline"}));
+    }));
+    return;
+  }
+
+  if(u.pathname.includes("/data/tdx/")||u.pathname.includes("/data/plates/")){
     e.respondWith(fetch(e.request));
     return;
   }
