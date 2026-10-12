@@ -1,63 +1,9 @@
-name: Normalize charging cache maintenance
-
+name: PAUSED - Normalize charging cache
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "scripts/normalize_charging_cache.py"
-      - "scripts/build_charging_fast.py"
-      - ".github/workflows/normalize-charging-cache.yml"
   workflow_dispatch:
-
-permissions:
-  contents: write
-
-concurrency:
-  group: cola-go-tdx-sync
-  cancel-in-progress: false
-
 jobs:
-  normalize:
+  paused:
+    if: ${{ false }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Normalize checked-in charging cache
-        run: python3 scripts/normalize_charging_cache.py
-      - name: Build lightweight charging snapshot
-        run: python3 scripts/build_charging_fast.py
-      - name: Verify lightweight snapshot budget
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          fast = Path("data/tdx/charging-fast.json").stat().st_size
-          full = Path("data/tdx/charging.json").stat().st_size
-          limit = 1_500_000
-          print("CHARGING_FAST_BUDGET", fast, "of", full, "bytes", round(fast / full * 100, 1), "%")
-          if fast > limit:
-              raise SystemExit(f"charging-fast.json too large: {fast} > {limit}")
-          PY
-      - name: Publish normalized cache
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "COLA GO Bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add data/tdx/charging.json data/tdx/charging-fast.json
-          if git diff --cached --quiet; then
-            echo "Charging cache already normalized."
-            exit 0
-          fi
-          git commit -m "data: normalize charging cache"
-          for attempt in 1 2 3; do
-            if git push origin HEAD:main; then
-              echo "Normalized charging cache published."
-              exit 0
-            fi
-            echo "Main changed; rebasing normalized cache (attempt $attempt)." >&2
-            git fetch origin main
-            git rebase origin/main
-          done
-          exit 1
+      - run: echo "COLA GO is paused"

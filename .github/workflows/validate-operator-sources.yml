@@ -1,27 +1,9 @@
-name: Validate charging operator sources
-
+name: PAUSED - Validate operator sources
 on:
-  pull_request:
-    paths:
-      - "scripts/sync_operator_sources.py"
-      - ".github/workflows/sync-operator-data.yml"
-      - ".github/workflows/validate-operator-sources.yml"
-      - "assets/app.js"
-      - "assets/tdx-runtime.js"
-      - "index.html"
-      - "scripts/verify_ui_v6.cjs"
   workflow_dispatch:
-
-permissions:
-  contents: read
-
 jobs:
-  validate:
+  paused:
+    if: ${{ false }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - name: Python syntax
-        run: python3 -m py_compile scripts/sync_operator_sources.py
-      - name: Fetch and validate public operator station sources
-        run: python3 scripts/sync_operator_sources.py --check-online
+      - run: echo "COLA GO is paused"

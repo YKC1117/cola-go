@@ -1,95 +1,9 @@
-name: Validate COLA GO V3
+name: PAUSED - Validate COLA GO V3
 on:
-  push:
-    branches: ["main", "design/v3-product-ui", "feature/full-toolbox", "feature/market-db", "feature/owner-plus", "feature/community-locations", "feature/tainan-live-parking", "fix/mobile-home-quality", "feature/highway-cctv-live", "feature/charging-core", "feature/taiwan-parking"]
-    paths-ignore:
-      - "data/tdx/**"
-      - "data/operators/**"
-      - "data/plates/**"
   workflow_dispatch:
-permissions:
-  contents: read
 jobs:
-  validate:
+  paused:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Check JavaScript syntax
-        run: |
-          node --check assets/app.js
-          node --check sw.js
-      - name: Check JSON
-        run: |
-          python3 -m json.tool manifest.webmanifest >/dev/null
-          python3 -m json.tool data/charging.json >/dev/null
-          python3 -m json.tool data/traffic.json >/dev/null
-          python3 -m json.tool data/tunnel.json >/dev/null
-          python3 -m json.tool data/parking.json >/dev/null
-          python3 -m json.tool data/parking-live-tainan.json >/dev/null
-          python3 -m json.tool data/cctv.json >/dev/null
-          python3 -m json.tool data/tesla-models.json >/dev/null
-          python3 -m json.tool data/marketplace.json >/dev/null
-          python3 -m json.tool data/community.json >/dev/null
-          python3 -m json.tool data/tesla-locations.json >/dev/null
-          python3 -m json.tool data/plates/announcements.json >/dev/null
-      - name: Smoke test Tainan live parking source
-        if: github.ref == 'refs/heads/feature/tainan-live-parking'
-        run: |
-          python3 scripts/sync_tainan_parking.py | tee /tmp/parking-sync.log
-          grep -q "PARKING_SYNC_OK" /tmp/parking-sync.log
-          python3 - <<'PY'
-          import json
-          data=json.load(open("data/parking-live-tainan.json",encoding="utf-8"))
-          assert data["status"]=="live"
-          assert len(data["items"])>=5
-          print("LIVE_PARKING_ROWS",len(data["items"]))
-          PY
-      - name: Check required files
-        run: |
-          test -s index.html
-          test -s assets/styles.css
-          test -s assets/logo.svg
-          grep -q "COLA GO" index.html
-          grep -q "data-view=\"home\"" index.html
-          grep -q "bottom-nav" index.html
-          grep -q "core-actions" index.html
-          ! grep -q 'id="installSheet"' index.html
-          ! grep -q 'installSheet' assets/app.js
-          grep -q '加入主畫面：點瀏覽器' assets/app.js
-          grep -q "data-view=\"tesla-db\"" index.html
-          grep -q "data-view=\"market\"" index.html
-          grep -q "data-view=\"warranty\"" index.html
-          grep -q "data-view=\"connector\"" index.html
-          grep -q "data-view=\"community\"" index.html
-          grep -q "data-view=\"locations\"" index.html
-          grep -q "parkingLiveTime" index.html
-          python3 -m py_compile scripts/sync_tainan_parking.py scripts/sync_traffic.py scripts/sync_cctv.py
-          ! grep -q 'if(view==="cctv")ensureCCTV' assets/app.js
-          ! grep -q 'ensureParkingCity(state.parkingCity)' assets/app.js
-      - name: Check focused primary navigation
-        run: |
-          python3 - <<'PY'
-          from html.parser import HTMLParser
-          html=open('index.html',encoding='utf-8').read()
-          class NavParser(HTMLParser):
-              def __init__(self):
-                  super().__init__(); self.in_nav=False; self.depth=0; self.items=[]
-              def handle_starttag(self,tag,attrs):
-                  a=dict(attrs)
-                  if tag=='nav' and 'bottom-nav' in a.get('class','').split():
-                      self.in_nav=True; self.depth=1; return
-                  if self.in_nav:
-                      self.depth+=1
-                      if tag=='button' and a.get('data-go'): self.items.append(a['data-go'])
-              def handle_endtag(self,tag):
-                  if self.in_nav:
-                      self.depth-=1
-                      if self.depth==0: self.in_nav=False
-          p=NavParser(); p.feed(html)
-          assert p.items==['home','charging','parking','highway','plate'], p.items
-          assert 'class="tunnel-link" data-go="tunnel"' in html
-          assert 'const ROAD_NAV_VIEWS=new Set(["highway","tunnel","cctv"])' in html
-          assert '<button data-go="highway"><svg><use href="#i-road"></use></svg><span>路況</span></button>' in html
-          assert '<button data-go="plate"><svg><use href="#i-car"></use></svg><span>車牌</span></button>' in html
-          print('PRIMARY_NAV_CONTRACT_PASS', ','.join(p.items))
-          PY
+      - run: echo "COLA GO is paused"
