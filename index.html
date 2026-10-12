@@ -8,11 +8,22 @@
   <meta name="robots" content="noindex,nofollow">
   <title>COLA GO｜暫停服務</title>
   <style>
-    :root{color-scheme:light dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#111;color:#f5f5f5;padding:24px}
+    :root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}
+    *{box-sizing:border-box}
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#111;color:#f5f5f5;padding:24px}
     main{width:min(560px,100%);padding:36px 28px;border:1px solid #2b2b2b;border-radius:22px;background:#181818;box-shadow:0 18px 50px rgba(0,0,0,.28);text-align:center}
-    .brand{font-weight:800;letter-spacing:.08em;font-size:30px;margin-bottom:18px}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#e53935;margin-right:10px;vertical-align:3px}
-    h1{font-size:24px;margin:0 0 14px}p{margin:0;color:#bdbdbd;line-height:1.8;font-size:16px}.small{margin-top:20px;font-size:13px;color:#777}
+    .brand{font-weight:800;letter-spacing:.08em;font-size:30px;margin-bottom:18px}
+    .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#e53935;margin-right:10px;vertical-align:3px}
+    h1{font-size:24px;margin:0 0 14px}
+    p{margin:0;color:#bdbdbd;line-height:1.8;font-size:16px}
+    .small{margin-top:20px;font-size:13px;color:#777}
+    .overlay{position:fixed;inset:0;display:grid;place-items:center;padding:22px;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);z-index:9999}
+    .dialog{width:min(430px,100%);background:#1b1b1b;border:1px solid #333;border-radius:22px;padding:28px 24px 22px;box-shadow:0 26px 80px rgba(0,0,0,.55);text-align:center}
+    .dialog h2{font-size:24px;margin:0 0 12px}
+    .dialog p{font-size:16px;color:#cfcfcf}
+    .line-btn{display:flex;align-items:center;justify-content:center;width:100%;margin-top:22px;min-height:50px;border-radius:14px;background:#06c755;color:#fff;text-decoration:none;font-weight:800;font-size:17px}
+    .close-btn{width:100%;margin-top:10px;min-height:46px;border:1px solid #444;border-radius:14px;background:#242424;color:#ddd;font-size:16px;font-weight:700;cursor:pointer}
+    .oa-id{margin-top:12px;color:#8d8d8d;font-size:13px}
   </style>
 </head>
 <body>
@@ -22,7 +33,21 @@
     <p>網站與即時資料服務已暫時關閉。<br>後續重新開放時會再恢復使用。</p>
     <div class="small">COLA GO</div>
   </main>
+
+  <div class="overlay" id="pauseNotice" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+    <div class="dialog">
+      <h2 id="pauseTitle">網站暫停中</h2>
+      <p>COLA GO 目前暫停服務。<br>有問題請加官方帳號聯絡。</p>
+      <a class="line-btn" href="https://lin.ee/Tu89Qyk" target="_blank" rel="noopener noreferrer">加入官方帳號聯絡</a>
+      <div class="oa-id">LINE 官方帳號：@638jxfra</div>
+      <button class="close-btn" type="button" id="closeNotice">關閉提示</button>
+    </div>
+  </div>
+
   <script>
+    document.getElementById('closeNotice').addEventListener('click',()=>{
+      document.getElementById('pauseNotice').style.display='none';
+    });
     (async()=>{
       try{
         if('serviceWorker' in navigator){
